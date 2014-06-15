@@ -6,6 +6,7 @@ rightHandGesture.push({
     finLen: [0, 0, 0, 0, 0],
     finAngle: [0, 0, 0, 0, 0]
 });
+
 rightHandGesture.push({
     type: "index",
     count: 1,
