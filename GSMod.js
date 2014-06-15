@@ -7,7 +7,8 @@ var leapDeviceMgr = (function() {
     var api = {};
     var _controllers = [];
 
-    getFilteredFingers = function(frame) {
+    getFilteredFingers = function(frame, tag) {
+
         if (frame.hands.length > 0) {
             var hand = frame.hands[0];
             if (hand.confidence < THR_HAND_CONFIDENCE) {
@@ -15,14 +16,51 @@ var leapDeviceMgr = (function() {
             }
             //TODO finger filtering
             var fingers = hand.fingers;
+
+
             var len = fingers.length;
+            while (len > 2) {
+                len--;
+                if (Leap.vec3.distance(fingers[len].tipPosition, fingers[len - 1].tipPosition) < 20) {
+                    if (fingers[len].type != 0) {
+                        fingers.splice(len, 1);
+
+                    }
+
+                }
+            }
+            len = fingers.length;
             while (len--) {
-                if (!fingers[len].extended) {
+                if (!fingers[len].extended && fingers[len].type != 0) {
                     fingers.splice(len, 1);
                 }
             }
+            //compare bones in thumb to determine whether it's extended or not
+            if (fingers.length > 1) {
+                var differ = fingers[0].tipPosition[0] - hand.fingers[1].carpPosition[0];
+                if (differ > -15) {
+                    fingers.splice(0, 1);
+                }
+            } else if (fingers.length == 1) {
+                if (!fingers[0].extended) {
+                    fingers.splice(0, 1);
+                }
+            }
+
+            //elimilate mid and fin mix issue
+            if (fingers.length > 2 && fingers.length < 5) {
+                if (fingers[0].type == 0 && fingers[1].type == 1) {
+                    //var len = fingers.length - 1;
+                    while (fingers.length > 2) {
+                        fingers.splice(fingers.length - 1, 1);
+                    }
+                }
+            }
+
+
             return fingers;
         }
+
         return [];
     };
 
@@ -30,6 +68,8 @@ var leapDeviceMgr = (function() {
     api.numberOfDev = function() {
         return controllers.length;
     };
+
+
 
 
     api.addDevice = function(url, tag, gestureList) {
@@ -44,16 +84,13 @@ var leapDeviceMgr = (function() {
         controller.tag = tag;
         controller.gestureList = gestureList;
         controller.analyzer = new quanAnalyzer(gestureList, gestureList);
-        controller.on('connect', function() {
-            //Init
-        });
 
+        controller.use('riggedHand');
         controller.connect();
-        controller.use('handHold');
 
+        controller.setBackground(true); //enable
 
         _controllers.push(controller);
-
 
     };
 
@@ -65,15 +102,16 @@ var leapDeviceMgr = (function() {
                 //for test gui
                 drawGestures();
 
-
-                //Filter out folded fingers
                 drawFingers(frame, this.tag);
-                var fingers = getFilteredFingers(frame);
+                //Filter out folded fingers
+                var fingers = getFilteredFingers(frame, this.tag);
+
+
 
 
                 this.analyzer.update(fingers, this.tag);
                 updateProgressBar(this.analyzer.getList(), this.tag, this.analyzer.getMinIndex());
-
+                console.log(frame);
             });
 
         }
@@ -165,6 +203,10 @@ function quanAnalyzer(list) {
 
                 //Combine angle and length using predefined weights
                 this._list[i].val = finLength * LENGTH_WEIGHT + finAngle * ANGLE_WEIGHT;
+
+
+
+
             }
         } else { //if there is no finger in the frame, clear data in the list.
             for (var i = 0; i < volGestures.length; i++) {
@@ -188,6 +230,23 @@ function quanAnalyzer(list) {
                 }
                 // console.log("type " + this._list[i].type + " val: " + this._list[i].val);
                 // console.log(this._list);
+            }
+            var questEle = document.getElementById("quesmarks");
+            if (minVal > 0.2) {
+                // questEle.style.visibility = 'visible';
+                questEle.style.top = canvas.height / 2 + 'px';
+
+                questEle.style.left = canvas.width / 2 + 'px';
+                $('#quesmarks').show();
+                $('#quesmarks').animo({
+                    animation: 'tada',
+                    keep: false
+                });
+
+
+            } else {
+                // $('#quesmarks').hide();
+                // $('#quesmarks').animo("cleanse");
             }
             return minIndex;
         }
@@ -215,5 +274,9 @@ for (var i = 0; i < leftHandGesture.length; i++) {
 // leapDeviceMgr.addDevice("localhost", "right");
 leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT);
 leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT);
+//leapDeviceMgr.addDevice(url, position, gesturelist, frameFn);
+/*
+frameFn(frame);
+*/
 
 leapDeviceMgr.start();

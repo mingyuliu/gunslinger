@@ -1,8 +1,12 @@
+var FINGER_RENDER_MODE = 0;
+
+
 var canvas = document.getElementById("leap-overlay");
 
 // fullscreen
 canvas.width = document.body.clientWidth;
 canvas.height = document.body.clientHeight;
+
 var ctx = canvas.getContext("2d");
 ctx.translate(canvas.width, canvas.height);
 var GESTURE_ICON_SIZE = 120;
@@ -56,6 +60,8 @@ leftTargetMask.style.left = (canvas.width / 2 - leftGesturePanel.width) / 2 + GE
 
 leftTargetMask.width = GESTURE_ICON_SIZE * 0.70;
 leftTargetMask.height = GESTURE_ICON_SIZE * 0.70;
+
+
 
 var SCALE_RATIO = 1.5;
 
@@ -266,13 +272,9 @@ var fingerTipsPos;
 function drawFingers(frame, whichhand) {
     if (whichhand != "right") return;
     ctx.clearRect(-canvas.width, -canvas.height, canvas.width, canvas.height);
-    var hand = frame.hands[0];
-    if (hand == undefined) {
-        return;
-    }
-    var extendedAlpha = 1.0;
 
-    var fingers = hand.fingers;
+    var hand = frame.hands[0];
+    var extendedAlpha = 1.0;
 
     var centerX = document.body.clientWidth / 2;
     var centerY = document.body.clientHeight / 2;
@@ -284,101 +286,256 @@ function drawFingers(frame, whichhand) {
     var xPos, yPos;
     var startX, startY;
     var tempStr;
-
-
     var handLen = 30;
-    var handProjDir = [hand.direction[0], hand.direction[2]];
-    var handProjPos = [hand.palmPosition[0], hand.palmPosition[2]];
-    if (handProjDir[0] >= 0) {
-        var cos = angle2Lines2dCos(yNormal, handProjDir);
-        yPos = handLen * cos;
-        xPos = Math.sqrt(handLen * handLen - yPos * yPos);
-        startY = handProjPos[1];
-        startX = handProjPos[0];
-    } else {
-        var cos = angle2Lines2dCos(yNormal, handProjDir);
-        yPos = handLen * cos;
-        xPos = -Math.sqrt(handLen * handLen - yPos * yPos);
-        startY = handProjPos[1];
-        startX = handProjPos[0];
+    if (hand == undefined) return;
+    var fingers = hand.fingers;
+    if (fingers.length == 0) {
+        return;
     }
-    var distance = startX * startX + startY * startY;
-
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = '#000000';
-
-    ctx.strokeStyle = "rgba(255, 153, 0, 1)";
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.arc(startX - centerX, startY - centerY, 8, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.moveTo(startX - centerX, startY - centerY);
-    ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
-    ctx.lineWidth = 10;
-
-    ctx.stroke();
-
-
-
-    // for (var i = 0; i < fingers.length; i++) {
-
-
-
-    //     var fingerProjDir = [fingers[i].direction[0], fingers[i].direction[2]];
-    //     var fingerProjPos = [fingers[i].tipPosition[0], fingers[i].tipPosition[2]];
-    //     var fingerLen = fingers[i].length;
-
-    //     if (fingerProjDir[0] >= 0) {
-    //         var cos = angle2Lines2dCos(yNormal, fingerProjDir);
-    //         yPos = -fingerLen * cos;
-    //         xPos = -Math.sqrt(fingerLen * fingerLen - yPos * yPos);
-    //         startY = fingerProjPos[1];
-    //         startX = fingerProjPos[0];
-    //     } else {
-    //         var cos = angle2Lines2dCos(yNormal, fingerProjDir);
-    //         yPos = -fingerLen * cos;
-    //         xPos = Math.sqrt(fingerLen * fingerLen - yPos * yPos);
-    //         startY = fingerProjPos[1];
-    //         startX = fingerProjPos[0];
-    //     }
-    //     extendedAlpha = (fingers[i].extended ? 1 : 0.2);
-    //     ctx.shadowBlur = 5;
-    //     ctx.shadowColor = '#000000';
-    //     ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
-    //     ctx.beginPath();
-    //     ctx.moveTo(startX - centerX, startY - centerY);
-    //     ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
-    //     ctx.lineWidth = 8;
-
-    //     ctx.lineCap = "round";
-    //     ctx.stroke();
-    // }
-
-    fingerTipsPos = new Array();
-    for (var i = 0; i < fingers.length; i++) {
-        fingerTipsPos.push([fingers[i].mcpPosition, fingers[i].pipPosition, fingers[i].dipPosition, fingers[i].tipPosition]);
-
+    if (hand.confidence < THR_HAND_CONFIDENCE) {
+        return;
     }
+    switch (FINGER_RENDER_MODE) {
+        case 0:
+            var offset = 250;
 
-    for (var i = 0; i < fingerTipsPos.length; i++) {
-        for (var j = 0; j < 3; j++) {
-            extendedAlpha = (fingers[i].extended ? 1 : 0.2);
-            ctx.shadowBlur = 5;
+            var handProjDir = [hand.direction[0], hand.direction[2]];
+            var handProjPos = [hand.palmPosition[0], hand.palmPosition[2]];
+            if (handProjDir[0] >= 0) {
+                var cos = angle2Lines2dCos(yNormal, handProjDir);
+                yPos = handLen * cos;
+                xPos = Math.sqrt(handLen * handLen - yPos * yPos);
+                startY = handProjPos[1];
+                startX = handProjPos[0];
+            } else {
+                var cos = angle2Lines2dCos(yNormal, handProjDir);
+                yPos = handLen * cos;
+                xPos = -Math.sqrt(handLen * handLen - yPos * yPos);
+                startY = handProjPos[1];
+                startX = handProjPos[0];
+            }
+            var distance = startX * startX + startY * startY;
+
+            ctx.shadowBlur = 20;
             ctx.shadowColor = '#000000';
-            ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
-            ctx.beginPath();
-            ctx.moveTo(fingerTipsPos[i][j][0] - centerX, fingerTipsPos[i][j][2] - centerY);
-            ctx.lineTo(fingerTipsPos[i][j + 1][0] - centerX, fingerTipsPos[i][j + 1][2] - centerY);
-            ctx.lineWidth = 8;
 
+            ctx.strokeStyle = "rgba(255, 153, 0, 1)";
             ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.arc(startX - centerX, startY - centerY, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.moveTo(startX - centerX, startY - centerY);
+            ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
+            ctx.lineWidth = 10;
+
             ctx.stroke();
-        };
 
-    };
+            startX += offset;
+
+            ctx.beginPath();
+            ctx.arc(startX - centerX, startY - centerY, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.moveTo(startX - centerX, startY - centerY);
+            ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
+            ctx.lineWidth = 10;
+
+            ctx.stroke();
 
 
+            // for (var i = 0; i < fingers.length; i++) {
 
+            //     var fingerProjDir = [fingers[i].direction[0], fingers[i].direction[2]];
+            //     var fingerProjPos = [fingers[i].tipPosition[0], fingers[i].tipPosition[2]];
+            //     var fingerLen = fingers[i].length;
+
+            //     if (fingerProjDir[0] >= 0) {
+            //         var cos = angle2Lines2dCos(yNormal, fingerProjDir);
+            //         yPos = -fingerLen * cos;
+            //         xPos = -Math.sqrt(fingerLen * fingerLen - yPos * yPos);
+            //         startY = fingerProjPos[1];
+            //         startX = fingerProjPos[0];
+            //     } else {
+            //         var cos = angle2Lines2dCos(yNormal, fingerProjDir);
+            //         yPos = -fingerLen * cos;
+            //         xPos = Math.sqrt(fingerLen * fingerLen - yPos * yPos);
+            //         startY = fingerProjPos[1];
+            //         startX = fingerProjPos[0];
+            //     }
+            //     extendedAlpha = (fingers[i].extended ? 1 : 0.2);
+            //     ctx.shadowBlur = 5;
+            //     ctx.shadowColor = '#000000';
+            //     ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
+            //     ctx.beginPath();
+            //     ctx.moveTo(startX - centerX, startY - centerY);
+            //     ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
+            //     ctx.lineWidth = 8;
+
+            //     ctx.lineCap = "round";
+            //     ctx.stroke();
+            // }
+
+            fingerTipsPos = [];
+            for (var i = 0; i < fingers.length; i++) {
+                fingerTipsPos.push([fingers[i].mcpPosition, fingers[i].pipPosition, fingers[i].dipPosition, fingers[i].tipPosition]);
+
+            }
+
+            for (var i = 0; i < fingerTipsPos.length; i++) {
+                for (var j = 0; j < 3; j++) {
+                    extendedAlpha = (fingers[i].extended ? 1 : 0.2);;
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = '#000000';
+                    ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
+                    ctx.beginPath();
+                    ctx.moveTo(fingerTipsPos[i][j][0] - centerX, fingerTipsPos[i][j][2] - centerY);
+                    ctx.lineTo(fingerTipsPos[i][j + 1][0] - centerX, fingerTipsPos[i][j + 1][2] - centerY);
+                    ctx.lineWidth = 8;
+
+                    ctx.lineCap = "round";
+                    ctx.stroke();
+                }
+
+            }
+            getFilterFingers(fingers);
+            fingerTipsPos = [];
+            for (var i = 0; i < fingers.length; i++) {
+                fingerTipsPos.push([fingers[i].mcpPosition, fingers[i].pipPosition, fingers[i].dipPosition, fingers[i].tipPosition]);
+
+            }
+
+
+            for (var i = 0; i < fingerTipsPos.length; i++) {
+                for (var j = 0; j < 3; j++) {
+                    extendedAlpha = 1;
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = '#000000';
+                    ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
+                    ctx.beginPath();
+                    ctx.moveTo(fingerTipsPos[i][j][0] - centerX + offset, fingerTipsPos[i][j][2] - centerY);
+                    ctx.lineTo(fingerTipsPos[i][j + 1][0] - centerX + offset, fingerTipsPos[i][j + 1][2] - centerY);
+                    ctx.lineWidth = 8;
+
+                    ctx.lineCap = "round";
+                    ctx.stroke();
+                }
+
+            }
+            break;
+        case 1:
+            var offset = 250;
+
+            var handProjDir = [hand.direction[0], hand.direction[2]];
+            var handProjPos = [hand.palmPosition[0], hand.palmPosition[2]];
+            if (handProjDir[0] >= 0) {
+                var cos = angle2Lines2dCos(yNormal, handProjDir);
+                yPos = handLen * cos;
+                xPos = Math.sqrt(handLen * handLen - yPos * yPos);
+                startY = handProjPos[1];
+                startX = handProjPos[0];
+            } else {
+                var cos = angle2Lines2dCos(yNormal, handProjDir);
+                yPos = handLen * cos;
+                xPos = -Math.sqrt(handLen * handLen - yPos * yPos);
+                startY = handProjPos[1];
+                startX = handProjPos[0];
+            }
+            var distance = startX * startX + startY * startY;
+
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#000000';
+
+            ctx.strokeStyle = "rgba(255, 153, 0, 1)";
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.arc(startX - centerX, startY - centerY, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.moveTo(startX - centerX, startY - centerY);
+            ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
+            ctx.lineWidth = 10;
+
+            ctx.stroke();
+            getFilterFingers(fingers);
+
+            for (var i = 0; i < fingers.length; i++) {
+
+                var fingerProjDir = [fingers[i].direction[0], fingers[i].direction[2]];
+                var fingerProjPos = [fingers[i].tipPosition[0], fingers[i].tipPosition[2]];
+                var fingerLen = fingers[i].length;
+
+                if (fingerProjDir[0] >= 0) {
+                    var cos = angle2Lines2dCos(yNormal, fingerProjDir);
+                    yPos = -fingerLen * cos;
+                    xPos = -Math.sqrt(fingerLen * fingerLen - yPos * yPos);
+                    startY = fingerProjPos[1];
+                    startX = fingerProjPos[0];
+                } else {
+                    var cos = angle2Lines2dCos(yNormal, fingerProjDir);
+                    yPos = -fingerLen * cos;
+                    xPos = Math.sqrt(fingerLen * fingerLen - yPos * yPos);
+                    startY = fingerProjPos[1];
+                    startX = fingerProjPos[0];
+                }
+                extendedAlpha = 1;
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = '#000000';
+                ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
+                ctx.beginPath();
+                ctx.moveTo(startX - centerX, startY - centerY);
+                ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
+                ctx.lineWidth = 8;
+
+                ctx.lineCap = "round";
+                ctx.stroke();
+            }
+
+
+            break;
+    }
+
+
+}
+
+function getFilterFingers(fingersraw) {
+    var len = fingersraw.length;
+    while (len > 2) {
+        len--;
+        console.log(Leap.vec3.distance(fingersraw[len].tipPosition, fingersraw[len - 1].tipPosition));
+        if (Leap.vec3.distance(fingersraw[len].tipPosition, fingersraw[len - 1].tipPosition) < 20) {
+            if (fingersraw[len].type != 0) {
+                fingersraw.splice(len, 1);
+
+            }
+
+        }
+    }
+    len = fingersraw.length;
+    while (len--) {
+        if (!fingersraw[len].extended && fingersraw[len].type != 0) {
+            fingersraw.splice(len, 1);
+        }
+    }
+    //compare bones in thumb to determine whether it's extended or not
+    if (fingersraw.length > 1) {
+        var differ = fingersraw[0].tipPosition[0] - fingersraw[1].carpPosition[0];
+        if (differ > -15) {
+            fingersraw.splice(0, 1);
+        }
+    } else if (fingersraw.length == 1) {
+        if (!fingersraw[0].extended) {
+            fingersraw.splice(0, 1);
+        }
+    }
+
+    //elimilate mid and fin mix issue
+    if (fingersraw.length > 2 && fingersraw.length < 5) {
+        if (fingersraw[0].type == 0 && fingersraw[1].type == 1) {
+            //var len = fingersraw.length - 1;
+            while (fingersraw.length > 2) {
+                fingersraw.splice(fingersraw.length - 1, 1);
+            }
+        }
+    }
+    return fingersraw;
 }
 
 function updateProgressBar(list, whichhand, minIndex) {
@@ -452,6 +609,11 @@ function angle2Lines2dCos(v1, v2) {
 
 }
 
-var baseBoneRotation = (new THREE.Quaternion).setFromEuler(
-    new THREE.Euler(Math.PI / 2, 0, 0)
-);
+
+$(document).keyup(function(event) {
+    switch (event.which) {
+        case 84: //"t" toggle cursor view
+            FINGER_RENDER_MODE = (FINGER_RENDER_MODE + 1) % 2;
+            break;
+    }
+});

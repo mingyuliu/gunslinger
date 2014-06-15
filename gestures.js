@@ -4,94 +4,43 @@ rightHandGesture.push({
     type: "neutral",
     count: 0,
     finLen: [0, 0, 0, 0, 0],
-    finAngle: [0, 0, 0, 0, 0],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
+    finAngle: [0, 0, 0, 0, 0]
 });
 rightHandGesture.push({
     type: "index",
     count: 1,
     finLen: [60, 0, 0, 0, 0],
-    finAngle: [0, 0, 0, 0, 0],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
+    finAngle: [0, 0, 0, 0, 0]
 });
 rightHandGesture.push({
     type: "thumb",
     count: 1,
     finLen: [40, 0, 0, 0, 0],
-    finAngle: [-47, 0, 0, 0, 0],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
+    finAngle: [-47, 0, 0, 0, 0]
 });
 rightHandGesture.push({
     type: "twofins",
     count: 2,
     finLen: [62, 70, 0, 0, 0],
-    finAngle: [-11, 14, 0, 0, 0],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
+    finAngle: [-11, 14, 0, 0, 0]
 });
 rightHandGesture.push({
     type: "point",
     count: 2,
     finLen: [35, 55, 0, 0, 0],
-    finAngle: [-40, 10, 0, 0, 0],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
-
+    finAngle: [-40, 10, 0, 0, 0]
 });
 rightHandGesture.push({
     type: "fourfin",
     count: 4,
     finLen: [60, 71, 61, 48, 0],
-    finAngle: [-19, 23, 23, 25, 0],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
-
+    finAngle: [-19, 23, 23, 25, 0]
 });
 rightHandGesture.push({
     type: "full",
     count: 5,
     finLen: [37, 60, 71, 61, 48],
-    finAngle: [-42, -19, 23, 23, 25],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
+    finAngle: [-42, -19, 23, 23, 25]
 });
 
 var leftHandGesture = new Array();
@@ -99,80 +48,37 @@ leftHandGesture[0] = {
     type: "neutral",
     count: 0,
     finLen: [0, 0, 0, 0, 0],
-    finAngle: [0, 0, 0, 0, 0],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
+    finAngle: [0, 0, 0, 0, 0]
 };
 leftHandGesture[1] = {
     type: "pan",
     count: 1,
     finLen: [55, 0, 0, 0, 0],
-    finAngle: [-7, 0, 0, 0, 0],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
+    finAngle: [-7, 0, 0, 0, 0]
 };
 leftHandGesture[2] = {
     type: "twofins",
     count: 2,
     finLen: [70, 62, 0, 0, 0],
-    finAngle: [-14, 11, 0, 0, 0],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
+    finAngle: [-14, 11, 0, 0, 0]
 };
 leftHandGesture[3] = {
     type: "point",
     count: 2,
     finLen: [55, 35, 0, 0, 0],
-    finAngle: [-10, 40, 0, 0, 0],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
-
+    finAngle: [-10, 40, 0, 0, 0]
 };
 leftHandGesture[4] = {
     type: "fourfins",
     count: 4,
     finLen: [44, 60, 70, 59, 0],
-    finAngle: [-20, -17, -16, 17, 0],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
+    finAngle: [-20, -17, -16, 17, 0]
 };
 leftHandGesture[5] = {
     type: "full",
     count: 5,
     finLen: [44, 60, 70, 59, 33],
-    finAngle: [-20, -17, -16, 17, 38],
-    finVel: [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ]
+    finAngle: [-20, -17, -16, 17, 38]
 };
 
 //on the wall set
