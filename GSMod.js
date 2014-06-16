@@ -318,7 +318,7 @@ function quanAnalyzer(tag) {
                 // console.log("type " + this._list[i].type + " val: " + this._list[i].val);
                 // console.log(this._list);
             }
-            var questEle = document.getElementById("quesmarks");
+            // var questEle = document.getElementById("quesmarks");
             // if (minVal > 0.2) {
             //     // questEle.style.visibility = 'visible';
             //     questEle.style.top = canvas.height / 2 + 'px';
