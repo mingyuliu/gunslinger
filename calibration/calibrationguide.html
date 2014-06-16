@@ -1,0 +1,83 @@
+
+  <title>2 hands 10 fingers</title>
+<style>
+html, body {
+  width: 100%;
+  height:100%;
+  margin: 0;
+  padding: 0;
+  background: #024;
+  color: #fff;
+}
+#wrap {
+  width: 600px;
+  margin: 0 auto;
+  height: 50%;
+}
+.half {
+  width: 50%;
+  margin-top: 100px;
+  float: left;
+}
+div {
+  text-align: center;
+  font-size: 60px;
+  font-family: Helvetica, Arial, sans-serif;
+}
+#hands,
+#steps,
+#fingers {
+  font-weight: bold;
+  font-size: 200px;
+}
+#leap-overlay { position: fixed; top: 0; left: 0; z-index: 4; pointer-events:none;}
+</style>
+<canvas id = "leap-overlay"> </canvas>
+<div id="wrap">
+  <div class="half">
+    <div id="hands">2</div>
+    <div id="description-hands">hands</div>
+  </div>
+  <div class="half"
+>    <div id="fingers">10</div>
+    <div id="description-fingers">fingers</div>
+  </div>
+</div>
+<div id="wrap">
+ 
+    <div id="steps">2</div>
+    <div id="currenttype">hands</div>
+
+
+</div>
+  <script src="../leap-0.6.0.js"></script>
+  <script src="../jquery-2.1.0.min.js"></script>
+<script>
+var handsDiv = document.getElementById("hands");
+var fingersDiv = document.getElementById("fingers");
+
+var handsDesc = document.getElementById("description-hands");
+var fingersDesc = document.getElementById("description-fingers");
+
+var currentFrame;
+
+Leap.loop(function(obj) {
+  var hands = obj.hands.length;
+  var fingers = obj.pointables.length;
+
+  handsDiv.innerHTML = hands;
+  fingersDiv.innerHTML = fingers;
+
+  var a = hands == 1 ? "hand" : "hands";
+  var b = fingers == 1 ? "finger" : "fingers";
+
+  handsDesc.innerHTML = a;
+  fingersDesc.innerHTML = b;
+
+  document.title = [hands, a, fingers, b].join(" ");
+  currentFrame = obj;
+  drawFingers(obj);
+});
+</script>
+  <script src="../gestures.js"></script>
+  <script src="calibration.js"></script>

@@ -1,11 +1,17 @@
 //Config
 var THR_HAND_CONFIDENCE = 0.4;
-
+var ORDINAL_DISTANCE_WEIGHT = 0.33;
+var THUMB_TIP_WEIGHT = 0.33;
+var NB_FINGER_WEIGHT = 0.34;
 
 var leapDeviceMgr = (function() {
 
     var api = {};
     var _controllers = [];
+
+    getFilteredFrame = function(frame) {
+        //TODO
+    }
 
     getFilteredFingers = function(frame, tag) {
 
@@ -83,7 +89,7 @@ var leapDeviceMgr = (function() {
 
         controller.tag = tag;
         controller.gestureList = gestureList;
-        controller.analyzer = new quanAnalyzer(gestureList, gestureList);
+        controller.analyzer = new quanAnalyzer(tag);
 
         controller.use('riggedHand');
         controller.connect();
@@ -102,16 +108,18 @@ var leapDeviceMgr = (function() {
                 //for test gui
                 drawGestures();
 
-                drawFingers(frame, this.tag);
+                // drawFingers(frame, this.tag);
                 //Filter out folded fingers
-                var fingers = getFilteredFingers(frame, this.tag);
+                // var fingers = getFilteredFingers(frame, this.tag);
+                var hand = frame.hands[0];
+                var fingers = [];
+                if (hand != undefined) {
 
-
-
-
+                    fingers = frame.hands[0].fingers;
+                }
                 this.analyzer.update(fingers, this.tag);
                 updateProgressBar(this.analyzer.getList(), this.tag, this.analyzer.getMinIndex());
-                console.log(frame);
+
             });
 
         }
@@ -129,12 +137,22 @@ var leapDeviceMgr = (function() {
 var LENGTH_WEIGHT = 0.5;
 var ANGLE_WEIGHT = 0.5;
 
-function quanAnalyzer(list) {
+function quanAnalyzer(tag) {
     this._list = [];
-    for (var i = 0; i < list.length; i++) {
+    this._gestures;
+    switch (tag) {
+        case "right":
+            this._gestures = JSON.parse(localStorage.rightGestures);
+            break;
+        case "left":
+            this._gestures = JSON.parse(localStorage.leftGestures);
+
+            break;
+    }
+    for (var i = 0; i < this._gestures.length; i++) {
 
         var item = {
-            type: list[i],
+            type: this._gestures[i].type,
             val: 1
         };
         this._list.push(item);
@@ -156,67 +174,136 @@ function quanAnalyzer(list) {
         return Math.acos(cos) * 180.0 / Math.PI;
     };
 
+    this.resetVal = function() {
+        for (var i = 0; i < this._gestures.length; i++) {
+            this._list[i].val = 1;
+        }
+        this._list[0].val = 0;
+    }
+
+    this.update = function(fingers) {
+        if (fingers.length == 0) {
+            this.resetVal();
+            return;
+        }
+        var distanceStr = "";
+        for (var p = 0; p < this._gestures.length; p++) { // for each vocabulary posture
+
+            // Step 2: difference in number of raised digits between the vocabulary gesture and the candidate gesture
+            var nbDigitDistance = 0;
+
+            // Step 3: ordinal distance between the digits of the vocabulary gesture and the candidate gesture
+            var diffArray = [];
+            for (var d = 1; d < 5; d++) { // digits (index to pinky fingers); I'm assuming thumb is 0 and pinky is 4
+
+                /*
+            Basically what this loop does is compute an array that represents the difference between the vocabulary and candidate postures:
+              - 2 means "this finger is raised in both postures"
+              - 0 means "this finger is raised in none of the postures"
+              - 1 means "this finger is raised in the vocabulary posture but not in the candidate posture"
+              - -1 means "this finger is raised in the candidate posture but not in the vocabulary posture"
+
+            So for example, if we have:
+                Vocabulary:      | | . .    
+                Candidate:       | . . |
+                We get:         [2;1;0;-1]
+            */
+
+                // I'm assuming that there is an "extended[]" boolean array in the posture objects
+                // The +var operation turns a boolean into an integer (0 or 1)
+                diffArray[d] = (this._gestures[p].extended[d] && fingers[d].extended ? 2 : +Number(this._gestures[p].extended[d]) - Number(fingers[d].extended));
+
+                nbDigitDistance += (diffArray[d] == 2 ? 0 : diffArray[d]);
+
+            }
 
 
-    this.update = function(fingers, whichhand) {
-        //this._list is an array and stores each posture name and its current distance value
+            /* 
+        Computing the ordinal distance.
+        This distance can be summarized as the lowest distance between a mismatched finger (1 or -1) and either another mismatched finger
+        of opposite sign or a correct finger (2). I've tried various distances and this ones is the closest to the logic that I'm trying
+        to implement.
+        */
 
-        //two distance measurement
-        var finLength;
-        var finAngle;
+            var first1 = 0;
+            var firstIndex1 = -1,
+                firstIndex2 = -1;
+            var dist1 = 0,
+                dist2 = 0;
+            var digit;
 
+            for (var i = 0; i < diffArray.length; i++) {
 
-        var volGestures = (whichhand == "right" ? rightHandGesture : leftHandGesture);
+                digit = diffArray[i];
 
-        if (fingers.length > 0) { //if there is at least one finger in the frame
-            var finCount = fingers.length;
-
-            for (var i = 0; i < volGestures.length; i++) { //volGestures stores our posture vocabulary
-                var finCountInVol = volGestures[i].count;
-                var minCount = Math.min(finCountInVol, finCount);
-                var maxCount = Math.max(finCountInVol, finCount);
-
-                //Length difference
-                var accumDistance = 0;
-                for (var j = 0; j < minCount; j++) {
-                    accumDistance += (fingers[j].length - volGestures[i].finLen[j]) * (fingers[j].length - volGestures[i].finLen[j]);
+                if (firstIndex2 == -1 && digit == 2) {
+                    firstIndex2 = i;
+                } else if (firstIndex1 == -1 && Math.abs(digit) == 1) {
+                    first1 = digit;
+                    firstIndex1 = i;
                 }
-                accumDistance += Math.abs(finCount - finCountInVol) * 120 * 120;
-                var normalizer = maxCount * 120 * 120;
-                finLength = Math.sqrt(accumDistance / normalizer);
 
-                //Angle difference
-                accumDistance = 0;
-                var downDir = [0, 0, -1];
-                for (var j = 0; j < minCount; j++) {
-                    var angle = this.angleBtLines(downDir, fingers[j].direction);
+                if (firstIndex1 != -1) {
 
-                    if (fingers[j].direction[0] < 0) {
-                        angle = -angle;
+                    if (digit == first1) {
+                        firstIndex1 = i;
                     }
 
-                    accumDistance += (angle - volGestures[i].finAngle[j]) * (angle - volGestures[i].finAngle[j]);
+                    if (digit != 0 && digit != first1) {
+                        dist1 = i - firstIndex1;
+                        break;
+                    }
+
                 }
-                accumDistance += Math.abs(finCount - finCountInVol) * 180 * 180;
-                normalizer = maxCount * 180 * 180;
-                finAngle = Math.sqrt(accumDistance / normalizer);
 
-                //Combine angle and length using predefined weights
-                this._list[i].val = finLength * LENGTH_WEIGHT + finAngle * ANGLE_WEIGHT;
+                if (firstIndex2 != -1) {
 
+                    if (digit == 2) {
+                        firstIndex2 = i;
+                    }
 
+                    if (Math.abs(digit) == 1 && dist2 == 0) {
+                        dist2 = i - firstIndex2;
 
+                    }
+
+                }
 
             }
-        } else { //if there is no finger in the frame, clear data in the list.
-            for (var i = 0; i < volGestures.length; i++) {
-                this._list[i].val = 1;
-            }
-            this._list[0].val = 0;
+
+
+            // Ordinal distance between raised fingers, normalized (maximum value is 3):
+            var ordinalDistance = Math.max(dist1, dist2) / 3;
+
+            // Distance between the thumb tips of the candidate and the vocabulary gesture from the index's mcpPosition (I'm assuming that the corresponding vector 
+            // of the vocabulary postures is stored in the posture object), normalized by the length of the index finger:
+            var cadidateThumbDist;
+            cadidateThumbDist = Leap.vec3.distance(fingers[0].tipPosition, fingers[1].mcpPosition)
+
+            var thumbTipDistance = Math.abs(cadidateThumbDist - this._gestures[p].thumbDistVec);
+
+
+            thumbTipDistance /= fingers[1].length;
+
+            // Difference between the number of raised digits, normalized (maximum difference is 4):
+            nbDigitDistance /= 4;
+            nbDigitDistance = Math.abs(nbDigitDistance);
+            ordinalDistance = Math.abs(ordinalDistance);
+
+
+            // Weighted sum (I suggest starting with all the weights at .33 and see what happens)
+            // I'm assuming that .val is the final score and that lower is better
+            this._list[p].val = ordinalDistance * ORDINAL_DISTANCE_WEIGHT + thumbTipDistance * THUMB_TIP_WEIGHT + nbDigitDistance * NB_FINGER_WEIGHT;
+            distanceStr += this._gestures[p].type + "\t\tordinal: " + ordinalDistance.toFixed(3) + " thumb: " + thumbTipDistance.toFixed(3) + " digit: " + nbDigitDistance.toFixed(3) + "<br />";
         }
+        var frameOutput = document.getElementById("frameData");
 
-        // if (whichhand == "right") console.log(this.getMinIndex());
-
+        var str = "";
+        for (var i = 0; i < this._list.length; i++) {
+            str += this._list[i].val + " , ";
+        }
+        frameOutput.innerHTML = "<div style='width:600px; font-size: 20px;float:left; padding:5px'>" + distanceStr + "</div>";
+        // console.log(str);
     };
 
     this.getMinIndex = function() {
@@ -232,22 +319,22 @@ function quanAnalyzer(list) {
                 // console.log(this._list);
             }
             var questEle = document.getElementById("quesmarks");
-            if (minVal > 0.2) {
-                // questEle.style.visibility = 'visible';
-                questEle.style.top = canvas.height / 2 + 'px';
+            // if (minVal > 0.2) {
+            //     // questEle.style.visibility = 'visible';
+            //     questEle.style.top = canvas.height / 2 + 'px';
 
-                questEle.style.left = canvas.width / 2 + 'px';
-                $('#quesmarks').show();
-                $('#quesmarks').animo({
-                    animation: 'tada',
-                    keep: false
-                });
+            //     questEle.style.left = canvas.width / 2 + 'px';
+            //     $('#quesmarks').show();
+            //     $('#quesmarks').animo({
+            //         animation: 'tada',
+            //         keep: false
+            //     });
 
 
-            } else {
-                // $('#quesmarks').hide();
-                // $('#quesmarks').animo("cleanse");
-            }
+            // } else {
+            //     // $('#quesmarks').hide();
+            //     // $('#quesmarks').animo("cleanse");
+            // }
             return minIndex;
         }
     };
@@ -273,7 +360,7 @@ for (var i = 0; i < leftHandGesture.length; i++) {
 //TEST
 // leapDeviceMgr.addDevice("localhost", "right");
 leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT);
-leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT);
+// leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT);
 //leapDeviceMgr.addDevice(url, position, gesturelist, frameFn);
 /*
 frameFn(frame);
