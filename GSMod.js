@@ -296,13 +296,16 @@ function quanAnalyzer(tag) {
             this._list[p].val = ordinalDistance * ORDINAL_DISTANCE_WEIGHT + thumbTipDistance * THUMB_TIP_WEIGHT + nbDigitDistance * NB_FINGER_WEIGHT;
             distanceStr += this._gestures[p].type + "\t\tordinal: " + ordinalDistance.toFixed(3) + " thumb: " + thumbTipDistance.toFixed(3) + " digit: " + nbDigitDistance.toFixed(3) + "<br />";
         }
-        var frameOutput = document.getElementById("frameData");
+        if (tag == "right") {
 
-        var str = "";
-        for (var i = 0; i < this._list.length; i++) {
-            str += this._list[i].val + " , ";
+            var frameOutput = document.getElementById("frameData");
+
+            var str = "";
+            for (var i = 0; i < this._list.length; i++) {
+                str += this._list[i].val + " , ";
+            }
+            frameOutput.innerHTML = "<div style='width:600px; font-size: 20px;float:left; padding:5px'>" + distanceStr + "</div>";
         }
-        frameOutput.innerHTML = "<div style='width:600px; font-size: 20px;float:left; padding:5px'>" + distanceStr + "</div>";
         // console.log(str);
     };
 
@@ -360,7 +363,7 @@ for (var i = 0; i < leftHandGesture.length; i++) {
 //TEST
 // leapDeviceMgr.addDevice("localhost", "right");
 leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT);
-// leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT);
+leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT);
 //leapDeviceMgr.addDevice(url, position, gesturelist, frameFn);
 /*
 frameFn(frame);

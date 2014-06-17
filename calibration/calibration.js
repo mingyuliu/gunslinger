@@ -24,7 +24,7 @@ var calibrator = (function() {
         }
         currentIndex = 0;
         stepsEl.innerHTML = (currentIndex + 1) + "/" + (types.length);
-        typeEl.innerHTML = types[currentIndex];
+        typeEl.innerHTML = whichhand + " " + types[currentIndex];
         $(document).keyup(function(event) {
             switch (event.which) {
                 case 84: //"t" toggle cursor view
@@ -40,13 +40,24 @@ var calibrator = (function() {
                         currentIndex++;
                         if (currentIndex < types.length) {
                             stepsEl.innerHTML = (currentIndex + 1) + "/" + (types.length);
-                            typeEl.innerHTML = types[currentIndex];
+                            typeEl.innerHTML = whichhand + " " + types[currentIndex];
+                        } else {
+
+                            typeEl.innerHTML = whichhand + " completed";
+                            console.log(data);
                         }
                     } else {
-                        typeEl.innerHTML = whichhand + " completed";
-                        console.log(data);
                         var dataStr = JSON.stringify(data, undefined);
-                        localStorage.rightGestures = dataStr;
+                        switch (whichhand) {
+                            case "right":
+                                localStorage.rightGestures = dataStr;
+
+                                break;
+                            case "left":
+                                localStorage.leftGestures = dataStr;
+                                break;
+                        }
+
                         alert("complete");
                     }
                     break;
@@ -173,4 +184,19 @@ function drawFingers(frame) {
     }
 }
 
-calibrator.startCalibrate("right");
+function GetURLParameter(sParam) {
+    var sPageURL = window.location.search.substring(1);
+    var sURLVariables = sPageURL.split('&');
+    for (var i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] == sParam) {
+            return sParameterName[1];
+        }
+    }
+}
+
+var tag = GetURLParameter("whichhand");
+if (tag != undefined) {
+    calibrator.startCalibrate(tag);
+
+}
