@@ -30,19 +30,22 @@ var calibrator = (function() {
                 case 84: //"t" toggle cursor view
                     if (currentIndex < types.length) {
                         var extended = [];
+                        var hand = currentFrame.hands[0];
                         var fingers = currentFrame.hands[0].fingers;
                         for (var i = 0; i < fingers.length; i++) {
                             extended[i] = fingers[i].extended;
                         }
                         var thumbDist;
-                        thumbDist = Leap.vec3.distance(fingers[0].tipPosition, fingers[1].mcpPosition)
+                        thumbDist = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
                         data.push(new Gesture(types[currentIndex], extended, thumbDist));
                         currentIndex++;
                         if (currentIndex < types.length) {
                             stepsEl.innerHTML = (currentIndex + 1) + "/" + (types.length);
                             typeEl.innerHTML = whichhand + " " + types[currentIndex];
                         } else {
-
+                            var handSpan = Leap.vec3.distance(fingers[0].tipPosition, fingers[4].tipPosition);
+                            var handSpanStr = JSON.stringify(handSpan, undefined);
+                            localStorage.handSpan = handSpanStr;
                             typeEl.innerHTML = whichhand + " completed";
                             console.log(data);
                         }

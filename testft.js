@@ -43,7 +43,6 @@ this.update = function(frame) {
             nbDigitDistance += (diffArray[d] == 2 ? 0 : diffArray[d]);
 
         }
-
         /* 
         Computing the ordinal distance.
         This distance can be summarized as the lowest distance between a mismatched finger (1 or -1) and either another mismatched finger

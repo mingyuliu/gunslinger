@@ -288,7 +288,7 @@ function drawFingers(frame, whichhand) {
     var tempStr;
     var handLen = 30;
     if (hand == undefined) return;
-    var fingers = hand.fingers;
+    var fingers = hand.fingers || {};
     if (fingers.length == 0) {
         return;
     }
@@ -330,16 +330,7 @@ function drawFingers(frame, whichhand) {
 
             ctx.stroke();
 
-            startX += offset;
 
-            ctx.beginPath();
-            ctx.arc(startX - centerX, startY - centerY, 8, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.moveTo(startX - centerX, startY - centerY);
-            ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
-            ctx.lineWidth = 10;
-
-            ctx.stroke();
 
 
             // for (var i = 0; i < fingers.length; i++) {
@@ -374,7 +365,7 @@ function drawFingers(frame, whichhand) {
             //     ctx.stroke();
             // }
 
-            fingerTipsPos = [];
+            var fingerTipsPos = [];
             for (var i = 0; i < fingers.length; i++) {
                 fingerTipsPos.push([fingers[i].mcpPosition, fingers[i].pipPosition, fingers[i].dipPosition, fingers[i].tipPosition]);
 
@@ -396,30 +387,8 @@ function drawFingers(frame, whichhand) {
                 }
 
             }
-            getFilterFingers(fingers);
-            fingerTipsPos = [];
-            for (var i = 0; i < fingers.length; i++) {
-                fingerTipsPos.push([fingers[i].mcpPosition, fingers[i].pipPosition, fingers[i].dipPosition, fingers[i].tipPosition]);
-
-            }
 
 
-            for (var i = 0; i < fingerTipsPos.length; i++) {
-                for (var j = 0; j < 3; j++) {
-                    extendedAlpha = 1;
-                    ctx.shadowBlur = 5;
-                    ctx.shadowColor = '#000000';
-                    ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
-                    ctx.beginPath();
-                    ctx.moveTo(fingerTipsPos[i][j][0] - centerX + offset, fingerTipsPos[i][j][2] - centerY);
-                    ctx.lineTo(fingerTipsPos[i][j + 1][0] - centerX + offset, fingerTipsPos[i][j + 1][2] - centerY);
-                    ctx.lineWidth = 8;
-
-                    ctx.lineCap = "round";
-                    ctx.stroke();
-                }
-
-            }
             break;
         case 1:
             var offset = 250;
@@ -454,7 +423,7 @@ function drawFingers(frame, whichhand) {
             ctx.lineWidth = 10;
 
             ctx.stroke();
-            getFilterFingers(fingers);
+
 
             for (var i = 0; i < fingers.length; i++) {
 

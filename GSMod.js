@@ -1,8 +1,8 @@
 //Config
 var THR_HAND_CONFIDENCE = 0.4;
-var ORDINAL_DISTANCE_WEIGHT = 0.33;
-var THUMB_TIP_WEIGHT = 0.33;
-var NB_FINGER_WEIGHT = 0.34;
+var ORDINAL_DISTANCE_WEIGHT = 0.60;
+var THUMB_TIP_WEIGHT = 0.10;
+var NB_FINGER_WEIGHT = 0.30;
 
 var leapDeviceMgr = (function() {
 
@@ -13,12 +13,14 @@ var leapDeviceMgr = (function() {
         //TODO
     }
 
-    getFilteredFingers = function(frame, tag) {
 
+
+    filterFingers = function(frame, tag) {
         if (frame.hands.length > 0) {
             var hand = frame.hands[0];
             if (hand.confidence < THR_HAND_CONFIDENCE) {
-                return [];
+                frame.hands[0] = undefined;
+                return;
             }
             //TODO finger filtering
             var fingers = hand.fingers;
@@ -29,45 +31,13 @@ var leapDeviceMgr = (function() {
                 len--;
                 if (Leap.vec3.distance(fingers[len].tipPosition, fingers[len - 1].tipPosition) < 20) {
                     if (fingers[len].type != 0) {
-                        fingers.splice(len, 1);
-
-                    }
-
-                }
-            }
-            len = fingers.length;
-            while (len--) {
-                if (!fingers[len].extended && fingers[len].type != 0) {
-                    fingers.splice(len, 1);
-                }
-            }
-            //compare bones in thumb to determine whether it's extended or not
-            if (fingers.length > 1) {
-                var differ = fingers[0].tipPosition[0] - hand.fingers[1].carpPosition[0];
-                if (differ > -15) {
-                    fingers.splice(0, 1);
-                }
-            } else if (fingers.length == 1) {
-                if (!fingers[0].extended) {
-                    fingers.splice(0, 1);
-                }
-            }
-
-            //elimilate mid and fin mix issue
-            if (fingers.length > 2 && fingers.length < 5) {
-                if (fingers[0].type == 0 && fingers[1].type == 1) {
-                    //var len = fingers.length - 1;
-                    while (fingers.length > 2) {
-                        fingers.splice(fingers.length - 1, 1);
+                        fingers[len].extended = false;
                     }
                 }
             }
-
-
-            return fingers;
         }
 
-        return [];
+
     };
 
 
@@ -108,18 +78,12 @@ var leapDeviceMgr = (function() {
                 //for test gui
                 drawGestures();
 
-                // drawFingers(frame, this.tag);
                 //Filter out folded fingers
-                // var fingers = getFilteredFingers(frame, this.tag);
-                var hand = frame.hands[0];
-                var fingers = [];
-                if (hand != undefined) {
+                filterFingers(frame, this.tag);
+                drawFingers(frame, this.tag);
 
-                    fingers = frame.hands[0].fingers;
-                }
-                this.analyzer.update(fingers, this.tag);
+                this.analyzer.update(frame, this.tag);
                 updateProgressBar(this.analyzer.getList(), this.tag, this.analyzer.getMinIndex());
-
             });
 
         }
@@ -181,20 +145,34 @@ function quanAnalyzer(tag) {
         this._list[0].val = 0;
     }
 
-    this.update = function(fingers) {
+    this.clearNonVal = function() {
+        this._list[0].val = 1;
+    }
+
+    this.update = function(frame) {
+        var hand = frame.hands[0];
+        var fingers = [];
+        if (hand != undefined) {
+
+            fingers = frame.hands[0].fingers;
+        } else {
+            this.resetVal();
+            return;
+        }
         if (fingers.length == 0) {
             this.resetVal();
             return;
         }
+        this.clearNonVal();
         var distanceStr = "";
-        for (var p = 0; p < this._gestures.length; p++) { // for each vocabulary posture
+        for (var p = 1; p < this._gestures.length; p++) { // for each vocabulary posture
 
             // Step 2: difference in number of raised digits between the vocabulary gesture and the candidate gesture
             var nbDigitDistance = 0;
 
             // Step 3: ordinal distance between the digits of the vocabulary gesture and the candidate gesture
             var diffArray = [];
-            for (var d = 1; d < 5; d++) { // digits (index to pinky fingers); I'm assuming thumb is 0 and pinky is 4
+            for (var d = 0; d < 5; d++) { // digits (index to pinky fingers); I'm assuming thumb is 0 and pinky is 4
 
                 /*
             Basically what this loop does is compute an array that represents the difference between the vocabulary and candidate postures:
@@ -273,17 +251,17 @@ function quanAnalyzer(tag) {
 
 
             // Ordinal distance between raised fingers, normalized (maximum value is 3):
-            var ordinalDistance = Math.max(dist1, dist2) / 3;
+            var ordinalDistance = Math.max(dist1, dist2) / 4;
 
             // Distance between the thumb tips of the candidate and the vocabulary gesture from the index's mcpPosition (I'm assuming that the corresponding vector 
             // of the vocabulary postures is stored in the posture object), normalized by the length of the index finger:
             var cadidateThumbDist;
-            cadidateThumbDist = Leap.vec3.distance(fingers[0].tipPosition, fingers[1].mcpPosition)
+            cadidateThumbDist = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
 
             var thumbTipDistance = Math.abs(cadidateThumbDist - this._gestures[p].thumbDistVec);
 
-
-            thumbTipDistance /= fingers[1].length;
+            var handSpan = JSON.parse(localStorage.handSpan);
+            thumbTipDistance /= (handSpan / 2);
 
             // Difference between the number of raised digits, normalized (maximum difference is 4):
             nbDigitDistance /= 4;
@@ -296,16 +274,35 @@ function quanAnalyzer(tag) {
             this._list[p].val = ordinalDistance * ORDINAL_DISTANCE_WEIGHT + thumbTipDistance * THUMB_TIP_WEIGHT + nbDigitDistance * NB_FINGER_WEIGHT;
             distanceStr += this._gestures[p].type + "\t\tordinal: " + ordinalDistance.toFixed(3) + " thumb: " + thumbTipDistance.toFixed(3) + " digit: " + nbDigitDistance.toFixed(3) + "<br />";
         }
-        if (tag == "right") {
+        switch (tag) {
+            case "right":
+                var frameOutput = document.getElementById("frameDataRight");
 
-            var frameOutput = document.getElementById("frameData");
+                var str = "";
+                for (var i = 0; i < this._list.length; i++) {
+                    str += this._list[i].val + " , ";
+                }
 
-            var str = "";
-            for (var i = 0; i < this._list.length; i++) {
-                str += this._list[i].val + " , ";
-            }
-            frameOutput.innerHTML = "<div style='width:600px; font-size: 20px;float:left; padding:5px'>" + distanceStr + "</div>";
+                var distanceToThumb;
+                distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
+                distanceStr += "thumbTip to palmCtr: " + distanceToThumb.toFixed(2) + "<br />";
+
+                distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, fingers[1].mcpPosition);
+                distanceStr += "thumbTip to indexMcp: " + distanceToThumb.toFixed(2) + "<br />";
+
+                frameOutput.innerHTML = "<div style='width:600px; font-size: 30px;float:right; padding:5px'>" + distanceStr + "</div>";
+                break;
+            case "left":
+                var frameOutput = document.getElementById("frameDataLeft");
+
+                var str = "";
+                for (var i = 0; i < this._list.length; i++) {
+                    str += this._list[i].val + " , ";
+                }
+                frameOutput.innerHTML = "<div style='width:600px; font-size: 30px;float:left; padding:5px'>" + distanceStr + "</div>";
+                break;
         }
+
         // console.log(str);
     };
 
@@ -347,6 +344,19 @@ function quanAnalyzer(tag) {
     };
 }
 
+function Pointer(tag_, screenWid_, screenHeight_) {
+    this.tag = tag_;
+    this.screenHeight = screenHeight_;
+    this.screenWid_ = screenWid_;
+    this.x = 0;
+    this.y = 0;
+    this.valid = false;
+
+    this.update = function(tipPosition) {
+
+    }
+}
+
 
 
 var GESTURE_ALL_RIGHT = [];
@@ -363,7 +373,7 @@ for (var i = 0; i < leftHandGesture.length; i++) {
 //TEST
 // leapDeviceMgr.addDevice("localhost", "right");
 leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT);
-leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT);
+// leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT);
 //leapDeviceMgr.addDevice(url, position, gesturelist, frameFn);
 /*
 frameFn(frame);
