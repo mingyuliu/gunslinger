@@ -331,40 +331,6 @@ function drawFingers(frame, whichhand) {
             ctx.stroke();
 
 
-
-
-            // for (var i = 0; i < fingers.length; i++) {
-
-            //     var fingerProjDir = [fingers[i].direction[0], fingers[i].direction[2]];
-            //     var fingerProjPos = [fingers[i].tipPosition[0], fingers[i].tipPosition[2]];
-            //     var fingerLen = fingers[i].length;
-
-            //     if (fingerProjDir[0] >= 0) {
-            //         var cos = angle2Lines2dCos(yNormal, fingerProjDir);
-            //         yPos = -fingerLen * cos;
-            //         xPos = -Math.sqrt(fingerLen * fingerLen - yPos * yPos);
-            //         startY = fingerProjPos[1];
-            //         startX = fingerProjPos[0];
-            //     } else {
-            //         var cos = angle2Lines2dCos(yNormal, fingerProjDir);
-            //         yPos = -fingerLen * cos;
-            //         xPos = Math.sqrt(fingerLen * fingerLen - yPos * yPos);
-            //         startY = fingerProjPos[1];
-            //         startX = fingerProjPos[0];
-            //     }
-            //     extendedAlpha = (fingers[i].extended ? 1 : 0.2);
-            //     ctx.shadowBlur = 5;
-            //     ctx.shadowColor = '#000000';
-            //     ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
-            //     ctx.beginPath();
-            //     ctx.moveTo(startX - centerX, startY - centerY);
-            //     ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
-            //     ctx.lineWidth = 8;
-
-            //     ctx.lineCap = "round";
-            //     ctx.stroke();
-            // }
-
             var fingerTipsPos = [];
             for (var i = 0; i < fingers.length; i++) {
                 fingerTipsPos.push([fingers[i].mcpPosition, fingers[i].pipPosition, fingers[i].dipPosition, fingers[i].tipPosition]);
@@ -373,7 +339,7 @@ function drawFingers(frame, whichhand) {
 
             for (var i = 0; i < fingerTipsPos.length; i++) {
                 for (var j = 0; j < 3; j++) {
-                    extendedAlpha = (fingers[i].extended ? 1 : 0.2);;
+                    extendedAlpha = (fingers[i].extended ? 1 : 0.2);
                     ctx.shadowBlur = 5;
                     ctx.shadowColor = '#000000';
                     ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
@@ -444,7 +410,7 @@ function drawFingers(frame, whichhand) {
                     startY = fingerProjPos[1];
                     startX = fingerProjPos[0];
                 }
-                extendedAlpha = 1;
+                extendedAlpha = (fingers[i].extended ? 1 : 0.2);;
                 ctx.shadowBlur = 5;
                 ctx.shadowColor = '#000000';
                 ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
@@ -586,3 +552,78 @@ $(document).keyup(function(event) {
             break;
     }
 });
+
+
+var CURSOR_SIZE = 40;
+var scaleFactor = 1; //temporal 
+var distanceAlphaProj = 1;
+
+function rightOnFrame(controls) {
+
+    switch (controls.tag) {
+        case "right":
+            switch (controls.posture) {
+                case "+thu+ind":
+                    var cursorX = controls.x;
+                    var cursorY = controls.y;
+
+                    switch (controls.cursorState) {
+                        case "active":
+                            ctx.fillStyle = "rgba(255,255,0,0.4)";
+                            break;
+                        case "down":
+                            ctx.fillStyle = "rgba(200,0,0,0.6)";
+                            break;
+                        case "dragging":
+                            ctx.fillStyle = "rgba(255,0,0,0.9)";
+                            break;
+                    }
+                    ctx.shadowBlur = 0;
+                    ctx.beginPath();
+                    ctx.arc(-cursorX, -cursorY, CURSOR_SIZE * scaleFactor, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.strokeStyle = "rgba(0,0,0," + distanceAlphaProj + ")";
+                    ctx.lineWidth = 8 * scaleFactor;
+                    ctx.beginPath();
+                    ctx.arc(-cursorX, -cursorY, CURSOR_SIZE * scaleFactor, 0, 2 * Math.PI);
+                    ctx.stroke();
+
+                    var targetSize = 20 * scaleFactor;
+                    var lineLen = 60 * scaleFactor;
+                    ctx.lineWidth = 5 * scaleFactor;
+                    ctx.beginPath();
+
+                    ctx.moveTo(-cursorX, -cursorY + targetSize);
+                    ctx.lineTo(-cursorX, -cursorY + lineLen);
+
+                    ctx.moveTo(-cursorX, -cursorY - targetSize);
+                    ctx.lineTo(-cursorX, -cursorY - lineLen);
+
+                    ctx.moveTo(-cursorX + targetSize, -cursorY);
+                    ctx.lineTo(-cursorX + lineLen, -cursorY);
+
+                    ctx.moveTo(-cursorX - targetSize, -cursorY);
+                    ctx.lineTo(-cursorX - lineLen, -cursorY);
+                    ctx.stroke();
+                    break;
+                case "+ind":
+                    var cursorX = controls.x;
+                    var cursorY = controls.y;
+                    ctx.fillStyle = "rgba(0,0,0," + distanceAlphaProj + ")";
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#999';
+                    ctx.beginPath();
+                    ctx.arc(-cursorX, -cursorY, CURSOR_SIZE * scaleFactor, 0, 2 * Math.PI);
+                    ctx.fill();
+                    break;
+            }
+            break;
+        case "left":
+            break;
+    }
+}
+
+
+function leftOnFrame(controls) {
+    console.log(controls);
+}

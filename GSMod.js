@@ -8,6 +8,10 @@ var leapDeviceMgr = (function() {
 
     var api = {};
     var _controllers = [];
+    var screenWid,
+        screenheight;
+
+
 
     getFilteredFrame = function(frame) {
         //TODO
@@ -41,6 +45,11 @@ var leapDeviceMgr = (function() {
     };
 
 
+    api.initDevice = function(screenWid_, screenHeight_) {
+        screenWid = screenWid_;
+        screenHeight = screenHeight_;
+    }
+
     api.numberOfDev = function() {
         return controllers.length;
     };
@@ -48,7 +57,7 @@ var leapDeviceMgr = (function() {
 
 
 
-    api.addDevice = function(url, tag, gestureList) {
+    api.addDevice = function(url, tag, gestureList, onFrameLoop) {
         var controller = new Leap.Controller({
             host: url,
             port: 6437,
@@ -60,6 +69,10 @@ var leapDeviceMgr = (function() {
         controller.tag = tag;
         controller.gestureList = gestureList;
         controller.analyzer = new quanAnalyzer(tag);
+        controller.onFrameLoop = onFrameLoop || function() {
+            // body...
+        };
+        controller.controls = new Controls(tag, screenWid, screenHeight);
 
         controller.use('riggedHand');
         controller.connect();
@@ -84,6 +97,11 @@ var leapDeviceMgr = (function() {
 
                 this.analyzer.update(frame, this.tag);
                 updateProgressBar(this.analyzer.getList(), this.tag, this.analyzer.getMinIndex());
+
+                this.controls.update(this.gestureList[this.analyzer.getMinIndex()], frame);
+
+                this.onFrameLoop(this.controls);
+
             });
 
         }
@@ -290,7 +308,7 @@ function quanAnalyzer(tag) {
                 distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, fingers[1].mcpPosition);
                 distanceStr += "thumbTip to indexMcp: " + distanceToThumb.toFixed(2) + "<br />";
 
-                frameOutput.innerHTML = "<div style='width:600px; font-size: 30px;float:right; padding:5px'>" + distanceStr + "</div>";
+                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:right; padding:5px'>" + distanceStr + "</div>";
                 break;
             case "left":
                 var frameOutput = document.getElementById("frameDataLeft");
@@ -299,7 +317,7 @@ function quanAnalyzer(tag) {
                 for (var i = 0; i < this._list.length; i++) {
                     str += this._list[i].val + " , ";
                 }
-                frameOutput.innerHTML = "<div style='width:600px; font-size: 30px;float:left; padding:5px'>" + distanceStr + "</div>";
+                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px'>" + distanceStr + "</div>";
                 break;
         }
 
@@ -344,16 +362,203 @@ function quanAnalyzer(tag) {
     };
 }
 
-function Pointer(tag_, screenWid_, screenHeight_) {
+function Controls(tag_, screenWid_, screenHeight_) {
     this.tag = tag_;
     this.screenHeight = screenHeight_;
-    this.screenWid_ = screenWid_;
+    this.screenWidth = screenWid_;
     this.x = 0;
     this.y = 0;
     this.valid = false;
+    this.posture = "none";
+    this.use = GetURLParameter("use");
+    this.fx = OneEuroFilter(100, 0.005, 0.8, 0.03);
+    this.fy = OneEuroFilter(100, 0.005, 0.8, 0.03);
+    this.cursorState = "none";
+    var TRESH_CLICKING = [0.30, 0.25];
+    var isThumbDown = false;
+    this.isDragging = false;
 
-    this.update = function(tipPosition) {
 
+    function interpolateSpeed(deviceSpeed, scaleFactor) {
+        var threshold = [
+            [0.0, 0.0],
+            [10.922, 34.798],
+            [31.750, 134.620],
+            [98.044, 617.220],
+            [1016.000, 14427.200]
+        ];
+
+
+        var absSpeed = Math.abs(deviceSpeed);
+        var i;
+
+        for (var i = 1; i < 5; i++) {
+            threshold[i][1] = threshold[i][1] * scaleFactor;
+        }
+
+        for (var i = 1; i < 5; i++) {
+            if (absSpeed < threshold[i][0]) {
+
+                var v = sign(deviceSpeed) * ((absSpeed - threshold[i - 1][0]) * ((threshold[i][1] - threshold[i - 1][1]) / (threshold[i][0] - threshold[i - 1][0])) + threshold[i - 1][1]);
+                if (isNaN(v)) {
+                    return 0;
+                };
+                return v;
+            }
+        }
+        i--;
+        var v = sign(deviceSpeed) * ((absSpeed - threshold[i - 1][0]) * ((threshold[i][1] - threshold[i - 1][1]) / (threshold[i][0] - threshold[i - 1][0])) + threshold[i - 1][1]);
+        if (isNaN(v)) {
+            return 0;
+        };
+        return v;
+    }
+
+    function sign(value) {
+        if (value >= 0)
+            return 1.0;
+        else
+            return -1.0;
+    }
+
+    function quantitativeAnalysisVel(hand, thumb, type) {
+        if (hand == undefined) {
+            return;
+        }
+        //get the average of hand paml direction
+        var count = 0;
+        var pamlDirection = Leap.vec3.create();
+
+        var index = -1;
+        for (var i = 0; i < rightHandGesture.length; i++) {
+            if (rightHandGesture[i].type === type) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index < 0) return;
+
+
+        var vValue = 1;
+
+
+        if (thumb != undefined) {
+            var countC = thumb.length;
+
+
+
+            var minCount = 1;
+            var maxCount = 1;
+
+            //Length difference
+            var nominator = 0;
+
+            var vecC = Leap.vec3.create();
+            Leap.vec3.subtract(vecC, thumb.tipVelocity, hand.palmVelocity);
+            var j = 0;
+
+            nominator += (vecC[0] - rightHandGesture[index].finVel[j][0]) * (vecC[0] - rightHandGesture[index].finVel[j][0]) +
+                (vecC[1] - rightHandGesture[index].finVel[j][1]) * (vecC[1] - rightHandGesture[index].finVel[j][1]) +
+                (vecC[2] - rightHandGesture[index].finVel[j][2]) * (vecC[2] - rightHandGesture[index].finVel[j][2]);
+
+
+            normalizer = maxCount * 500 * 500;
+            vValue = Math.sqrt(nominator / normalizer);
+        }
+        return vValue;
+    }
+
+    this.ReviseCursorPos = function() {
+        if (this.x > this.screenWidth) {
+            this.x = this.screenWidth;
+        } else if (this.x < 0) {
+            this.x = 0;
+        }
+        if (this.y > this.screenHeight) {
+            this.y = this.screenHeight;
+        } else if (this.y < 0) {
+            this.y = 0;
+        }
+    }
+
+
+    this.update = function(posture, frame) {
+        this.posture = posture;
+
+        if (frame.hands[0] != undefined && posture == "+thu+ind") {
+            var timestamp = frame.timestamp * 0.000001;
+            var velraw = frame.hands[0].fingers[1].tipVelocity;
+            var delta = [this.fx.filter(velraw[0], timestamp), this.fy.filter(velraw[1], timestamp)];
+
+            if (delta[0] > -20 && delta[0] < 20 && delta[1] > -20 && delta[1] < 20) {
+                //#convert
+                if (this.use == "wall") {
+                    this.x -= interpolateSpeed(delta[1], ACCELERATION_FACTOR) / 200;
+                    this.y -= interpolateSpeed(delta[0], ACCELERATION_FACTOR) / 200;
+                } else {
+                    this.x -= interpolateSpeed(delta[0], ACCELERATION_FACTOR) / 200;
+                    this.y += interpolateSpeed(delta[1], ACCELERATION_FACTOR) / 200;
+                }
+            } else {
+                if (this.use == "wall") {
+                    this.x -= interpolateSpeed(delta[1], ACCELERATION_FACTOR) / 200;
+                    this.y -= interpolateSpeed(delta[0], ACCELERATION_FACTOR) / 200;
+                } else {
+                    this.x -= interpolateSpeed(delta[0], ACCELERATION_FACTOR) / 200;
+                    this.y += interpolateSpeed(delta[1], ACCELERATION_FACTOR) / 200;
+                }
+
+            }
+            this.ReviseCursorPos();
+
+            var clickDownValue = quantitativeAnalysisVel(frame.hands[0], frame.hands[0].fingers[0], "clickdown");
+            var clickUpValue = quantitativeAnalysisVel(frame.hands[0], frame.hands[0].fingers[0], "clickup");
+
+
+            if (clickUpValue < TRESH_CLICKING[0]) {
+                if (isThumbDown) {
+                    isThumbDown = false;
+                    this.cursorState = "active";
+                    this.isDragging = false;
+                }
+            } else if (clickDownValue < TRESH_CLICKING[0]) {
+                if (!isThumbDown) {
+                    this.isDragging = false;
+                    var _this = this;
+                    setTimeout(function() {
+                        _this.isDragging = true;
+
+                    }, 500); //# drag time
+                }
+                isThumbDown = true;
+                this.cursorState = "down";
+            } else {
+                if (!isThumbDown) {
+                    this.cursorState = "active";
+                    this.isDragging = false;
+                }
+
+            }
+            if (this.isDragging && isThumbDown) {
+                this.cursorState = "dragging";
+            }
+        } else {
+            this.cursorState = "none";
+            isThumbDown = false;
+            this.isDragging = false;
+        }
+    }
+}
+
+function GetURLParameter(sParam) {
+    var sPageURL = window.location.search.substring(1);
+    var sURLVariables = sPageURL.split('&');
+    for (var i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] == sParam) {
+            return sParameterName[1];
+        }
     }
 }
 
@@ -371,9 +576,11 @@ for (var i = 0; i < leftHandGesture.length; i++) {
 
 
 //TEST
+var ACCELERATION_FACTOR = 8;
 // leapDeviceMgr.addDevice("localhost", "right");
-leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT);
-// leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT);
+leapDeviceMgr.initDevice(1920, 1098);
+leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
+leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT, leftOnFrame);
 //leapDeviceMgr.addDevice(url, position, gesturelist, frameFn);
 /*
 frameFn(frame);

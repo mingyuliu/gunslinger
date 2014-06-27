@@ -1,38 +1,38 @@
 //Gesture Vocalbury
 var rightHandGesture = new Array();
 rightHandGesture.push({
-    type: "neutral",
+    type: "fist",
     count: 0,
     finLen: [0, 0, 0, 0, 0],
     finAngle: [0, 0, 0, 0, 0]
 });
 
 rightHandGesture.push({
-    type: "index",
+    type: "+ind",
     count: 1,
     finLen: [60, 0, 0, 0, 0],
     finAngle: [0, 0, 0, 0, 0]
 });
 rightHandGesture.push({
-    type: "thumb",
+    type: "+thu",
     count: 1,
     finLen: [40, 0, 0, 0, 0],
     finAngle: [-47, 0, 0, 0, 0]
 });
 rightHandGesture.push({
-    type: "twofins",
+    type: "+ind+mid",
     count: 2,
     finLen: [62, 70, 0, 0, 0],
     finAngle: [-11, 14, 0, 0, 0]
 });
 rightHandGesture.push({
-    type: "point",
+    type: "+thu+ind",
     count: 2,
     finLen: [35, 55, 0, 0, 0],
     finAngle: [-40, 10, 0, 0, 0]
 });
 rightHandGesture.push({
-    type: "fourfin",
+    type: "-thu",
     count: 4,
     finLen: [60, 71, 61, 48, 0],
     finAngle: [-19, 23, 23, 25, 0]
@@ -46,31 +46,31 @@ rightHandGesture.push({
 
 var leftHandGesture = new Array();
 leftHandGesture[0] = {
-    type: "neutral",
+    type: "fist",
     count: 0,
     finLen: [0, 0, 0, 0, 0],
     finAngle: [0, 0, 0, 0, 0]
 };
 leftHandGesture[1] = {
-    type: "pan",
+    type: "+ind",
     count: 1,
     finLen: [55, 0, 0, 0, 0],
     finAngle: [-7, 0, 0, 0, 0]
 };
 leftHandGesture[2] = {
-    type: "twofins",
+    type: "+ind+mid",
     count: 2,
     finLen: [70, 62, 0, 0, 0],
     finAngle: [-14, 11, 0, 0, 0]
 };
 leftHandGesture[3] = {
-    type: "point",
+    type: "+thu+ind",
     count: 2,
     finLen: [55, 35, 0, 0, 0],
     finAngle: [-10, 40, 0, 0, 0]
 };
 leftHandGesture[4] = {
-    type: "fourfins",
+    type: "-thu",
     count: 4,
     finLen: [44, 60, 70, 59, 0],
     finAngle: [-20, -17, -16, 17, 0]
@@ -81,7 +81,32 @@ leftHandGesture[5] = {
     finLen: [44, 60, 70, 59, 33],
     finAngle: [-20, -17, -16, 17, 38]
 };
-
+rightHandGesture.push({
+    type: "clickdown",
+    count: 2,
+    finLen: [34, 72, 0, 0, 0],
+    finAngle: [0, 37, 0, 0, 0],
+    finVel: [
+        [255, -100, -140],
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0]
+    ]
+});
+rightHandGesture.push({
+    type: "clickup",
+    count: 2,
+    finLen: [34, 72, 0, 0, 0],
+    finAngle: [-5, 37, 0, 0, 0],
+    finVel: [
+        [-240, 0, 100],
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0]
+    ]
+});
 //on the wall set
 // rightHandGesture[1] = {
 //     type: "clickdown",
