@@ -33,11 +33,34 @@ var leapDeviceMgr = (function() {
             var len = fingers.length;
             while (len > 2) {
                 len--;
-                if (Leap.vec3.distance(fingers[len].tipPosition, fingers[len - 1].tipPosition) < 20) {
+                var fin1 = fingers[len].tipPosition;
+                fin1[1] = 0;
+                var fin2 = fingers[len - 1].tipPosition;
+                fin2[1] = 0;
+                var differ = Leap.vec3.distance(fin1, fin2);
+                if (Leap.vec3.distance(fin1, fin2) < 20) {
                     if (fingers[len].type != 0) {
                         fingers[len].extended = false;
                     }
                 }
+            }
+
+            //compare bones in thumb to determine whether it's extended or not
+            if (fingers.length > 1) {
+                var thumbProj = fingers[0].tipPosition;
+                thumbProj[1] = 0;
+                var indexProj = fingers[1].mcpPosition;
+                indexProj[1] = 0;
+                var differ = Leap.vec3.distance(thumbProj, indexProj);
+
+                if (differ > 20 && thumbProj[0] < indexProj[0]) {
+                    fingers[0].extended = true;
+                }
+
+                var frameOutput = document.getElementById("frameDataLeft");
+
+                var distanceStr = "distance " + differ;
+                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px'>" + distanceStr + "</div>";
             }
         }
 
