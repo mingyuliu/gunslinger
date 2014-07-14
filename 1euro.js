@@ -20,7 +20,7 @@ function OneEuroFilter(freq, mincutoff, beta, dcutoff) {
         return 1 / (1 + tau / te);
     }
 
-    that.filter = function(v, timestamp) {
+    that.filter = function (v, timestamp) {
         if (lastTime !== undefined && timestamp !== undefined) {
             if (timestamp - lastTime == 0) {
                 return 0;
@@ -53,7 +53,7 @@ function LowPassFilter(alpha, initval) {
         return s;
     }
 
-    that.filter = function(v) {
+    that.filter = function (v) {
 
         y = v;
         s = v;
@@ -61,18 +61,18 @@ function LowPassFilter(alpha, initval) {
         return s;
     }
 
-    that.filterWithAlpha = function(v, a) {
+    that.filterWithAlpha = function (v, a) {
 
         alpha = a;
 
         return that.filter(v);
     }
 
-    that.hasLastRawValue = function() {
+    that.hasLastRawValue = function () {
         return that.filter === lowpass;
     }
 
-    that.lastRawValue = function() {
+    that.lastRawValue = function () {
         return y;
     }
 

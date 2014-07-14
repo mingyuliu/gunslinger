@@ -37,6 +37,7 @@ var calibrator = (function() {
                         }
                         var thumbDist;
                         thumbDist = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
+                        console.log(thumbDist);
                         data.push(new Gesture(types[currentIndex], extended, thumbDist));
                         currentIndex++;
                         if (currentIndex < types.length) {

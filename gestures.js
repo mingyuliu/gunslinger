@@ -81,7 +81,11 @@ leftHandGesture[5] = {
     finLen: [44, 60, 70, 59, 33],
     finAngle: [-20, -17, -16, 17, 38]
 };
-rightHandGesture.push({
+
+var rightHandMotion = [];
+
+
+rightHandMotion.push({
     type: "clickdown",
     count: 2,
     finLen: [34, 72, 0, 0, 0],
@@ -94,7 +98,7 @@ rightHandGesture.push({
         [0, 0, 0]
     ]
 });
-rightHandGesture.push({
+rightHandMotion.push({
     type: "clickup",
     count: 2,
     finLen: [34, 72, 0, 0, 0],

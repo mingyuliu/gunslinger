@@ -1,0 +1,454 @@
+<canvas id="canvasOne"></canvas>
+<canvas id="leap-overlay"></canvas>
+
+<style>
+    html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    #canvasOne {
+        z-index: 1;
+    }
+
+    #blocktext {
+        text-align: center;
+        font-size: 150px;
+        font-weight: bold;
+        font-family: Helvetica, Arial, sans-serif;
+        position: absolute;
+        top: 35%;
+        right: 20%;
+        z-index: 3;
+    }
+
+    #blocktext h1 {
+        font-size: 150px;
+        font-weight: bold;
+        line-height: 0px;
+    }
+
+    #blocktext h4 {
+        line-height: 0px;
+        font-size: 70px;
+    }
+
+
+</style>
+<link href="GSMod.css" rel="stylesheet" type="text/css">
+<link href="progressbar.css" rel="stylesheet" type="text/css">
+<title>Pilot</title>
+
+<script src="Modernizr/modernizr-2.0.6.js"></script>
+<script src="jquery-2.1.0.min.js"></script>
+<script src="com/rectangleworld/display/SimpleDiskParticle.js"></script>
+<script src="com/rectangleworld/display/SimpleSquareParticle.js"></script>
+<script src="leap-0.6.0.min.js"></script>
+<script src="1euro.js"></script>
+
+<script src="gestures.js"></script>
+<script src="GSMod.js"></script>
+
+
+
+
+<body>
+
+
+<div id="blocktext">
+    <h1>block #1 Set #1</h1> <h4>start your task by clicking the the target</h4>
+
+</div>
+
+
+<script>
+
+
+$(document).keyup(function (event) {
+    switch (event.which) {
+        case 84: //"t" toggle cursor view
+            FINGER_RENDER_MODE = (FINGER_RENDER_MODE + 1) % 2;
+            break;
+    }
+});
+
+
+function canvasSupport() {
+    return Modernizr.canvas;
+}
+var ACCELERATION_FACTOR = 3;
+var canvas;
+var ctx;
+var CURSOR_SIZE = 40;
+var scaleFactor = 1; //temporal
+var distanceAlphaProj = 1;
+var shapeTarget;
+
+var canvasWidth = 0, canvasHeight = 0;
+
+var WIDTH_L = 140;
+var WIDTH_M = 80;
+var WIDTH_S = 40;
+var WIDTH_ORDER = [WIDTH_L, WIDTH_M, WIDTH_S, WIDTH_M, WIDTH_S, WIDTH_L, WIDTH_S, WIDTH_L, WIDTH_M];
+var currentBlock = 0;
+var currentSet = 0;
+var currentTarget = 0;
+var currentWidth = 0;
+var isInputValid = false;
+var sections = [];
+var clickTimeout = true;
+
+function canvasApp() {
+    if (!canvasSupport()) {
+        return;
+    }
+
+    var theCanvas = document.getElementById("canvasOne");
+    var context = theCanvas.getContext("2d");
+
+    init();
+
+    var records = [];
+    var recorder;
+
+    function init() {
+        var canvasOne = document.getElementById("canvasOne");
+        canvasWidth = document.body.clientWidth;
+        canvasHeight = document.body.clientHeight;
+        // fullscreen
+        canvasOne.width = canvasWidth;
+        canvasOne.height = canvasHeight;
+
+        canvas = document.getElementById("leap-overlay");
+
+        // fullscreen
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+
+        ctx = canvas.getContext("2d");
+//            ctx.translate(canvas.width, canvas.height);
+
+        numShapes = 1;
+        easeAmount = 0.45;
+        isBlockReady = false;
+        readTextFile("blocks.txt");
+
+
+        leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
+        leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
+        // leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT, leftOnFrame);
+        leapDeviceMgr.start();
+//        leapDeviceMgr.showVerboseInfo();
+//        $(".knob").ccountdown(2015,8,25,'18:00'); //only need to pass target date and time
+
+    }
+
+    function recorderUpdate(controls) {
+        var screenX = -controls.x + canvasWidth;
+        var screenY = -controls.y + canvasHeight;
+
+
+        var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentBlock, currentSet,
+                currentTarget, sections[currentBlock][currentSet][currentTarget].distance, screenX.toFixed(0), screenY.toFixed(0),
+                false, controls.cursorEvent);
+//        console.log(record.posture);
+        records.push(record);
+    }
+
+
+    function stopRecorder() {
+        clearInterval(myVar);
+    }
+
+
+    function writeToStorage() {
+        var logData = JSON.parse(localStorage.getItem("logData")) || [];
+        logData.push(records);
+        localStorage.setItem("logData", JSON.stringify(logData));
+        records = [];
+    }
+
+
+    function makeShape() {
+
+        if (currentTarget > 6) {
+            currentSet++;
+            currentTarget = 0;
+        }
+        if (currentSet > 2) {
+            writeToStorage();
+            currentBlock++;
+            currentSet = 0;
+            currentTarget = 0;
+            currentWidth++;
+        }
+        if (currentWidth > 8) {
+            currentWidth = 0;
+        }
+
+        var tempX = 50;
+        var tempY = 50;
+        var tempRad;
+        var tempR;
+        var tempG;
+        var tempB;
+        var tempA;
+        var tempColor;
+
+
+        tempRad = WIDTH_ORDER[currentWidth];
+
+//        setTimeout(function(){console.log(sections.length)},3000)
+        var blockText = document.getElementById("blocktext");
+//        blockText.innerHTML = "block " + Number(currentBlock+1);
+        tempX = sections[currentBlock][currentSet][currentTarget].x;
+        tempY = sections[currentBlock][currentSet][currentTarget].y;
+
+
+        //we set a randomized color, including a random alpha (transparency) value.
+        //The color is set using the rgba() method.
+        if (currentTarget == 0) {
+            tempColor = "rgba(200, 0, 0, 0.8)";
+            blockText.style.visibility = "visible";
+            blockText.innerHTML = "    <h1>#block " + Number(currentBlock + 1) + " #Set " + Number(currentSet + 1) + "<//h1> <h4>resume your task by clicking the target<//h4>";
+            if (currentBlock == 0 && currentSet == 0) {
+                blockText.innerHTML = "    <h1>block #1 Set #1<//h1> <h4>start your task by clicking the target<//h4>";
+            }
+        } else {
+            tempColor = "rgba(255, 102, 0, 0.8)";
+            blockText.style.visibility = "hidden";
+
+        }
+//        currentTarget++;
+
+        //randomly select either a circle or a square
+
+//			tempShape = new SimpleSquareParticle(tempX, tempY);
+        tempShape = new SimpleDiskParticle(tempX, tempY)
+
+
+        tempShape.color = tempColor;
+        tempShape.radius = tempRad;
+
+        shapeTarget = tempShape;
+
+
+    }
+
+
+    function drawShape() {
+        shapeTarget.drawToContext(context);
+    }
+
+    function drawScreen() {
+        //bg
+        context.fillStyle = "#d6d2d2";
+        context.fillRect(0, 0, theCanvas.width, theCanvas.height);
+
+        drawShape();
+    }
+
+    function handleAnimation(controls) {
+        switch (controls.posture) {
+            case "+thu+ind":
+                var cursorX = controls.x;
+                var cursorY = controls.y;
+
+                switch (controls.cursorState) {
+                    case "active":
+                        ctx.fillStyle = "rgba(255,255,0,0.4)";
+                        break;
+                    case "down":
+                        ctx.fillStyle = "rgba(200,0,0,0.6)";
+                        var screenX = canvas.width - cursorX;
+                        var screenY = canvas.height - cursorY;
+
+                        break;
+                    case "dragging":
+                        ctx.fillStyle = "rgba(255,0,0,0.9)";
+                        break;
+                }
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * scaleFactor, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(0,0,0," + distanceAlphaProj + ")";
+                ctx.lineWidth = 8 * scaleFactor;
+                ctx.beginPath();
+                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * scaleFactor, 0, 2 * Math.PI);
+                ctx.stroke();
+
+                var targetSize = 20 * scaleFactor;
+                var lineLen = 60 * scaleFactor;
+                ctx.lineWidth = 5 * scaleFactor;
+                ctx.beginPath();
+
+                ctx.moveTo(-cursorX + canvasWidth, -cursorY + canvasHeight + targetSize);
+                ctx.lineTo(-cursorX + canvasWidth, -cursorY + canvasHeight + lineLen);
+
+                ctx.moveTo(-cursorX + canvasWidth, -cursorY + canvasHeight - targetSize);
+                ctx.lineTo(-cursorX + canvasWidth, -cursorY + canvasHeight - lineLen);
+
+                ctx.moveTo(-cursorX + canvasWidth + targetSize, -cursorY + canvasHeight);
+                ctx.lineTo(-cursorX + canvasWidth + lineLen, -cursorY + canvasHeight);
+
+                ctx.moveTo(-cursorX + canvasWidth - targetSize, -cursorY + canvasHeight);
+                ctx.lineTo(-cursorX + canvasWidth - lineLen, -cursorY + canvasHeight);
+                ctx.stroke();
+
+
+                break;
+            case "+ind":
+                var cursorX = controls.x;
+                var cursorY = controls.y;
+                ctx.fillStyle = "rgba(0,0,0," + distanceAlphaProj + ")";
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#999';
+                ctx.beginPath();
+                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * scaleFactor, 0, 2 * Math.PI);
+                ctx.fill();
+                break;
+        }
+    }
+
+    function handleEvent(controls) {
+        switch (controls.cursorEvent) {
+            case "clickup":
+                if (clickTimeout) {
+
+                    var screenX = -controls.x + canvasWidth;
+                    var screenY = -controls.y + canvasHeight;
+
+                    if (shapeTarget.hitTest(screenX, screenY)) {
+                        isInputValid = (isInputValid ? true : false);
+                    } else {
+                        isInputValid = false;
+                    }
+
+                    var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentBlock, currentSet,
+                            currentTarget, sections[currentBlock][currentSet][currentTarget].distance, screenX.toFixed(0), screenY.toFixed(0),
+                            isInputValid, controls.cursorEvent);
+                    records.push(record);
+//                    console.log(record);
+                    if (isInputValid) {
+                        currentTarget++;
+                        makeShape();
+                        drawScreen();
+                        isInputValid = false;
+                    }
+                    clickTimeout = false;
+                    setTimeout(function () {
+                        clickTimeout = true
+                    }, 200);
+                }
+                break;
+            case "clickdown":
+                if (clickTimeout) {
+                    var screenX = -controls.x + canvasWidth;
+                    var screenY = -controls.y + canvasHeight;
+
+                    var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentBlock, currentSet,
+                            currentTarget, sections[currentBlock][currentSet][currentTarget].distance, screenX.toFixed(0), screenY.toFixed(0),
+                            false, controls.cursorEvent);
+                    records.push(record);
+                    if (shapeTarget.hitTest(screenX, screenY)) {
+                        isInputValid = true;
+                    } else {
+                        isInputValid = false;
+                    }
+                }
+        }
+    }
+
+    function rightOnFrame(controls) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        handleAnimation(controls);
+        handleEvent(controls);
+        if (recorder == undefined) {
+            recorder = setInterval(function () {
+                recorderUpdate(controls)
+            }, 500);
+        }
+    }
+
+    function Target(x_, y_, distance_) {
+        this.x = x_;
+        this.y = y_;
+        this.distance = distance_;
+    }
+
+    function Record(timestamp_, posture_, tipPosition_, block_, set_, target_, distance_, cursorX_, cursorY_, isHit_, cursorEvent_) {
+        this.timestamp = timestamp_;
+        this.posture = posture_;
+        this.tipPosition = tipPosition_;
+        this.block = block_;
+        this.set = set_;
+        this.target = target_;
+        this.distance = distance_;
+        this.cursorX = cursorX_;
+        this.cursorY = cursorY_;
+        this.isHit = isHit_;
+        this.cursorEvent = cursorEvent_;
+    }
+
+
+    function readTextFile(file) {
+        $.get(file, function (myContentFile) {
+            var lines = myContentFile.split("\r\n");
+            var newSection = [];
+            var newSet = [];
+            var newTarget = [];
+            var setCount = 0;
+            var targetCount = 0;
+            for (var i  in lines) {
+                //here your code
+                //each line is "lines[i]"
+
+
+                //print in console
+                if (lines[i].indexOf("Section") > -1) {
+                    if (i != 0) {
+
+                        sections.push(newSet);
+                        newSet = new Array();
+                    }
+                } else if (lines[i].indexOf("target position") > -1) {
+                    var positionStr = lines[i];
+                    var distanceStr = positionStr.substr(positionStr.indexOf("distance") + 9);
+                    distanceStr = distanceStr.substr(0, distanceStr.length - 1);
+                    var distance = Number(distanceStr);
+                    positionStr = positionStr.substr(positionStr.indexOf("(") + 1, positionStr.indexOf(")") - 1);
+                    var positions = positionStr.split(",");
+                    var posX = Number(positions[0]);
+                    var posY = Number(positions[1]);
+                    newTarget.push(new Target(posX, posY, distance));
+
+                    if (newTarget.length > 6) {
+                        newSet.push(newTarget);
+                        newTarget = new Array();
+                    }
+                }
+            }
+
+        }, 'text')
+                .done(function () {
+                    makeShape();
+
+                    drawScreen();
+
+                });
+
+    }
+
+
+}
+
+$(window).load(canvasApp());
+
+
+</script>
+</body>

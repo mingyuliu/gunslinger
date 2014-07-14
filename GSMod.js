@@ -3,23 +3,562 @@ var THR_HAND_CONFIDENCE = 0.4;
 var ORDINAL_DISTANCE_WEIGHT = 0.60;
 var THUMB_TIP_WEIGHT = 0.10;
 var NB_FINGER_WEIGHT = 0.30;
+var GESTURE_ICON_SIZE = 120;
+var SCALE_RATIO = 1.5;
+var FINGER_RENDER_MODE = 0;
+var isVerboseInfoShonw = false;
 
-var leapDeviceMgr = (function() {
+var leapDeviceMgr = (function () {
 
     var api = {};
     var _controllers = [];
-    var screenWid,
-        screenheight;
+    var screenWidth,
+        screenHeight;
+
+    var rightProgressbars = [],
+        leftProgressbars = [];
+
+    var ctxLeftGestures, ctxRightGestures;
 
 
+    function createProgress() {
+        var divProgressBar = document.createElement('div');
+        divProgressBar.setAttribute('id', 'progressbar');
+        document.body.appendChild(divProgressBar);
+        $("#progressbar").hide();
 
-    getFilteredFrame = function(frame) {
-        //TODO
+        var rightGesturePanel = document.createElement('canvas');
+        rightGesturePanel.setAttribute('id', 'rightGesturePanel');
+        rightGesturePanel.setAttribute('class', 'gesturePanel');
+        divProgressBar.appendChild(rightGesturePanel);
+        var leftGesturePanel = document.createElement('canvas');
+        leftGesturePanel.setAttribute('id', 'leftGesturePanel');
+        leftGesturePanel.setAttribute('class', 'gesturePanel');
+        divProgressBar.appendChild(leftGesturePanel);
+        var rightGesturePanelContainer = document.createElement('canvas');
+        rightGesturePanelContainer.setAttribute('id', 'rightGesturePanelContainer');
+        rightGesturePanelContainer.setAttribute('class', 'gesturePanelContainer');
+        divProgressBar.appendChild(rightGesturePanelContainer);
+        var leftGesturePanelContainer = document.createElement('canvas');
+        leftGesturePanelContainer.setAttribute('id', 'leftGesturePanelContainer');
+        leftGesturePanelContainer.setAttribute('class', 'gesturePanelContainer');
+        divProgressBar.appendChild(leftGesturePanelContainer);
+        var rightTargetMask = document.createElement('canvas');
+        rightTargetMask.setAttribute('id', 'rightTargetMask');
+        rightTargetMask.setAttribute('class', 'targetMask');
+        divProgressBar.appendChild(rightTargetMask);
+        var leftTargetMask = document.createElement('canvas');
+        leftTargetMask.setAttribute('id', 'leftTargetMask');
+        leftTargetMask.setAttribute('class', 'targetMask');
+        divProgressBar.appendChild(leftTargetMask);
+
+        //Panels Init
+
+
+        rightGesturePanel.width = GESTURE_ICON_SIZE * rightGestureList.length;
+        rightGesturePanel.height = GESTURE_ICON_SIZE;
+        rightGesturePanelContainer.width = GESTURE_ICON_SIZE * rightGestureList.length;
+        rightGesturePanelContainer.height = GESTURE_ICON_SIZE * 1.2;
+
+
+        ctxRightGestures = rightGesturePanel.getContext("2d");
+// ctxRightGestures?.translate(canvas.width, canvas.height);
+
+
+        rightGesturePanel.style.top = canvas.height - GESTURE_ICON_SIZE * 1.2 + "px";
+        rightGesturePanel.style.left = (canvas.width / 2 - rightGesturePanel.width) / 2 + canvas.width / 2 + "px";
+        rightGesturePanelContainer.style.top = canvas.height - GESTURE_ICON_SIZE * 1.2 + "px";
+        rightGesturePanelContainer.style.left = (canvas.width / 2 - rightGesturePanel.width) / 2 + canvas.width / 2 + "px";
+
+        var rightTargetMask = document.getElementById("rightTargetMask");
+
+        rightTargetMask.style.top = canvas.height - GESTURE_ICON_SIZE * 1.15 + "px";
+        rightTargetMask.style.left = (canvas.width / 2 - rightGesturePanel.width) / 2 + canvas.width / 2 + GESTURE_ICON_SIZE / 8 + GESTURE_ICON_SIZE * 0.02 + "px";
+
+        rightTargetMask.width = GESTURE_ICON_SIZE * 0.70;
+        rightTargetMask.height = GESTURE_ICON_SIZE * 0.70;
+
+        var leftGesturePanel = document.getElementById("leftGesturePanel");
+
+        leftGesturePanel.width = GESTURE_ICON_SIZE * leftGestureList.length;
+        leftGesturePanel.height = GESTURE_ICON_SIZE;
+        leftGesturePanelContainer.width = GESTURE_ICON_SIZE * leftGestureList.length;
+        leftGesturePanelContainer.height = GESTURE_ICON_SIZE * 1.2;
+
+        ctxLeftGestures = leftGesturePanel.getContext("2d");
+// ctxRightGestures?.translate(canvas.width, canvas.height);
+
+
+        leftGesturePanel.style.top = canvas.height - GESTURE_ICON_SIZE * 1.2 + "px";
+        leftGesturePanel.style.left = (canvas.width / 2 - leftGesturePanel.width) / 2 + "px";
+        leftGesturePanelContainer.style.top = canvas.height - GESTURE_ICON_SIZE * 1.2 + "px";
+        leftGesturePanelContainer.style.left = (canvas.width / 2 - leftGesturePanel.width) / 2 + "px";
+
+        var leftTargetMask = document.getElementById("leftTargetMask");
+
+        leftTargetMask.style.top = canvas.height - GESTURE_ICON_SIZE * 1.15 + "px";
+        leftTargetMask.style.left = (canvas.width / 2 - leftGesturePanel.width) / 2 + GESTURE_ICON_SIZE / 8 + GESTURE_ICON_SIZE * 0.02 + "px";
+
+        leftTargetMask.width = GESTURE_ICON_SIZE * 0.70;
+        leftTargetMask.height = GESTURE_ICON_SIZE * 0.70;
+        //right
+
+        var startPosX = (canvas.width / 2 - rightGesturePanel.width) / 2 + canvas.width / 2;
+        var startPosY = canvas.height - GESTURE_ICON_SIZE * 0.7;
+        for (var i = 0; i < rightGestureList.length; i++) {
+
+            var div = document.createElement('div');
+            div.setAttribute('class', 'meter red');
+            div.setAttribute('id', 'rightProgressbar' + i);
+
+            div.style.top = startPosY + "px";
+            div.style.left = startPosX + i * GESTURE_ICON_SIZE + 5 + "px";
+            div.style.zIndex = 10006;
+            div.style.width = GESTURE_ICON_SIZE / 1.2 + "px";
+            div.style.position = "absolute";
+            div.style.opacity = "0.7";
+            divProgressBar.appendChild(div);
+            var span = document.createElement('span');
+            span.setAttribute('style', 'width: 25%');
+            var divEl = document.createElement('div');
+
+            // span.innerHTML = "&nbsp&nbsp25%";
+            div.appendChild(span);
+            div.appendChild(divEl);
+            rightProgressbars.push(span);
+
+
+        }
+        //left
+        startPosX = (canvas.width / 2 - leftGesturePanel.width) / 2;
+        startPosY = canvas.height - GESTURE_ICON_SIZE * 0.7;
+        for (var i = 0; i < leftGestureList.length; i++) {
+
+            var div = document.createElement('div');
+            div.setAttribute('class', 'meter red');
+            div.setAttribute('id', 'leftProgressbar' + i);
+
+            div.style.top = startPosY + "px";
+            div.style.left = startPosX + i * GESTURE_ICON_SIZE + 5 + "px";
+            div.style.zIndex = 10006;
+            div.style.width = GESTURE_ICON_SIZE / 1.2 + "px";
+            div.style.position = "absolute";
+            div.style.opacity = "0.7";
+            divProgressBar.appendChild(div);
+            var span = document.createElement('span');
+            span.setAttribute('style', 'width: 25%');
+            var divEl = document.createElement('div');
+
+            // span.innerHTML = "&nbsp&nbsp25%";
+            div.appendChild(span);
+            div.appendChild(divEl);
+            leftProgressbars.push(span);
+
+        }
+
+    }
+
+    function drawMaskOnIcon(target, whichhand) {
+//        if (whichhand == "right") {
+//            var originX = rightTargetMask.style.left;
+//            var index = originX.indexOf('p');
+//            var originX = originX.substr(0, index);
+//
+//            var startX = (canvas.width / 2 - rightGesturePanel.width) / 2 + canvas.width / 2 + GESTURE_ICON_SIZE / 8 + GESTURE_ICON_SIZE * 0.02;
+//            var targetX = startX + target * GESTURE_ICON_SIZE;
+//            // if (targetX > originX) {
+//            move("#rightTargetMask")
+//                .x(targetX - originX)
+//                .duration('0.2s')
+//                .end();
+//        } else if (whichhand == "left") {
+//            var originX = leftTargetMask.style.left;
+//            var index = originX.indexOf('p');
+//            var originX = originX.substr(0, index);
+//
+//            var startX = (canvas.width / 2 - leftGesturePanel.width) / 2 + GESTURE_ICON_SIZE / 8 + GESTURE_ICON_SIZE * 0.02;
+//            var targetX = startX + target * GESTURE_ICON_SIZE;
+//            // if (targetX > originX) {
+//            move("#leftTargetMask")
+//                .x(targetX - originX)
+//                .duration('0.2s')
+//                .end();
+//        }
+        // } else {
+        //     move("#rightTargetMask")
+        //         .x( originX - targetX)
+        //         .end();
+        // }
+    }
+
+    function updateProgressBar(list, whichhand, minIndex) {
+        switch (whichhand) {
+            case "left":
+                var closest = Number.MIN_VALUE;
+                var closestIndex = 0;
+                for (var i = 0; i < list.length; i++) {
+                    var progress = Math.max(0, 1 - list[i].val.toFixed(3));
+
+                    if (closest < progress) {
+                        closest = progress;
+                        closestIndex = i;
+                    }
+
+                    if (progress > .80) {
+                        var parentEl = leftProgressbars[i].parentNode;
+                        parentEl.setAttribute('class', 'meter');
+                    } else {
+                        var parentEl = leftProgressbars[i].parentNode;
+                        parentEl.setAttribute('class', 'meter red');
+                    }
+                    leftProgressbars[i].setAttribute('style', 'width: ' + progress * 100 + '%');
+
+                }
+                drawMaskOnIcon(closestIndex, whichhand);
+                break;
+            case "right":
+                var closest = Number.MIN_VALUE;
+                var closestIndex = 0;
+                for (var i = 0; i < list.length; i++) {
+                    var progress = Math.max(0, 1 - list[i].val.toFixed(3));
+
+                    if (closest < progress) {
+                        closest = progress;
+                        closestIndex = i;
+                    }
+
+                    if (progress > .80) {
+                        var parentEl = rightProgressbars[i].parentNode;
+                        parentEl.setAttribute('class', 'meter');
+                    } else {
+                        var parentEl = rightProgressbars[i].parentNode;
+                        parentEl.setAttribute('class', 'meter red');
+                    }
+                    rightProgressbars[i].setAttribute('style', 'width: ' + progress * 100 + '%');
+
+                }
+                drawMaskOnIcon(closestIndex, whichhand);
+
+                break;
+        }
     }
 
 
+    getFilteredFrame = function (frame) {
+        //TODO
+    };
 
-    filterFingers = function(frame, tag) {
+    getExtendedCount = function (fingers) {
+        var count = 0;
+        for (var i = 0; i < fingers.length; i++) {
+            if (fingers[i].extended) {
+                count++;
+            }
+        }
+        return count;
+    };
+
+    createDebugTextElement = function () {
+        var div = document.createElement('div');
+        div.setAttribute('id', 'frameDataRight');
+
+        var div2 = document.createElement('div');
+        div2.setAttribute('id', 'frameDataLeft');
+
+
+        document.body.appendChild(div);
+        document.body.appendChild(div2);
+
+        $("#frameDataRight").hide();
+        $("#frameDataLeft").hide();
+    }
+
+    function angle2Lines2dCos(v1, v2) {
+        var m1, n1, m2, n2;
+
+        m1 = v1[0];
+        n1 = v1[1];
+
+
+        m2 = v2[0];
+        n2 = v2[1];
+
+        return (m1 * m2 + n1 * n2) / (Math.sqrt(m1 * m1 + n1 * n1) * Math.sqrt(m2 * m2 + n2 * n2));
+
+    }
+
+    function drawFingers(frame, whichhand) {
+        if (whichhand != "right") return;
+        ctx.clearRect(-canvas.width, -canvas.height, canvas.width, canvas.height);
+
+        var hand = frame.hands[0];
+        var extendedAlpha = 1.0;
+
+        var centerX = document.body.clientWidth / 2;
+        var centerY = document.body.clientHeight / 2;
+
+
+        var yNormal = [0, 1];
+        var str = "angles: ";
+
+        var xPos, yPos;
+        var startX, startY;
+        var tempStr;
+        var handLen = 30;
+        if (hand == undefined) return;
+        var fingers = hand.fingers || {};
+        if (fingers.length == 0) {
+            return;
+        }
+        if (hand.confidence < THR_HAND_CONFIDENCE) {
+            return;
+        }
+        switch (FINGER_RENDER_MODE) {
+            case 0:
+                var offset = 250;
+
+                var handProjDir = [hand.direction[0], hand.direction[2]];
+                var handProjPos = [hand.palmPosition[0], hand.palmPosition[2]];
+                if (handProjDir[0] >= 0) {
+                    var cos = angle2Lines2dCos(yNormal, handProjDir);
+                    yPos = handLen * cos;
+                    xPos = Math.sqrt(handLen * handLen - yPos * yPos);
+                    startY = handProjPos[1];
+                    startX = handProjPos[0];
+                } else {
+                    var cos = angle2Lines2dCos(yNormal, handProjDir);
+                    yPos = handLen * cos;
+                    xPos = -Math.sqrt(handLen * handLen - yPos * yPos);
+                    startY = handProjPos[1];
+                    startX = handProjPos[0];
+                }
+                var distance = startX * startX + startY * startY;
+
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#000000';
+
+                ctx.strokeStyle = "rgba(255, 153, 0, 1)";
+                ctx.lineCap = "round";
+                ctx.beginPath();
+                ctx.arc(startX - centerX, startY - centerY, 8, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.moveTo(startX - centerX, startY - centerY);
+                ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
+                ctx.lineWidth = 10;
+
+                ctx.stroke();
+
+
+                var fingerTipsPos = [];
+                for (var i = 0; i < fingers.length; i++) {
+                    fingerTipsPos.push([fingers[i].mcpPosition, fingers[i].pipPosition, fingers[i].dipPosition, fingers[i].tipPosition]);
+
+                }
+
+                for (var i = 0; i < fingerTipsPos.length; i++) {
+                    for (var j = 0; j < 3; j++) {
+                        extendedAlpha = (fingers[i].extended ? 1 : 0.2);
+                        ctx.shadowBlur = 5;
+                        ctx.shadowColor = '#000000';
+                        ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
+                        ctx.beginPath();
+                        ctx.moveTo(fingerTipsPos[i][j][0] - centerX, fingerTipsPos[i][j][2] - centerY);
+                        ctx.lineTo(fingerTipsPos[i][j + 1][0] - centerX, fingerTipsPos[i][j + 1][2] - centerY);
+                        ctx.lineWidth = 8;
+
+                        ctx.lineCap = "round";
+                        ctx.stroke();
+                    }
+
+                }
+
+
+                break;
+            case 1:
+                var offset = 250;
+
+                var handProjDir = [hand.direction[0], hand.direction[2]];
+                var handProjPos = [hand.palmPosition[0], hand.palmPosition[2]];
+                if (handProjDir[0] >= 0) {
+                    var cos = angle2Lines2dCos(yNormal, handProjDir);
+                    yPos = handLen * cos;
+                    xPos = Math.sqrt(handLen * handLen - yPos * yPos);
+                    startY = handProjPos[1];
+                    startX = handProjPos[0];
+                } else {
+                    var cos = angle2Lines2dCos(yNormal, handProjDir);
+                    yPos = handLen * cos;
+                    xPos = -Math.sqrt(handLen * handLen - yPos * yPos);
+                    startY = handProjPos[1];
+                    startX = handProjPos[0];
+                }
+                var distance = startX * startX + startY * startY;
+
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#000000';
+
+                ctx.strokeStyle = "rgba(255, 153, 0, 1)";
+                ctx.lineCap = "round";
+                ctx.beginPath();
+                ctx.arc(startX - centerX, startY - centerY, 8, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.moveTo(startX - centerX, startY - centerY);
+                ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
+                ctx.lineWidth = 10;
+
+                ctx.stroke();
+
+
+                for (var i = 0; i < fingers.length; i++) {
+
+                    var fingerProjDir = [fingers[i].direction[0], fingers[i].direction[2]];
+                    var fingerProjPos = [fingers[i].tipPosition[0], fingers[i].tipPosition[2]];
+                    var fingerLen = fingers[i].length;
+
+                    if (fingerProjDir[0] >= 0) {
+                        var cos = angle2Lines2dCos(yNormal, fingerProjDir);
+                        yPos = -fingerLen * cos;
+                        xPos = -Math.sqrt(fingerLen * fingerLen - yPos * yPos);
+                        startY = fingerProjPos[1];
+                        startX = fingerProjPos[0];
+                    } else {
+                        var cos = angle2Lines2dCos(yNormal, fingerProjDir);
+                        yPos = -fingerLen * cos;
+                        xPos = Math.sqrt(fingerLen * fingerLen - yPos * yPos);
+                        startY = fingerProjPos[1];
+                        startX = fingerProjPos[0];
+                    }
+                    extendedAlpha = (fingers[i].extended ? 1 : 0.2);
+                    ;
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = '#000000';
+                    ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
+                    ctx.beginPath();
+                    ctx.moveTo(startX - centerX, startY - centerY);
+                    ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
+                    ctx.lineWidth = 8;
+
+                    ctx.lineCap = "round";
+                    ctx.stroke();
+                }
+
+
+                break;
+        }
+    }
+
+    function drawGestures() {
+
+        ctxRightGestures.clearRect(0, 0, rightGesturePanel.width, rightGesturePanel.height);
+
+        ctxRightGestures.lineCap = "round";
+        // // ctxRightGestures.beginPath();
+        // ctxRightGestures.fillStyle = "rgba(200,200,200,0.6)";
+        // ctxRightGestures.fillRect(0, 0, rightGesturePanel.width, rightGesturePanel.height);
+
+        for (var i = 0; i < rightGestureList.length; i++) {
+            var handX = (i + 0.5) * GESTURE_ICON_SIZE;
+            var handY = GESTURE_ICON_SIZE / 1.6;
+
+            ctxRightGestures.fillStyle = "rgba(255, 153, 0, 1.0)";
+            ctxRightGestures.strokeStyle = "rgba(255, 153, 0, 1.0)";
+
+
+            var startX = rightGestureList[i].hand.start[0] / SCALE_RATIO;
+            var startY = rightGestureList[i].hand.start[1] / SCALE_RATIO;
+            var endX = rightGestureList[i].hand.end[0] / SCALE_RATIO;
+            var endY = rightGestureList[i].hand.end[1] / SCALE_RATIO;
+            ctxRightGestures.shadowBlur = 2;
+            ctxRightGestures.shadowColor = '#2B2B2B';
+
+            ctxRightGestures.lineCap = "round";
+            ctxRightGestures.beginPath();
+            ctxRightGestures.arc(startX + handX, startY + handY, 4, 0, 2 * Math.PI);
+            ctxRightGestures.fill();
+            ctxRightGestures.moveTo(startX + handX, startY + handY);
+            ctxRightGestures.lineTo(endX + handX, endY + handY);
+            ctxRightGestures.lineWidth = 10;
+
+            ctxRightGestures.stroke();
+
+            for (var j = 0; j < rightGestureList[i].fingers.length; j++) {
+
+                var startX = rightGestureList[i].fingers[j].start[0] / SCALE_RATIO;
+                var startY = rightGestureList[i].fingers[j].start[1] / SCALE_RATIO;
+                var endX = rightGestureList[i].fingers[j].end[0] / SCALE_RATIO;
+                var endY = rightGestureList[i].fingers[j].end[1] / SCALE_RATIO;
+
+                ctxRightGestures.shadowBlur = 2;
+                ctxRightGestures.shadowColor = '#2B2B2B';
+                ctxRightGestures.strokeStyle = "rgba(255, 0, 51, 0.8)";
+                ctxRightGestures.beginPath();
+                ctxRightGestures.moveTo(startX + handX, startY + handY);
+                ctxRightGestures.lineTo(endX + handX, endY + handY);
+                ctxRightGestures.lineWidth = 8;
+                ctxRightGestures.stroke();
+            }
+
+            ctxRightGestures.fillStyle = "rgba(0,0,0,1.0)";
+            ctxRightGestures.font = "20px Verdana bold";
+            var textLen = rightHandGesture[i].type.length * 20;
+            ctxRightGestures.fillText(rightHandGesture[i].type, handX - textLen / 4, GESTURE_ICON_SIZE * 0.92);
+        }
+
+        ctxLeftGestures.clearRect(0, 0, leftGesturePanel.width, leftGesturePanel.height);
+
+        ctxLeftGestures.lineCap = "round";
+
+
+        for (var i = 0; i < leftGestureList.length; i++) {
+            var handX = (i + 0.5) * GESTURE_ICON_SIZE;
+            var handY = GESTURE_ICON_SIZE / 1.6;
+
+            ctxLeftGestures.fillStyle = "rgba(255, 153, 0, 1.0)";
+            ctxLeftGestures.strokeStyle = "rgba(255, 153, 0, 1.0)";
+
+
+            var startX = leftGestureList[i].hand.start[0] / SCALE_RATIO;
+            var startY = leftGestureList[i].hand.start[1] / SCALE_RATIO;
+            var endX = leftGestureList[i].hand.end[0] / SCALE_RATIO;
+            var endY = leftGestureList[i].hand.end[1] / SCALE_RATIO;
+            ctxLeftGestures.shadowBlur = 2;
+            ctxLeftGestures.shadowColor = '#2B2B2B';
+
+            ctxLeftGestures.lineCap = "round";
+            ctxLeftGestures.beginPath();
+            ctxLeftGestures.arc(startX + handX, startY + handY, 4, 0, 2 * Math.PI);
+            ctxLeftGestures.fill();
+            ctxLeftGestures.moveTo(startX + handX, startY + handY);
+            ctxLeftGestures.lineTo(endX + handX, endY + handY);
+            ctxLeftGestures.lineWidth = 10;
+
+            ctxLeftGestures.stroke();
+
+            for (var j = 0; j < leftGestureList[i].fingers.length; j++) {
+
+                var startX = leftGestureList[i].fingers[j].start[0] / SCALE_RATIO;
+                var startY = leftGestureList[i].fingers[j].start[1] / SCALE_RATIO;
+                var endX = leftGestureList[i].fingers[j].end[0] / SCALE_RATIO;
+                var endY = leftGestureList[i].fingers[j].end[1] / SCALE_RATIO;
+
+                ctxLeftGestures.shadowBlur = 2;
+                ctxLeftGestures.shadowColor = '#2B2B2B';
+                ctxLeftGestures.strokeStyle = "rgba(255, 0, 51, 0.8)";
+                ctxLeftGestures.beginPath();
+                ctxLeftGestures.moveTo(startX + handX, startY + handY);
+                ctxLeftGestures.lineTo(endX + handX, endY + handY);
+                ctxLeftGestures.lineWidth = 8;
+                ctxLeftGestures.stroke();
+            }
+
+            ctxLeftGestures.fillStyle = "rgba(0,0,0,1.0)";
+            ctxLeftGestures.font = "20px Verdana bold";
+            var textLen = leftHandGesture[i].type.length * 20;
+            ctxLeftGestures.fillText(leftHandGesture[i].type, handX - textLen / 4, GESTURE_ICON_SIZE * 0.92);
+        }
+    }
+
+    filterFingers = function (frame, tag) {
         if (frame.hands.length > 0) {
             var hand = frame.hands[0];
             if (hand.confidence < THR_HAND_CONFIDENCE) {
@@ -29,58 +568,63 @@ var leapDeviceMgr = (function() {
             //TODO finger filtering
             var fingers = hand.fingers;
 
+            /*only apply distance filter when less than 4 fingers are extended
+             this is used to filter out fingers that glued together
+             */
 
-            var len = fingers.length;
-            while (len > 2) {
-                len--;
-                var fin1 = fingers[len].tipPosition;
-                fin1[1] = 0;
-                var fin2 = fingers[len - 1].tipPosition;
-                fin2[1] = 0;
-                var differ = Leap.vec3.distance(fin1, fin2);
-                if (Leap.vec3.distance(fin1, fin2) < 20) {
-                    if (fingers[len].type != 0) {
-                        fingers[len].extended = false;
+            if (getExtendedCount(fingers) < 4) {
+                var len = fingers.length;
+                while (len > 2) {
+                    len--;
+                    var fin1 = Leap.vec3.fromValues(fingers[len].tipPosition[0], 0, fingers[len].tipPosition[2]);
+                    var fin2 = Leap.vec3.fromValues(fingers[len - 1].tipPosition[0], 0, fingers[len - 1].tipPosition[2]);
+                    var differ = Leap.vec3.distance(fin1, fin2);
+                    if (Leap.vec3.distance(fin1, fin2) < 30) {    //heuristics
+                        if (fingers[len].type != 0) {
+                            fingers[len].extended = false;
+                        }
                     }
                 }
             }
 
             //compare bones in thumb to determine whether it's extended or not
+
             if (fingers.length > 1) {
-                var thumbProj = fingers[0].tipPosition;
-                thumbProj[1] = 0;
-                var indexProj = fingers[1].mcpPosition;
-                indexProj[1] = 0;
+                var thumbProj = [fingers[0].tipPosition[0], 0, fingers[0].tipPosition[2]];
+
+                var indexProj = [fingers[1].mcpPosition[0], 0, fingers[1].mcpPosition[2]];
+
                 var differ = Leap.vec3.distance(thumbProj, indexProj);
 
                 if (differ > 20 && thumbProj[0] < indexProj[0]) {
                     fingers[0].extended = true;
                 }
 
-                var frameOutput = document.getElementById("frameDataLeft");
-
-                var distanceStr = "distance " + differ;
-                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px'>" + distanceStr + "</div>";
             }
+
         }
-
-
     };
 
 
-    api.initDevice = function(screenWid_, screenHeight_) {
-        screenWid = screenWid_;
+    api.showVerboseInfo = function () {
+        $("#frameDataRight").show();
+        $("#frameDataLeft").show();
+        $("#progressbar").show();
+        drawGestures();
+        isVerboseInfoShonw = true;
+    }
+
+    api.initDevice = function (screenWid_, screenHeight_) {
+        screenWidth = screenWid_;
         screenHeight = screenHeight_;
     }
 
-    api.numberOfDev = function() {
+    api.numberOfDev = function () {
         return controllers.length;
     };
 
 
-
-
-    api.addDevice = function(url, tag, gestureList, onFrameLoop) {
+    api.addDevice = function (url, tag, gestureList, onFrameLoop) {
         var controller = new Leap.Controller({
             host: url,
             port: 6437,
@@ -92,12 +636,12 @@ var leapDeviceMgr = (function() {
         controller.tag = tag;
         controller.gestureList = gestureList;
         controller.analyzer = new quanAnalyzer(tag);
-        controller.onFrameLoop = onFrameLoop || function() {
+        controller.onFrameLoop = onFrameLoop || function () {
             // body...
         };
-        controller.controls = new Controls(tag, screenWid, screenHeight);
+        controller.controls = new Controls(tag, screenWidth, screenHeight);
 
-        controller.use('riggedHand');
+//        controller.use('riggedHand');
         controller.connect();
 
         controller.setBackground(true); //enable
@@ -106,20 +650,24 @@ var leapDeviceMgr = (function() {
 
     };
 
-    api.start = function() {
+    api.start = function () {
         //for test gui
         createProgress();
+        createDebugTextElement();
         for (var i = 0; i < _controllers.length; i++) {
-            _controllers[i].loop(function(frame) {
+            _controllers[i].loop(function (frame) {
                 //for test gui
-                drawGestures();
+
 
                 //Filter out folded fingers
                 filterFingers(frame, this.tag);
-                drawFingers(frame, this.tag);
 
                 this.analyzer.update(frame, this.tag);
-                updateProgressBar(this.analyzer.getList(), this.tag, this.analyzer.getMinIndex());
+                if (isVerboseInfoShonw) {
+
+                    drawFingers(frame, this.tag);
+                    updateProgressBar(this.analyzer.getList(), this.tag, this.analyzer.getMinIndex());
+                }
 
                 this.controls.update(this.gestureList[this.analyzer.getMinIndex()], frame);
 
@@ -131,8 +679,7 @@ var leapDeviceMgr = (function() {
     };
 
 
-
-    api.getController = function(controllerIndex) {
+    api.getController = function (controllerIndex) {
         return _controllers[controllerIndex];
     };
 
@@ -179,18 +726,18 @@ function quanAnalyzer(tag) {
         return Math.acos(cos) * 180.0 / Math.PI;
     };
 
-    this.resetVal = function() {
+    this.resetVal = function () {
         for (var i = 0; i < this._gestures.length; i++) {
             this._list[i].val = 1;
         }
         this._list[0].val = 0;
     }
 
-    this.clearNonVal = function() {
+    this.clearNonVal = function () {
         this._list[0].val = 1;
     }
 
-    this.update = function(frame) {
+    this.update = function (frame) {
         var hand = frame.hands[0];
         var fingers = [];
         if (hand != undefined) {
@@ -200,7 +747,7 @@ function quanAnalyzer(tag) {
             this.resetVal();
             return;
         }
-        if (fingers.length == 0) {
+        if (getExtendedCount(fingers) == 0) {
             this.resetVal();
             return;
         }
@@ -216,17 +763,17 @@ function quanAnalyzer(tag) {
             for (var d = 0; d < 5; d++) { // digits (index to pinky fingers); I'm assuming thumb is 0 and pinky is 4
 
                 /*
-            Basically what this loop does is compute an array that represents the difference between the vocabulary and candidate postures:
-              - 2 means "this finger is raised in both postures"
-              - 0 means "this finger is raised in none of the postures"
-              - 1 means "this finger is raised in the vocabulary posture but not in the candidate posture"
-              - -1 means "this finger is raised in the candidate posture but not in the vocabulary posture"
+                 Basically what this loop does is compute an array that represents the difference between the vocabulary and candidate postures:
+                 - 2 means "this finger is raised in both postures"
+                 - 0 means "this finger is raised in none of the postures"
+                 - 1 means "this finger is raised in the vocabulary posture but not in the candidate posture"
+                 - -1 means "this finger is raised in the candidate posture but not in the vocabulary posture"
 
-            So for example, if we have:
-                Vocabulary:      | | . .    
-                Candidate:       | . . |
-                We get:         [2;1;0;-1]
-            */
+                 So for example, if we have:
+                 Vocabulary:      | | . .
+                 Candidate:       | . . |
+                 We get:         [2;1;0;-1]
+                 */
 
                 // I'm assuming that there is an "extended[]" boolean array in the posture objects
                 // The +var operation turns a boolean into an integer (0 or 1)
@@ -238,11 +785,11 @@ function quanAnalyzer(tag) {
 
 
             /* 
-        Computing the ordinal distance.
-        This distance can be summarized as the lowest distance between a mismatched finger (1 or -1) and either another mismatched finger
-        of opposite sign or a correct finger (2). I've tried various distances and this ones is the closest to the logic that I'm trying
-        to implement.
-        */
+             Computing the ordinal distance.
+             This distance can be summarized as the lowest distance between a mismatched finger (1 or -1) and either another mismatched finger
+             of opposite sign or a correct finger (2). I've tried various distances and this ones is the closest to the logic that I'm trying
+             to implement.
+             */
 
             var first1 = 0;
             var firstIndex1 = -1,
@@ -315,39 +862,42 @@ function quanAnalyzer(tag) {
             this._list[p].val = ordinalDistance * ORDINAL_DISTANCE_WEIGHT + thumbTipDistance * THUMB_TIP_WEIGHT + nbDigitDistance * NB_FINGER_WEIGHT;
             distanceStr += this._gestures[p].type + "\t\tordinal: " + ordinalDistance.toFixed(3) + " thumb: " + thumbTipDistance.toFixed(3) + " digit: " + nbDigitDistance.toFixed(3) + "<br />";
         }
-        switch (tag) {
-            case "right":
-                var frameOutput = document.getElementById("frameDataRight");
+        if (isVerboseInfoShonw) {
 
-                var str = "";
-                for (var i = 0; i < this._list.length; i++) {
-                    str += this._list[i].val + " , ";
-                }
+            switch (tag) {
+                case "right":
+                    var frameOutput = document.getElementById("frameDataRight");
 
-                var distanceToThumb;
-                distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
-                distanceStr += "thumbTip to palmCtr: " + distanceToThumb.toFixed(2) + "<br />";
+                    var str = "";
+                    for (var i = 0; i < this._list.length; i++) {
+                        str += this._list[i].val + " , ";
+                    }
 
-                distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, fingers[1].mcpPosition);
-                distanceStr += "thumbTip to indexMcp: " + distanceToThumb.toFixed(2) + "<br />";
+                    var distanceToThumb;
+                    distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
+                    distanceStr += "thumbTip to palmCtr: " + distanceToThumb.toFixed(2) + "<br />";
 
-                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:right; padding:5px'>" + distanceStr + "</div>";
-                break;
-            case "left":
-                var frameOutput = document.getElementById("frameDataLeft");
+                    distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, fingers[1].mcpPosition);
+                    distanceStr += "thumbTip to indexMcp: " + distanceToThumb.toFixed(2) + "<br />";
 
-                var str = "";
-                for (var i = 0; i < this._list.length; i++) {
-                    str += this._list[i].val + " , ";
-                }
-                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px'>" + distanceStr + "</div>";
-                break;
+                    frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:right; padding:5px; position:absolute; top:10px; right:10px'>" + distanceStr + "</div>";
+                    break;
+                case "left":
+                    var frameOutput = document.getElementById("frameDataLeft");
+
+                    var str = "";
+                    for (var i = 0; i < this._list.length; i++) {
+                        str += this._list[i].val + " , ";
+                    }
+                    frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + distanceStr + "</div>";
+                    break;
+            }
         }
 
         // console.log(str);
     };
 
-    this.getMinIndex = function() {
+    this.getMinIndex = function () {
         {
             var minVal = Number.MAX_VALUE;
             var minIndex = 0;
@@ -380,12 +930,18 @@ function quanAnalyzer(tag) {
         }
     };
 
-    this.getList = function() {
+    this.getList = function () {
         return this._list;
     };
 }
 
 function Controls(tag_, screenWid_, screenHeight_) {
+
+    var freq = 100,
+        mincutoff = 0.005,
+        beta = 0.8,
+        dcutoff = 0.03;
+
     this.tag = tag_;
     this.screenHeight = screenHeight_;
     this.screenWidth = screenWid_;
@@ -394,12 +950,41 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.valid = false;
     this.posture = "none";
     this.use = GetURLParameter("use");
-    this.fx = OneEuroFilter(100, 0.005, 0.8, 0.03);
-    this.fy = OneEuroFilter(100, 0.005, 0.8, 0.03);
+    this.fx = OneEuroFilter(freq, mincutoff, beta, dcutoff);
+    this.fy = OneEuroFilter(freq, mincutoff, beta, dcutoff);
     this.cursorState = "none";
-    var TRESH_CLICKING = [0.30, 0.25];
+    this.cursorEvent = "none";
+    this.tipPosition = Leap.vec3.create();
+    var TRESH_CLICKING = [0.30, 0.35];
     var isThumbDown = false;
     this.isDragging = false;
+    this.timestamp = 0;
+
+    this.setCursorState = function (state) {
+        switch (state) {
+            case "active":
+                if (this.cursorState == "down" || this.cursorState == "dragging") {
+                    this.cursorEvent = "clickup";
+                } else {
+                    this.cursorEvent = "none";
+                }
+                break;
+            case "down":
+                if (this.cursorState == "active") {
+                    this.cursorEvent = "clickdown";
+                } else {
+                    this.cursorEvent = "none";
+                }
+                break;
+            case "dragging":
+                this.cursorEvent = "dragging";
+                break;
+            case "none":
+                this.cursorEvent = "none";
+                break;
+        }
+        this.cursorState = state;
+    }
 
 
     function interpolateSpeed(deviceSpeed, scaleFactor) {
@@ -425,7 +1010,8 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 var v = sign(deviceSpeed) * ((absSpeed - threshold[i - 1][0]) * ((threshold[i][1] - threshold[i - 1][1]) / (threshold[i][0] - threshold[i - 1][0])) + threshold[i - 1][1]);
                 if (isNaN(v)) {
                     return 0;
-                };
+                }
+                ;
                 return v;
             }
         }
@@ -433,7 +1019,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
         var v = sign(deviceSpeed) * ((absSpeed - threshold[i - 1][0]) * ((threshold[i][1] - threshold[i - 1][1]) / (threshold[i][0] - threshold[i - 1][0])) + threshold[i - 1][1]);
         if (isNaN(v)) {
             return 0;
-        };
+        }
         return v;
     }
 
@@ -453,8 +1039,8 @@ function Controls(tag_, screenWid_, screenHeight_) {
         var pamlDirection = Leap.vec3.create();
 
         var index = -1;
-        for (var i = 0; i < rightHandGesture.length; i++) {
-            if (rightHandGesture[i].type === type) {
+        for (var i = 0; i < rightHandMotion.length; i++) {
+            if (rightHandMotion[i].type === type) {
                 index = i;
                 break;
             }
@@ -470,7 +1056,6 @@ function Controls(tag_, screenWid_, screenHeight_) {
             var countC = thumb.length;
 
 
-
             var minCount = 1;
             var maxCount = 1;
 
@@ -481,9 +1066,9 @@ function Controls(tag_, screenWid_, screenHeight_) {
             Leap.vec3.subtract(vecC, thumb.tipVelocity, hand.palmVelocity);
             var j = 0;
 
-            nominator += (vecC[0] - rightHandGesture[index].finVel[j][0]) * (vecC[0] - rightHandGesture[index].finVel[j][0]) +
-                (vecC[1] - rightHandGesture[index].finVel[j][1]) * (vecC[1] - rightHandGesture[index].finVel[j][1]) +
-                (vecC[2] - rightHandGesture[index].finVel[j][2]) * (vecC[2] - rightHandGesture[index].finVel[j][2]);
+            nominator += (vecC[0] - rightHandMotion[index].finVel[j][0]) * (vecC[0] - rightHandMotion[index].finVel[j][0]) +
+                (vecC[1] - rightHandMotion[index].finVel[j][1]) * (vecC[1] - rightHandMotion[index].finVel[j][1]) +
+                (vecC[2] - rightHandMotion[index].finVel[j][2]) * (vecC[2] - rightHandMotion[index].finVel[j][2]);
 
 
             normalizer = maxCount * 500 * 500;
@@ -492,7 +1077,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
         return vValue;
     }
 
-    this.ReviseCursorPos = function() {
+    this.ReviseCursorPos = function () {
         if (this.x > this.screenWidth) {
             this.x = this.screenWidth;
         } else if (this.x < 0) {
@@ -506,15 +1091,20 @@ function Controls(tag_, screenWid_, screenHeight_) {
     }
 
 
-    this.update = function(posture, frame) {
+    this.update = function (posture, frame) {
         this.posture = posture;
+        this.timestamp = frame.timestamp * 0.000001;
+        if (frame.hands[0] != undefined) {
+            this.tipPosition = frame.hands[0].fingers[1].tipPosition;
 
-        if (frame.hands[0] != undefined && posture == "+thu+ind") {
-            var timestamp = frame.timestamp * 0.000001;
-            var velraw = frame.hands[0].fingers[1].tipVelocity;
-            var delta = [this.fx.filter(velraw[0], timestamp), this.fy.filter(velraw[1], timestamp)];
+            if (posture == "+thu+ind") {
+                var timestamp = frame.timestamp * 0.000001;
+                var velraw = frame.hands[0].fingers[1].tipVelocity;
+                if (Leap.vec3.len(velraw) < 5) {
+                    velraw = [0, 0];
+                }
+                var delta = [this.fx.filter(velraw[0], timestamp), this.fy.filter(velraw[1], timestamp)];
 
-            if (delta[0] > -20 && delta[0] < 20 && delta[1] > -20 && delta[1] < 20) {
                 //#convert
                 if (this.use == "wall") {
                     this.x -= interpolateSpeed(delta[1], ACCELERATION_FACTOR) / 200;
@@ -523,53 +1113,55 @@ function Controls(tag_, screenWid_, screenHeight_) {
                     this.x -= interpolateSpeed(delta[0], ACCELERATION_FACTOR) / 200;
                     this.y += interpolateSpeed(delta[1], ACCELERATION_FACTOR) / 200;
                 }
-            } else {
-                if (this.use == "wall") {
-                    this.x -= interpolateSpeed(delta[1], ACCELERATION_FACTOR) / 200;
-                    this.y -= interpolateSpeed(delta[0], ACCELERATION_FACTOR) / 200;
+                this.ReviseCursorPos();
+
+                var clickDownValue = quantitativeAnalysisVel(frame.hands[0], frame.hands[0].fingers[0], "clickdown");
+                var clickUpValue = quantitativeAnalysisVel(frame.hands[0], frame.hands[0].fingers[0], "clickup");
+
+
+                if (clickUpValue < TRESH_CLICKING[0]) {
+                    if (isThumbDown) {
+                        isThumbDown = false;
+                        this.setCursorState("active");
+                        this.isDragging = false;
+                    }
+                } else if (clickDownValue < TRESH_CLICKING[0]) {
+                    if (!isThumbDown) {
+                        this.isDragging = false;
+                        var _this = this;
+                        setTimeout(function () {
+                            _this.isDragging = true;
+
+                        }, 500); //# drag time
+                    }
+                    isThumbDown = true;
+                    this.setCursorState("down");
+
                 } else {
-                    this.x -= interpolateSpeed(delta[0], ACCELERATION_FACTOR) / 200;
-                    this.y += interpolateSpeed(delta[1], ACCELERATION_FACTOR) / 200;
+
+                    if (!isThumbDown) {
+                        this.isDragging = false;
+                        this.setCursorState("active");
+                    }
+
                 }
-
-            }
-            this.ReviseCursorPos();
-
-            var clickDownValue = quantitativeAnalysisVel(frame.hands[0], frame.hands[0].fingers[0], "clickdown");
-            var clickUpValue = quantitativeAnalysisVel(frame.hands[0], frame.hands[0].fingers[0], "clickup");
-
-
-            if (clickUpValue < TRESH_CLICKING[0]) {
-                if (isThumbDown) {
+                var hand = frame.hands[0];
+                var fingers = hand.fingers;
+                var distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
+                if (distanceToThumb > 70) {  //heuristics
+                    this.isDragging = false;
                     isThumbDown = false;
-                    this.cursorState = "active";
-                    this.isDragging = false;
                 }
-            } else if (clickDownValue < TRESH_CLICKING[0]) {
-                if (!isThumbDown) {
-                    this.isDragging = false;
-                    var _this = this;
-                    setTimeout(function() {
-                        _this.isDragging = true;
-
-                    }, 500); //# drag time
+                if (this.isDragging && isThumbDown) {
+                    this.setCursorState("dragging");
                 }
-                isThumbDown = true;
-                this.cursorState = "down";
             } else {
-                if (!isThumbDown) {
-                    this.cursorState = "active";
-                    this.isDragging = false;
-                }
-
-            }
-            if (this.isDragging && isThumbDown) {
-                this.cursorState = "dragging";
+                this.setCursorState("none");
+                isThumbDown = false;
+                this.isDragging = false;
             }
         } else {
-            this.cursorState = "none";
-            isThumbDown = false;
-            this.isDragging = false;
+            this.posture = "none";
         }
     }
 }
@@ -586,7 +1178,6 @@ function GetURLParameter(sParam) {
 }
 
 
-
 var GESTURE_ALL_RIGHT = [];
 for (var i = 0; i < rightHandGesture.length; i++) {
     GESTURE_ALL_RIGHT.push(rightHandGesture[i].type);
@@ -597,16 +1188,5 @@ for (var i = 0; i < leftHandGesture.length; i++) {
 }
 
 
-
 //TEST
-var ACCELERATION_FACTOR = 8;
-// leapDeviceMgr.addDevice("localhost", "right");
-leapDeviceMgr.initDevice(1920, 1098);
-leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
-leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT, leftOnFrame);
-//leapDeviceMgr.addDevice(url, position, gesturelist, frameFn);
-/*
-frameFn(frame);
-*/
 
-leapDeviceMgr.start();
