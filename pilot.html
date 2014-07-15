@@ -48,7 +48,7 @@
 <script src="com/rectangleworld/display/SimpleSquareParticle.js"></script>
 <script src="leap-0.6.0.min.js"></script>
 <script src="1euro.js"></script>
-
+<script src = "move.min.js"> </script>
 <script src="gestures.js"></script>
 <script src="GSMod.js"></script>
 
@@ -144,6 +144,7 @@ function canvasApp() {
         leapDeviceMgr.start();
 //        leapDeviceMgr.showVerboseInfo();
 //        $(".knob").ccountdown(2015,8,25,'18:00'); //only need to pass target date and time
+        leapDeviceMgr.showVerboseInfo();
 
     }
 
@@ -402,8 +403,6 @@ function canvasApp() {
             var newSection = [];
             var newSet = [];
             var newTarget = [];
-            var setCount = 0;
-            var targetCount = 0;
             for (var i  in lines) {
                 //here your code
                 //each line is "lines[i]"

@@ -22,6 +22,14 @@ var leapDeviceMgr = (function () {
 
 
     function createProgress() {
+        var fingersPanel = document.createElement('canvas');
+        fingersPanel.setAttribute('id', 'fingersPanel');
+        fingersPanel.setAttribute('class', 'overlay');
+        fingersPanel.width = canvasWidth;
+        fingersPanel.height = canvasHeight;
+        document.body.appendChild(fingersPanel);
+        $("#fingersPanel").hide();
+
         var divProgressBar = document.createElement('div');
         divProgressBar.setAttribute('id', 'progressbar');
         document.body.appendChild(divProgressBar);
@@ -159,36 +167,35 @@ var leapDeviceMgr = (function () {
     }
 
     function drawMaskOnIcon(target, whichhand) {
-//        if (whichhand == "right") {
-//            var originX = rightTargetMask.style.left;
-//            var index = originX.indexOf('p');
-//            var originX = originX.substr(0, index);
-//
-//            var startX = (canvas.width / 2 - rightGesturePanel.width) / 2 + canvas.width / 2 + GESTURE_ICON_SIZE / 8 + GESTURE_ICON_SIZE * 0.02;
-//            var targetX = startX + target * GESTURE_ICON_SIZE;
-//            // if (targetX > originX) {
-//            move("#rightTargetMask")
-//                .x(targetX - originX)
-//                .duration('0.2s')
-//                .end();
-//        } else if (whichhand == "left") {
-//            var originX = leftTargetMask.style.left;
-//            var index = originX.indexOf('p');
-//            var originX = originX.substr(0, index);
-//
-//            var startX = (canvas.width / 2 - leftGesturePanel.width) / 2 + GESTURE_ICON_SIZE / 8 + GESTURE_ICON_SIZE * 0.02;
-//            var targetX = startX + target * GESTURE_ICON_SIZE;
-//            // if (targetX > originX) {
-//            move("#leftTargetMask")
-//                .x(targetX - originX)
-//                .duration('0.2s')
-//                .end();
-//        }
-        // } else {
-        //     move("#rightTargetMask")
-        //         .x( originX - targetX)
-        //         .end();
-        // }
+        if (whichhand == "right") {
+            var originX = rightTargetMask.style.left;
+            var index = originX.indexOf('p');
+            var originX = originX.substr(0, index);
+
+            var startX = (canvas.width / 2 - rightGesturePanel.width) / 2 + canvas.width / 2 + GESTURE_ICON_SIZE / 8 + GESTURE_ICON_SIZE * 0.02;
+            var targetX = startX + target * GESTURE_ICON_SIZE;
+            // if (targetX > originX) {
+            move("#rightTargetMask")
+                .x(targetX - originX)
+                .duration('0.2s')
+                .end();
+        } else if (whichhand == "left") {
+            var originX = leftTargetMask.style.left;
+            var index = originX.indexOf('p');
+            var originX = originX.substr(0, index);
+
+            var startX = (canvas.width / 2 - leftGesturePanel.width) / 2 + GESTURE_ICON_SIZE / 8 + GESTURE_ICON_SIZE * 0.02;
+            var targetX = startX + target * GESTURE_ICON_SIZE;
+            // if (targetX > originX) {
+            move("#leftTargetMask")
+                .x(targetX - originX)
+                .duration('0.2s')
+                .end();
+        } else {
+            move("#rightTargetMask")
+                .x(originX - targetX)
+                .end();
+        }
     }
 
     function updateProgressBar(list, whichhand, minIndex) {
@@ -289,13 +296,17 @@ var leapDeviceMgr = (function () {
 
     function drawFingers(frame, whichhand) {
         if (whichhand != "right") return;
-        ctx.clearRect(-canvas.width, -canvas.height, canvas.width, canvas.height);
+//        context.translate(canvas.width, canvas.height);
+//        context.clearRect(0, 0, canvas.width, canvas.height);
+        var fingersPanel = document.getElementById("fingersPanel");
+        var context = fingersPanel.getContext("2d");
+        context.clearRect(0, 0, canvas.width, canvas.height);
 
         var hand = frame.hands[0];
         var extendedAlpha = 1.0;
 
-        var centerX = document.body.clientWidth / 2;
-        var centerY = document.body.clientHeight / 2;
+        var centerX = -document.body.clientWidth / 2;
+        var centerY = -document.body.clientHeight / 2;
 
 
         var yNormal = [0, 1];
@@ -334,19 +345,19 @@ var leapDeviceMgr = (function () {
                 }
                 var distance = startX * startX + startY * startY;
 
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = '#000000';
+                context.shadowBlur = 20;
+                context.shadowColor = '#000000';
 
-                ctx.strokeStyle = "rgba(255, 153, 0, 1)";
-                ctx.lineCap = "round";
-                ctx.beginPath();
-                ctx.arc(startX - centerX, startY - centerY, 8, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.moveTo(startX - centerX, startY - centerY);
-                ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
-                ctx.lineWidth = 10;
+                context.strokeStyle = "rgba(255, 153, 0, 1)";
+                context.lineCap = "round";
+                context.beginPath();
+                context.arc(startX - centerX, startY - centerY, 8, 0, 2 * Math.PI);
+                context.fill();
+                context.moveTo(startX - centerX, startY - centerY);
+                context.lineTo(xPos + startX - centerX, yPos + startY - centerY);
+                context.lineWidth = 10;
 
-                ctx.stroke();
+                context.stroke();
 
 
                 var fingerTipsPos = [];
@@ -358,16 +369,16 @@ var leapDeviceMgr = (function () {
                 for (var i = 0; i < fingerTipsPos.length; i++) {
                     for (var j = 0; j < 3; j++) {
                         extendedAlpha = (fingers[i].extended ? 1 : 0.2);
-                        ctx.shadowBlur = 5;
-                        ctx.shadowColor = '#000000';
-                        ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
-                        ctx.beginPath();
-                        ctx.moveTo(fingerTipsPos[i][j][0] - centerX, fingerTipsPos[i][j][2] - centerY);
-                        ctx.lineTo(fingerTipsPos[i][j + 1][0] - centerX, fingerTipsPos[i][j + 1][2] - centerY);
-                        ctx.lineWidth = 8;
+                        context.shadowBlur = 5;
+                        context.shadowColor = '#000000';
+                        context.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
+                        context.beginPath();
+                        context.moveTo(fingerTipsPos[i][j][0] - centerX, fingerTipsPos[i][j][2] - centerY);
+                        context.lineTo(fingerTipsPos[i][j + 1][0] - centerX, fingerTipsPos[i][j + 1][2] - centerY);
+                        context.lineWidth = 8;
 
-                        ctx.lineCap = "round";
-                        ctx.stroke();
+                        context.lineCap = "round";
+                        context.stroke();
                     }
 
                 }
@@ -394,19 +405,19 @@ var leapDeviceMgr = (function () {
                 }
                 var distance = startX * startX + startY * startY;
 
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = '#000000';
+                context.shadowBlur = 20;
+                context.shadowColor = '#000000';
 
-                ctx.strokeStyle = "rgba(255, 153, 0, 1)";
-                ctx.lineCap = "round";
-                ctx.beginPath();
-                ctx.arc(startX - centerX, startY - centerY, 8, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.moveTo(startX - centerX, startY - centerY);
-                ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
-                ctx.lineWidth = 10;
+                context.strokeStyle = "rgba(255, 153, 0, 1)";
+                context.lineCap = "round";
+                context.beginPath();
+                context.arc(startX - centerX, startY - centerY, 8, 0, 2 * Math.PI);
+                context.fill();
+                context.moveTo(startX - centerX, startY - centerY);
+                context.lineTo(xPos + startX - centerX, yPos + startY - centerY);
+                context.lineWidth = 10;
 
-                ctx.stroke();
+                context.stroke();
 
 
                 for (var i = 0; i < fingers.length; i++) {
@@ -430,21 +441,22 @@ var leapDeviceMgr = (function () {
                     }
                     extendedAlpha = (fingers[i].extended ? 1 : 0.2);
                     ;
-                    ctx.shadowBlur = 5;
-                    ctx.shadowColor = '#000000';
-                    ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
-                    ctx.beginPath();
-                    ctx.moveTo(startX - centerX, startY - centerY);
-                    ctx.lineTo(xPos + startX - centerX, yPos + startY - centerY);
-                    ctx.lineWidth = 8;
+                    context.shadowBlur = 5;
+                    context.shadowColor = '#000000';
+                    context.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
+                    context.beginPath();
+                    context.moveTo(startX - centerX, startY - centerY);
+                    context.lineTo(xPos + startX - centerX, yPos + startY - centerY);
+                    context.lineWidth = 8;
 
-                    ctx.lineCap = "round";
-                    ctx.stroke();
+                    context.lineCap = "round";
+                    context.stroke();
                 }
 
 
                 break;
         }
+//        context.translate(-canvas.width, -canvas.height);
     }
 
     function drawGestures() {
@@ -610,6 +622,7 @@ var leapDeviceMgr = (function () {
         $("#frameDataRight").show();
         $("#frameDataLeft").show();
         $("#progressbar").show();
+        $("#fingersPanel").show();
         drawGestures();
         isVerboseInfoShonw = true;
     }
@@ -1066,9 +1079,9 @@ function Controls(tag_, screenWid_, screenHeight_) {
             Leap.vec3.subtract(vecC, thumb.tipVelocity, hand.palmVelocity);
             var j = 0;
 
-            nominator += (vecC[0] - rightHandMotion[index].finVel[j][0]) * (vecC[0] - rightHandMotion[index].finVel[j][0]) +
-                (vecC[1] - rightHandMotion[index].finVel[j][1]) * (vecC[1] - rightHandMotion[index].finVel[j][1]) +
-                (vecC[2] - rightHandMotion[index].finVel[j][2]) * (vecC[2] - rightHandMotion[index].finVel[j][2]);
+            nominator += Math.pow((vecC[0] - rightHandMotion[index].finVel[j][0]), 2) +
+                Math.pow((vecC[1] - rightHandMotion[index].finVel[j][1]), 2) +
+                Math.pow((vecC[2] - rightHandMotion[index].finVel[j][2]), 2);
 
 
             normalizer = maxCount * 500 * 500;

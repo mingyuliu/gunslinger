@@ -20,6 +20,14 @@ html, body {
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 2;
+    z-index: 200000;
+    pointer-events: none;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 200001;
     pointer-events: none;
 }

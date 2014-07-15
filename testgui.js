@@ -11,7 +11,6 @@ var ctx = canvas.getContext("2d");
 ctx.translate(canvas.width, canvas.height);
 
 
-
 function getFilterFingers(fingersraw) {
     var len = fingersraw.length;
     while (len > 2) {
@@ -56,8 +55,6 @@ function getFilterFingers(fingersraw) {
 }
 
 
-
-
 function angle2Lines2dCos(v1, v2) {
     var m1, n1, m2, n2;
 
@@ -73,7 +70,7 @@ function angle2Lines2dCos(v1, v2) {
 }
 
 
-$(document).keyup(function(event) {
+$(document).keyup(function (event) {
     switch (event.which) {
         case 84: //"t" toggle cursor view
             FINGER_RENDER_MODE = (FINGER_RENDER_MODE + 1) % 2;
@@ -87,7 +84,10 @@ var scaleFactor = 1; //temporal
 var distanceAlphaProj = 1;
 
 function rightOnFrame(controls) {
+    if (!isVerboseInfoShonw) {
 
+        ctx.clearRect(-canvas.width, -canvas.height, canvas.width, canvas.height);
+    }
     switch (controls.tag) {
         case "right":
             switch (controls.posture) {
@@ -152,11 +152,13 @@ function rightOnFrame(controls) {
 }
 
 
-function leftOnFrame(controls) {}
+function leftOnFrame(controls) {
+}
 
 var ACCELERATION_FACTOR = 5;
 leapDeviceMgr.initDevice(1920, 1098);
 leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
 //leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT, leftOnFrame);
+//leapDeviceMgr.showVerboseInfo();
 
 leapDeviceMgr.start();
