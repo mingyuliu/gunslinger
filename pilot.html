@@ -48,11 +48,10 @@
 <script src="com/rectangleworld/display/SimpleSquareParticle.js"></script>
 <script src="leap-0.6.0.min.js"></script>
 <script src="1euro.js"></script>
-<script src = "move.min.js"> </script>
+<script src="move.min.js"></script>
 <script src="gestures.js"></script>
 <script src="GSMod.js"></script>
-
-
+<script src="gl-matrix.js"></script>
 
 
 <body>
@@ -100,6 +99,9 @@ var currentWidth = 0;
 var isInputValid = false;
 var sections = [];
 var clickTimeout = true;
+var fileWriter;
+var fileEntry;
+var fileSystem;
 
 function canvasApp() {
     if (!canvasSupport()) {
@@ -112,9 +114,13 @@ function canvasApp() {
     init();
 
     var records = [];
-    var recorder;
+    var recorder = false;
 
     function init() {
+        //get block number
+        currentBlock = Number(getURLParameter("block"))-1 || 0;
+        currentWidth = Number(getURLParameter("width"))-1 || 0;
+
         var canvasOne = document.getElementById("canvasOne");
         canvasWidth = document.body.clientWidth;
         canvasHeight = document.body.clientHeight;
@@ -133,8 +139,6 @@ function canvasApp() {
 //            ctx.translate(canvas.width, canvas.height);
 
         numShapes = 1;
-        easeAmount = 0.45;
-        isBlockReady = false;
         readTextFile("blocks.txt");
 
 
@@ -144,8 +148,8 @@ function canvasApp() {
         leapDeviceMgr.start();
 //        leapDeviceMgr.showVerboseInfo();
 //        $(".knob").ccountdown(2015,8,25,'18:00'); //only need to pass target date and time
-        leapDeviceMgr.showVerboseInfo();
-
+//        leapDeviceMgr.showVerboseInfo();
+        initFileSystem();
     }
 
     function recorderUpdate(controls) {
@@ -154,23 +158,100 @@ function canvasApp() {
 
 
         var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentBlock, currentSet,
-                currentTarget, sections[currentBlock][currentSet][currentTarget].distance, screenX.toFixed(0), screenY.toFixed(0),
-                false, controls.cursorEvent);
+                currentTarget, WIDTH_ORDER[currentWidth], sections[currentBlock][currentSet][currentTarget].distance, screenX.toFixed(0), screenY.toFixed(0),
+                isInputValid, "loopEvent");
 //        console.log(record.posture);
         records.push(record);
     }
 
 
     function stopRecorder() {
-        clearInterval(myVar);
+        clearInterval(recorder);
+        recorder = false;
     }
 
 
+    function startRecorder(controls) {
+        if (controls) {
+            recorder = window.setInterval(function () {
+                recorderUpdate(controls);
+            }, 30);
+        }
+    }
+
+    function getURLParameter(sParam) {
+        var sPageURL = window.location.search.substring(1);
+        var sURLVariables = sPageURL.split('&');
+        for (var i = 0; i < sURLVariables.length; i++) {
+            var sParameterName = sURLVariables[i].split('=');
+            if (sParameterName[0] == sParam) {
+                return sParameterName[1];
+            }
+        }
+    }
+
+    function initFileSystem() {
+        window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+        window.requestFileSystem(window.PERSISTENT, 50 * 1024 * 1024, onInitFs, errorHandler);
+    }
+
+    function errorHandler(e) {
+        var msg = '';
+
+        switch (e.code) {
+            case FileError.QUOTA_EXCEEDED_ERR:
+                msg = 'QUOTA_EXCEEDED_ERR';
+                break;
+            case FileError.NOT_FOUND_ERR:
+                msg = 'NOT_FOUND_ERR';
+                break;
+            case FileError.SECURITY_ERR:
+                msg = 'SECURITY_ERR';
+                break;
+            case FileError.INVALID_MODIFICATION_ERR:
+                msg = 'INVALID_MODIFICATION_ERR';
+                break;
+            case FileError.INVALID_STATE_ERR:
+                msg = 'INVALID_STATE_ERR';
+                break;
+            default:
+                msg = 'Unknown Error';
+                break;
+        }
+        ;
+
+        console.log('Error: ' + msg);
+    }
+
+    function onInitFs(fs) {
+        fileSystem = fs;
+        fs.root.getFile('log.txt', {create: false}, function (fileEntry_) {
+
+            // Create a FileWriter object for our FileEntry (log.txt).
+            fileEntry = fileEntry_;
+            fileEntry_.createWriter(function (fileWriter_) {
+
+                fileWriter = fileWriter_;
+            }, errorHandler);
+
+        }, errorHandler);
+
+    }
+
     function writeToStorage() {
-        var logData = JSON.parse(localStorage.getItem("logData")) || [];
-        logData.push(records);
-        localStorage.setItem("logData", JSON.stringify(logData));
+        var date = new Date();
+        var logData = [];
+        logData.push([date.toLocaleString(), records]);
+//        console.log(records);
+//        localStorage.setItem("logData", JSON.stringify(logData));
+        fileWriter.seek(fileWriter.length);
+        // Create a new Blob and write it to log.txt.
+        var blob = new Blob([JSON.stringify(logData)], {type: 'text/plain'});
+//        console.log(blob);
+        fileWriter.write(blob);
+
         records = [];
+        stopRecorder();
     }
 
 
@@ -191,13 +272,7 @@ function canvasApp() {
             currentWidth = 0;
         }
 
-        var tempX = 50;
-        var tempY = 50;
         var tempRad;
-        var tempR;
-        var tempG;
-        var tempB;
-        var tempA;
         var tempColor;
 
 
@@ -216,10 +291,12 @@ function canvasApp() {
             tempColor = "rgba(200, 0, 0, 0.8)";
             blockText.style.visibility = "visible";
             blockText.innerHTML = "    <h1>#block " + Number(currentBlock + 1) + " #Set " + Number(currentSet + 1) + "<//h1> <h4>resume your task by clicking the target<//h4>";
+
             if (currentBlock == 0 && currentSet == 0) {
                 blockText.innerHTML = "    <h1>block #1 Set #1<//h1> <h4>start your task by clicking the target<//h4>";
             }
         } else {
+
             tempColor = "rgba(255, 102, 0, 0.8)";
             blockText.style.visibility = "hidden";
 
@@ -331,11 +408,14 @@ function canvasApp() {
                     }
 
                     var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentBlock, currentSet,
-                            currentTarget, sections[currentBlock][currentSet][currentTarget].distance, screenX.toFixed(0), screenY.toFixed(0),
+                            currentTarget, WIDTH_ORDER[currentWidth], sections[currentBlock][currentSet][currentTarget].distance, screenX.toFixed(0), screenY.toFixed(0),
                             isInputValid, controls.cursorEvent);
                     records.push(record);
 //                    console.log(record);
                     if (isInputValid) {
+                        if (currentSet == 0 && !recorder) {
+                            startRecorder(controls);
+                        }
                         currentTarget++;
                         makeShape();
                         drawScreen();
@@ -343,7 +423,7 @@ function canvasApp() {
                     }
                     clickTimeout = false;
                     setTimeout(function () {
-                        clickTimeout = true
+                        clickTimeout = true;
                     }, 200);
                 }
                 break;
@@ -352,15 +432,15 @@ function canvasApp() {
                     var screenX = -controls.x + canvasWidth;
                     var screenY = -controls.y + canvasHeight;
 
-                    var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentBlock, currentSet,
-                            currentTarget, sections[currentBlock][currentSet][currentTarget].distance, screenX.toFixed(0), screenY.toFixed(0),
-                            false, controls.cursorEvent);
-                    records.push(record);
                     if (shapeTarget.hitTest(screenX, screenY)) {
                         isInputValid = true;
                     } else {
                         isInputValid = false;
                     }
+                    var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentBlock, currentSet,
+                            currentTarget, WIDTH_ORDER[currentWidth], sections[currentBlock][currentSet][currentTarget].distance, screenX.toFixed(0), screenY.toFixed(0),
+                            isInputValid, controls.cursorEvent);
+                    records.push(record);
                 }
         }
     }
@@ -369,11 +449,7 @@ function canvasApp() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         handleAnimation(controls);
         handleEvent(controls);
-        if (recorder == undefined) {
-            recorder = setInterval(function () {
-                recorderUpdate(controls)
-            }, 500);
-        }
+
     }
 
     function Target(x_, y_, distance_) {
@@ -382,13 +458,14 @@ function canvasApp() {
         this.distance = distance_;
     }
 
-    function Record(timestamp_, posture_, tipPosition_, block_, set_, target_, distance_, cursorX_, cursorY_, isHit_, cursorEvent_) {
+    function Record(timestamp_, posture_, tipPosition_, block_, set_, target_, targetSize_, distance_, cursorX_, cursorY_, isHit_, cursorEvent_) {
         this.timestamp = timestamp_;
         this.posture = posture_;
         this.tipPosition = tipPosition_;
         this.block = block_;
         this.set = set_;
         this.target = target_;
+        this.targetSize = targetSize_;
         this.distance = distance_;
         this.cursorX = cursorX_;
         this.cursorY = cursorY_;
@@ -447,6 +524,47 @@ function canvasApp() {
 }
 
 $(window).load(canvasApp());
+
+//function errorHandler(e) {
+//    var msg = '';
+//
+//    switch (e.code) {
+//        case FileError.QUOTA_EXCEEDED_ERR:
+//            msg = 'QUOTA_EXCEEDED_ERR';
+//            break;
+//        case FileError.NOT_FOUND_ERR:
+//            msg = 'NOT_FOUND_ERR';
+//            break;
+//        case FileError.SECURITY_ERR:
+//            msg = 'SECURITY_ERR';
+//            break;
+//        case FileError.INVALID_MODIFICATION_ERR:
+//            msg = 'INVALID_MODIFICATION_ERR';
+//            break;
+//        case FileError.INVALID_STATE_ERR:
+//            msg = 'INVALID_STATE_ERR';
+//            break;
+//        default:
+//            msg = 'Unknown Error';
+//            break;
+//    };
+//
+//    console.log('Error: ' + msg);
+//}
+//
+//function onInitFs(fs) {
+//
+//    fs.root.getFile('log.txt', {create: true, exclusive: true}, function(fileEntry) {
+//
+//        // fileEntry.isFile === true
+//        // fileEntry.name == 'log.txt'
+//        // fileEntry.fullPath == '/log.txt'
+//
+//    }, errorHandler);
+//
+//}
+//
+//window.requestFileSystem(window.PERSISTENT, 500*1024*1024, onInitFs, errorHandler);
 
 
 </script>

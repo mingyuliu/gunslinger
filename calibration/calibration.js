@@ -45,6 +45,7 @@ var calibrator = (function() {
                             typeEl.innerHTML = whichhand + " " + types[currentIndex];
                         } else {
                             var handSpan = Leap.vec3.distance(fingers[0].tipPosition, fingers[4].tipPosition);
+                            console.log(handSpan);
                             var handSpanStr = JSON.stringify(handSpan, undefined);
                             localStorage.handSpan = handSpanStr;
                             typeEl.innerHTML = whichhand + " completed";

@@ -893,6 +893,8 @@ function quanAnalyzer(tag) {
                     distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, fingers[1].mcpPosition);
                     distanceStr += "thumbTip to indexMcp: " + distanceToThumb.toFixed(2) + "<br />";
 
+//                    distanceStr += "pinch:" + hand.pitch()+" roll:"+hand.roll();
+
                     frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:right; padding:5px; position:absolute; top:10px; right:10px'>" + distanceStr + "</div>";
                     break;
                 case "left":
@@ -995,6 +997,9 @@ function Controls(tag_, screenWid_, screenHeight_) {
             case "none":
                 this.cursorEvent = "none";
                 break;
+            default:
+                this.cursorEvent = "none";
+                break;
         }
         this.cursorState = state;
     }
@@ -1043,6 +1048,22 @@ function Controls(tag_, screenWid_, screenHeight_) {
             return -1.0;
     }
 
+    function angleBtLines(v1, v2) {
+        var m1, n1, p1, m2, n2, p2;
+
+        m1 = v1[0];
+        n1 = v1[1];
+        p1 = v1[2];
+
+
+        m2 = v2[0];
+        n2 = v2[1];
+        p2 = v2[2];
+
+        var cos = (m1 * m2 + n1 * n2 + p1 * p2) / (Math.sqrt(m1 * m1 + n1 * n1 + p1 * p1) * Math.sqrt(m2 * m2 + n2 * n2 + p2 * p2));
+        return Math.acos(cos) * 180.0 / Math.PI;
+    }
+
     function quantitativeAnalysisVel(hand, thumb, type) {
         if (hand == undefined) {
             return;
@@ -1066,26 +1087,40 @@ function Controls(tag_, screenWid_, screenHeight_) {
 
 
         if (thumb != undefined) {
-            var countC = thumb.length;
+            //Angle difference
+            var angle = angleBtLines([0,0,-1], [hand.direction[0], 0, hand.direction[2]]);
 
-
-            var minCount = 1;
-            var maxCount = 1;
+            if (hand.direction[0] < 0) {
+                angle = -angle;
+            }
 
             //Length difference
             var nominator = 0;
 
             var vecC = Leap.vec3.create();
             Leap.vec3.subtract(vecC, thumb.tipVelocity, hand.palmVelocity);
+
             var j = 0;
+
+            var modelView = mat4.create();
+
+
+            mat4.identity(modelView); // Set to identity
+            mat4.rotateY(modelView, modelView, Math.PI*angle/180);
+            mat4.rotateZ(modelView, modelView, -hand.roll().toFixed(2));
+            mat4.rotateX(modelView, modelView, -hand.pitch().toFixed(2));
+            vec3.transformMat4(vecC, vecC, modelView);
 
             nominator += Math.pow((vecC[0] - rightHandMotion[index].finVel[j][0]), 2) +
                 Math.pow((vecC[1] - rightHandMotion[index].finVel[j][1]), 2) +
                 Math.pow((vecC[2] - rightHandMotion[index].finVel[j][2]), 2);
 
 
-            normalizer = maxCount * 500 * 500;
+            normalizer =  500 * 500;
             vValue = Math.sqrt(nominator / normalizer);
+
+
+
         }
         return vValue;
     }
@@ -1161,7 +1196,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 var hand = frame.hands[0];
                 var fingers = hand.fingers;
                 var distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
-                if (distanceToThumb > 70) {  //heuristics
+                if (distanceToThumb > localStorage.handSpan*0.44) {  //heuristics
                     this.isDragging = false;
                     isThumbDown = false;
                 }
