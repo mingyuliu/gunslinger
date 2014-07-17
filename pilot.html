@@ -87,11 +87,10 @@ var distanceAlphaProj = 1;
 var shapeTarget;
 
 var canvasWidth = 0, canvasHeight = 0;
-var SCALE_TO_PIXEL = 160/62;
-var SHRINK_RATIO = 500/1600;
-var WIDTH_L = 270*SCALE_TO_PIXEL*SHRINK_RATIO;
-var WIDTH_M = 90*SCALE_TO_PIXEL*SHRINK_RATIO;
-var WIDTH_S = 30*SCALE_TO_PIXEL*SHRINK_RATIO;
+
+var WIDTH_L = 270*SCALE_TO_PIXEL;
+var WIDTH_M = 90*SCALE_TO_PIXEL;
+var WIDTH_S = 30*SCALE_TO_PIXEL;
 var WIDTH_ORDER = [WIDTH_L, WIDTH_M, WIDTH_S, WIDTH_M, WIDTH_S, WIDTH_L, WIDTH_S, WIDTH_L, WIDTH_M];
 var currentBlock = 0;
 var currentSet = 0;
@@ -454,7 +453,7 @@ function canvasApp() {
         //reference rectangle
         var tempShape = new SimpleSquareParticle(120, 120);
         tempShape.color = "rgba(255, 255, 255, 1.0)";
-        tempShape.radius = 100/SCALE_TO_PIXEL;
+        tempShape.radius = 10*SCALE_TO_PIXEL;
         tempShape.drawToContext(ctx);
     }
 
@@ -574,7 +573,7 @@ $(window).load(canvasApp());
 
 
 
-var ACCELERATION_FACTOR = 3;
+
 
 
 

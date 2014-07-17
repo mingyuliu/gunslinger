@@ -8,11 +8,14 @@ var SCALE_RATIO = 1.5;
 var FINGER_RENDER_MODE = 0;
 var isVerboseInfoShonw = false;
 
+var SCALE_TO_PIXEL = 200/57;
+var SHRINK_RATIO = 541/1900;
+
 //CD Gain Config
-var vMin = 10,
-    vMax = 300,
-    cdMin = 0.5,
-    cdMax = 1900/20,
+var vMin = 15,
+    vMax = 600,
+    cdMin = 0.25,
+    cdMax = 1900/80,
     ratio_inf = 0.5,
     lambda = 4 / (vMax - vMin),
     vel_inf = ratio_inf * (vMax - vMin) + vMin;
@@ -1018,7 +1021,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
         var gain = (cdMax - cdMin) / (1 + Math.exp(-lambda * (vel - vel_inf))) + cdMin;
         tipVelocity[0] *= gain;
         tipVelocity[1] *= gain;
-
+        console.log(vel);
     }
 
 
@@ -1127,12 +1130,12 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 if (vec2.len(velraw) < 5) {
                     velraw = [0, 0];
                 }
-                console.log("before:"+velraw);
+//                console.log("before:"+velraw);
 //                var delta = [this.fx.filter(velraw[0], this.timestamp), this.fy.filter(velraw[1], this.timestamp)];
                 var delta = [velraw[0], velraw[1]];
                 CDGainTransfer(delta);
                 vec2.scale(delta, delta, (this.timestamp - this.lastFrameTimestamp) * 0.001 * SCALE_TO_PIXEL);
-                console.log("after:" + delta);
+//                console.log("after:" + delta);
 
                 //#convert
                 if (this.use == "wall") {
