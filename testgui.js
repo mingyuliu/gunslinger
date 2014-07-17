@@ -155,7 +155,7 @@ function rightOnFrame(controls) {
 function leftOnFrame(controls) {
 }
 
-var ACCELERATION_FACTOR = 5;
+var ACCELERATION_FACTOR = 1;
 leapDeviceMgr.initDevice(1920, 1098);
 leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
 //leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT, leftOnFrame);

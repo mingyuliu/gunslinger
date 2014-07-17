@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="BookmarkManager">
+    <bookmark url="file://$PROJECT_DIR$/GSMod.js" line="1018" mnemonic="1" />
+    <bookmark url="file://$PROJECT_DIR$/GSMod.js" line="13" mnemonic="2" />
+    <bookmark url="file://$PROJECT_DIR$/GSMod.js" line="1131" mnemonic="3" />
+    <bookmark url="file://$PROJECT_DIR$/GSMod.js" line="962" mnemonic="4" />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="24c3b901-cda8-4e90-a5ff-efd7392a406f" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/GSMod.js" afterPath="$PROJECT_DIR$/GSMod.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/calibration/calibration.js" afterPath="$PROJECT_DIR$/calibration/calibration.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pilot.html" afterPath="$PROJECT_DIR$/pilot.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/testgui.js" afterPath="$PROJECT_DIR$/testgui.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="v2.iws" />
@@ -31,12 +37,22 @@
       <file leaf-file-name="GSMod.js" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/GSMod.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.7344782" vertical-offset="17665" max-vertical-offset="23674">
-              <caret line="959" column="20" selection-start-line="959" selection-start-column="20" selection-end-line="959" selection-end-column="20" />
+            <state vertical-scroll-proportion="0.4266843" vertical-offset="0" max-vertical-offset="23332">
+              <caret line="17" column="47" selection-start-line="17" selection-start-column="47" selection-end-line="17" selection-end-column="47" />
               <folding>
-                <marker date="1405535473213" expanded="true" signature="34891:34985" placeholder="..." />
-                <marker date="1405535473213" expanded="true" signature="35389:35481" placeholder="..." />
+                <marker date="1405617289070" expanded="true" signature="35079:35173" placeholder="..." />
+                <marker date="1405617289070" expanded="true" signature="35577:35669" placeholder="..." />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="testgui.js" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/testgui.js">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="-105.85714" vertical-offset="0" max-vertical-offset="3211">
+              <caret line="156" column="0" selection-start-line="156" selection-start-column="0" selection-end-line="156" selection-end-column="0" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -44,11 +60,11 @@
       <file leaf-file-name="Sample.html" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$USER_HOME$/Documents/LeapDeveloperKit_2.0.0+15464_win/LeapSDK/samples/Sample.html">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-5.696429" vertical-offset="3652" max-vertical-offset="4902">
-              <caret line="209" column="47" selection-start-line="209" selection-start-column="47" selection-end-line="209" selection-end-column="47" />
+            <state vertical-scroll-proportion="-4.089286" vertical-offset="1006" max-vertical-offset="4902">
+              <caret line="65" column="42" selection-start-line="65" selection-start-column="40" selection-end-line="65" selection-end-column="42" />
               <folding>
-                <marker date="1405534578749" expanded="false" signature="2253:2289" placeholder="..." />
-                <marker date="1405534578749" expanded="false" signature="2579:2615" placeholder="..." />
+                <marker date="1405534578749" expanded="true" signature="2253:2289" placeholder="..." />
+                <marker date="1405534578749" expanded="true" signature="2579:2615" placeholder="..." />
                 <marker date="1405534578749" expanded="false" signature="5326:5362" placeholder="..." />
               </folding>
             </state>
@@ -58,8 +74,18 @@
       <file leaf-file-name="pilot.html" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/pilot.html">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="13.303572" vertical-offset="2265" max-vertical-offset="10963">
-              <caret line="80" column="27" selection-start-line="80" selection-start-column="27" selection-end-line="80" selection-end-column="27" />
+            <state vertical-scroll-proportion="-4.339286" vertical-offset="1885" max-vertical-offset="11172">
+              <caret line="112" column="32" selection-start-line="112" selection-start-column="28" selection-end-line="112" selection-end-column="32" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="1euro.js" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/1euro.js">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0" vertical-offset="309" max-vertical-offset="1615">
+              <caret line="30" column="0" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -116,12 +142,12 @@
         <option value="$PROJECT_DIR$/progressbar.css" />
         <option value="$PROJECT_DIR$/index.html" />
         <option value="$PROJECT_DIR$/OOPDragging.html" />
-        <option value="$PROJECT_DIR$/testgui.js" />
         <option value="$PROJECT_DIR$/GSMod.css" />
         <option value="$PROJECT_DIR$/calibration/calibration.js" />
         <option value="$USER_HOME$/Documents/LeapDeveloperKit_2.0.0+15464_win/LeapSDK/samples/Sample.html" />
-        <option value="$PROJECT_DIR$/pilot.html" />
+        <option value="$PROJECT_DIR$/testgui.js" />
         <option value="$PROJECT_DIR$/GSMod.js" />
+        <option value="$PROJECT_DIR$/pilot.html" />
       </list>
     </option>
   </component>
@@ -171,7 +197,6 @@
       <sortByType />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -192,6 +217,7 @@
           </PATH>
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -364,7 +390,7 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="30" />
+      <option name="time" value="36" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
@@ -388,8 +414,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="20349" max-vertical-offset="23009">
           <caret line="1081" column="87" selection-start-line="1081" selection-start-column="87" selection-end-line="1081" selection-end-column="87" />
           <folding>
-            <marker date="1405535473213" expanded="true" signature="34891:34985" placeholder="..." />
-            <marker date="1405535473213" expanded="true" signature="35389:35481" placeholder="..." />
+            <marker date="1405617289070" expanded="true" signature="35079:35173" placeholder="..." />
+            <marker date="1405617289070" expanded="true" signature="35577:35669" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -452,8 +478,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="22591">
           <caret line="958" column="47" selection-start-line="958" selection-start-column="40" selection-end-line="958" selection-end-column="47" />
           <folding>
-            <marker date="1405535473213" expanded="true" signature="34891:34985" placeholder="..." />
-            <marker date="1405535473213" expanded="true" signature="35389:35481" placeholder="..." />
+            <marker date="1405617289070" expanded="true" signature="35079:35173" placeholder="..." />
+            <marker date="1405617289070" expanded="true" signature="35577:35669" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -519,8 +545,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="17324" max-vertical-offset="22591">
           <caret line="931" column="0" selection-start-line="931" selection-start-column="0" selection-end-line="931" selection-end-column="52" />
           <folding>
-            <marker date="1405535473213" expanded="true" signature="34891:34985" placeholder="..." />
-            <marker date="1405535473213" expanded="true" signature="35389:35481" placeholder="..." />
+            <marker date="1405617289070" expanded="true" signature="35079:35173" placeholder="..." />
+            <marker date="1405617289070" expanded="true" signature="35577:35669" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -586,8 +612,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="11609">
           <caret line="143" column="18" selection-start-line="143" selection-start-column="18" selection-end-line="143" selection-end-column="18" />
           <folding>
-            <marker date="1405535473213" expanded="true" signature="34891:34985" placeholder="..." />
-            <marker date="1405535473213" expanded="true" signature="35389:35481" placeholder="..." />
+            <marker date="1405617289070" expanded="true" signature="35079:35173" placeholder="..." />
+            <marker date="1405617289070" expanded="true" signature="35577:35669" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -619,8 +645,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="8531" max-vertical-offset="11609">
           <caret line="449" column="0" selection-start-line="449" selection-start-column="0" selection-end-line="449" selection-end-column="0" />
           <folding>
-            <marker date="1405535473213" expanded="true" signature="34891:34985" placeholder="..." />
-            <marker date="1405535473213" expanded="true" signature="35389:35481" placeholder="..." />
+            <marker date="1405617289070" expanded="true" signature="35079:35173" placeholder="..." />
+            <marker date="1405617289070" expanded="true" signature="35577:35669" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -636,13 +662,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.33333334" vertical-offset="3" max-vertical-offset="3629">
           <caret line="18" column="7" selection-start-line="18" selection-start-column="7" selection-end-line="18" selection-end-column="7" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/1euro.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1615">
-          <caret line="5" column="9" selection-start-line="5" selection-start-column="9" selection-end-line="5" selection-end-column="9" />
         </state>
       </provider>
     </entry>
@@ -687,14 +706,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="2869">
           <caret line="8" column="43" selection-start-line="8" selection-start-column="43" selection-end-line="8" selection-end-column="43" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/testgui.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="1824" max-vertical-offset="3211">
-          <caret line="68" column="0" selection-start-line="68" selection-start-column="0" selection-end-line="68" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -744,6 +755,14 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/1euro.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="309" max-vertical-offset="1615">
+          <caret line="30" column="0" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/calibration/calibration.js">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="-10.357142" vertical-offset="508" max-vertical-offset="4028">
@@ -754,31 +773,39 @@
     </entry>
     <entry file="file://$USER_HOME$/Documents/LeapDeveloperKit_2.0.0+15464_win/LeapSDK/samples/Sample.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-5.696429" vertical-offset="3652" max-vertical-offset="4902">
-          <caret line="209" column="47" selection-start-line="209" selection-start-column="47" selection-end-line="209" selection-end-column="47" />
+        <state vertical-scroll-proportion="-4.089286" vertical-offset="1006" max-vertical-offset="4902">
+          <caret line="65" column="42" selection-start-line="65" selection-start-column="40" selection-end-line="65" selection-end-column="42" />
           <folding>
-            <marker date="1405534578749" expanded="false" signature="2253:2289" placeholder="..." />
-            <marker date="1405534578749" expanded="false" signature="2579:2615" placeholder="..." />
+            <marker date="1405534578749" expanded="true" signature="2253:2289" placeholder="..." />
+            <marker date="1405534578749" expanded="true" signature="2579:2615" placeholder="..." />
             <marker date="1405534578749" expanded="false" signature="5326:5362" placeholder="..." />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/testgui.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-105.85714" vertical-offset="0" max-vertical-offset="3211">
+          <caret line="156" column="0" selection-start-line="156" selection-start-column="0" selection-end-line="156" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/pilot.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="13.303572" vertical-offset="2265" max-vertical-offset="10963">
-          <caret line="80" column="27" selection-start-line="80" selection-start-column="27" selection-end-line="80" selection-end-column="27" />
+        <state vertical-scroll-proportion="-4.339286" vertical-offset="1885" max-vertical-offset="11172">
+          <caret line="112" column="32" selection-start-line="112" selection-start-column="28" selection-end-line="112" selection-end-column="32" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/GSMod.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.7344782" vertical-offset="17665" max-vertical-offset="23674">
-          <caret line="959" column="20" selection-start-line="959" selection-start-column="20" selection-end-line="959" selection-end-column="20" />
+        <state vertical-scroll-proportion="0.4266843" vertical-offset="0" max-vertical-offset="23332">
+          <caret line="17" column="47" selection-start-line="17" selection-start-column="47" selection-end-line="17" selection-end-column="47" />
           <folding>
-            <marker date="1405535473213" expanded="true" signature="34891:34985" placeholder="..." />
-            <marker date="1405535473213" expanded="true" signature="35389:35481" placeholder="..." />
+            <marker date="1405617289070" expanded="true" signature="35079:35173" placeholder="..." />
+            <marker date="1405617289070" expanded="true" signature="35577:35669" placeholder="..." />
           </folding>
         </state>
       </provider>

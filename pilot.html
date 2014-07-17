@@ -87,10 +87,11 @@ var distanceAlphaProj = 1;
 var shapeTarget;
 
 var canvasWidth = 0, canvasHeight = 0;
-
-var WIDTH_L = 140;
-var WIDTH_M = 80;
-var WIDTH_S = 40;
+var SCALE_TO_PIXEL = 160/62;
+var SHRINK_RATIO = 500/1600;
+var WIDTH_L = 270*SCALE_TO_PIXEL*SHRINK_RATIO;
+var WIDTH_M = 90*SCALE_TO_PIXEL*SHRINK_RATIO;
+var WIDTH_S = 30*SCALE_TO_PIXEL*SHRINK_RATIO;
 var WIDTH_ORDER = [WIDTH_L, WIDTH_M, WIDTH_S, WIDTH_M, WIDTH_S, WIDTH_L, WIDTH_S, WIDTH_L, WIDTH_M];
 var currentBlock = 0;
 var currentSet = 0;
@@ -150,6 +151,7 @@ function canvasApp() {
 //        $(".knob").ccountdown(2015,8,25,'18:00'); //only need to pass target date and time
 //        leapDeviceMgr.showVerboseInfo();
         initFileSystem();
+
     }
 
     function recorderUpdate(controls) {
@@ -276,13 +278,13 @@ function canvasApp() {
         var tempColor;
 
 
-        tempRad = WIDTH_ORDER[currentWidth];
+        tempRad = WIDTH_ORDER[currentWidth] /2;
 
 //        setTimeout(function(){console.log(sections.length)},3000)
         var blockText = document.getElementById("blocktext");
 //        blockText.innerHTML = "block " + Number(currentBlock+1);
-        tempX = sections[currentBlock][currentSet][currentTarget].x;
-        tempY = sections[currentBlock][currentSet][currentTarget].y;
+        tempX = sections[currentBlock][currentSet][currentTarget].x*SCALE_TO_PIXEL*SHRINK_RATIO;
+        tempY = sections[currentBlock][currentSet][currentTarget].y*SCALE_TO_PIXEL*SHRINK_RATIO;
 
 
         //we set a randomized color, including a random alpha (transparency) value.
@@ -306,7 +308,7 @@ function canvasApp() {
         //randomly select either a circle or a square
 
 //			tempShape = new SimpleSquareParticle(tempX, tempY);
-        tempShape = new SimpleDiskParticle(tempX, tempY)
+        tempShape = new SimpleDiskParticle(tempX, tempY);
 
 
         tempShape.color = tempColor;
@@ -449,7 +451,11 @@ function canvasApp() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         handleAnimation(controls);
         handleEvent(controls);
-
+        //reference rectangle
+        var tempShape = new SimpleSquareParticle(120, 120);
+        tempShape.color = "rgba(255, 255, 255, 1.0)";
+        tempShape.radius = 100/SCALE_TO_PIXEL;
+        tempShape.drawToContext(ctx);
     }
 
     function Target(x_, y_, distance_) {
@@ -565,6 +571,11 @@ $(window).load(canvasApp());
 //}
 //
 //window.requestFileSystem(window.PERSISTENT, 500*1024*1024, onInitFs, errorHandler);
+
+
+
+var ACCELERATION_FACTOR = 3;
+
 
 
 </script>

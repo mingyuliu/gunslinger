@@ -8,6 +8,15 @@ var SCALE_RATIO = 1.5;
 var FINGER_RENDER_MODE = 0;
 var isVerboseInfoShonw = false;
 
+//CD Gain Config
+var vMin = 10,
+    vMax = 300,
+    cdMin = 0.5,
+    cdMax = 1900/20,
+    ratio_inf = 0.5,
+    lambda = 4 / (vMax - vMin),
+    vel_inf = ratio_inf * (vMax - vMin) + vMin;
+
 var leapDeviceMgr = (function () {
 
     var api = {};
@@ -951,11 +960,10 @@ function quanAnalyzer(tag) {
 }
 
 function Controls(tag_, screenWid_, screenHeight_) {
-
     var freq = 100,
-        mincutoff = 0.005,
-        beta = 0.8,
-        dcutoff = 0.03;
+        mincutoff = 1,
+        beta = 1,
+        dcutoff = 3;
 
     this.tag = tag_;
     this.screenHeight = screenHeight_;
@@ -974,6 +982,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
     var isThumbDown = false;
     this.isDragging = false;
     this.timestamp = 0;
+    this.lastFrameTimestamp = 0;
 
     this.setCursorState = function (state) {
         switch (state) {
@@ -1004,49 +1013,18 @@ function Controls(tag_, screenWid_, screenHeight_) {
         this.cursorState = state;
     }
 
+    function CDGainTransfer(tipVelocity) {
+        var vel = vec2.len(tipVelocity);
+        var gain = (cdMax - cdMin) / (1 + Math.exp(-lambda * (vel - vel_inf))) + cdMin;
+        tipVelocity[0] *= gain;
+        tipVelocity[1] *= gain;
 
-    function interpolateSpeed(deviceSpeed, scaleFactor) {
-        var threshold = [
-            [0.0, 0.0],
-            [10.922, 34.798],
-            [31.750, 134.620],
-            [98.044, 617.220],
-            [1016.000, 14427.200]
-        ];
-
-
-        var absSpeed = Math.abs(deviceSpeed);
-        var i;
-
-        for (var i = 1; i < 5; i++) {
-            threshold[i][1] = threshold[i][1] * scaleFactor;
-        }
-
-        for (var i = 1; i < 5; i++) {
-            if (absSpeed < threshold[i][0]) {
-
-                var v = sign(deviceSpeed) * ((absSpeed - threshold[i - 1][0]) * ((threshold[i][1] - threshold[i - 1][1]) / (threshold[i][0] - threshold[i - 1][0])) + threshold[i - 1][1]);
-                if (isNaN(v)) {
-                    return 0;
-                }
-                ;
-                return v;
-            }
-        }
-        i--;
-        var v = sign(deviceSpeed) * ((absSpeed - threshold[i - 1][0]) * ((threshold[i][1] - threshold[i - 1][1]) / (threshold[i][0] - threshold[i - 1][0])) + threshold[i - 1][1]);
-        if (isNaN(v)) {
-            return 0;
-        }
-        return v;
     }
 
-    function sign(value) {
-        if (value >= 0)
-            return 1.0;
-        else
-            return -1.0;
-    }
+
+
+
+
 
     function angleBtLines(v1, v2) {
         var m1, n1, p1, m2, n2, p2;
@@ -1088,7 +1066,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
 
         if (thumb != undefined) {
             //Angle difference
-            var angle = angleBtLines([0,0,-1], [hand.direction[0], 0, hand.direction[2]]);
+            var angle = angleBtLines([0, 0, -1], [hand.direction[0], 0, hand.direction[2]]);
 
             if (hand.direction[0] < 0) {
                 angle = -angle;
@@ -1106,7 +1084,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
 
 
             mat4.identity(modelView); // Set to identity
-            mat4.rotateY(modelView, modelView, Math.PI*angle/180);
+            mat4.rotateY(modelView, modelView, Math.PI * angle / 180);
             mat4.rotateZ(modelView, modelView, -hand.roll().toFixed(2));
             mat4.rotateX(modelView, modelView, -hand.pitch().toFixed(2));
             vec3.transformMat4(vecC, vecC, modelView);
@@ -1116,9 +1094,8 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 Math.pow((vecC[2] - rightHandMotion[index].finVel[j][2]), 2);
 
 
-            normalizer =  500 * 500;
+            normalizer = 500 * 500;
             vValue = Math.sqrt(nominator / normalizer);
-
 
 
         }
@@ -1141,25 +1118,29 @@ function Controls(tag_, screenWid_, screenHeight_) {
 
     this.update = function (posture, frame) {
         this.posture = posture;
-        this.timestamp = frame.timestamp * 0.000001;
+        this.timestamp = frame.timestamp * 0.001;
         if (frame.hands[0] != undefined) {
             this.tipPosition = frame.hands[0].fingers[1].tipPosition;
 
             if (posture == "+thu+ind") {
-                var timestamp = frame.timestamp * 0.000001;
-                var velraw = frame.hands[0].fingers[1].tipVelocity;
-                if (Leap.vec3.len(velraw) < 5) {
+                var velraw = [frame.hands[0].fingers[1].tipVelocity[0], frame.hands[0].fingers[1].tipVelocity[1]];
+                if (vec2.len(velraw) < 5) {
                     velraw = [0, 0];
                 }
-                var delta = [this.fx.filter(velraw[0], timestamp), this.fy.filter(velraw[1], timestamp)];
+                console.log("before:"+velraw);
+//                var delta = [this.fx.filter(velraw[0], this.timestamp), this.fy.filter(velraw[1], this.timestamp)];
+                var delta = [velraw[0], velraw[1]];
+                CDGainTransfer(delta);
+                vec2.scale(delta, delta, (this.timestamp - this.lastFrameTimestamp) * 0.001 * SCALE_TO_PIXEL);
+                console.log("after:" + delta);
 
                 //#convert
                 if (this.use == "wall") {
-                    this.x -= interpolateSpeed(delta[1], ACCELERATION_FACTOR) / 200;
-                    this.y -= interpolateSpeed(delta[0], ACCELERATION_FACTOR) / 200;
+                    this.x -= delta[1];
+                    this.y -= delta[0];
                 } else {
-                    this.x -= interpolateSpeed(delta[0], ACCELERATION_FACTOR) / 200;
-                    this.y += interpolateSpeed(delta[1], ACCELERATION_FACTOR) / 200;
+                    this.x -= delta[0];
+                    this.y += delta[1];
                 }
                 this.ReviseCursorPos();
 
@@ -1196,7 +1177,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 var hand = frame.hands[0];
                 var fingers = hand.fingers;
                 var distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
-                if (distanceToThumb > localStorage.handSpan*0.44) {  //heuristics
+                if (distanceToThumb > localStorage.handSpan * 0.44) {  //heuristics
                     this.isDragging = false;
                     isThumbDown = false;
                 }
@@ -1211,6 +1192,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
         } else {
             this.posture = "none";
         }
+        this.lastFrameTimestamp =  frame.timestamp * 0.001;
     }
 }
 
