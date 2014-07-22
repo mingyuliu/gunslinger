@@ -1021,7 +1021,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
         var gain = (cdMax - cdMin) / (1 + Math.exp(-lambda * (vel - vel_inf))) + cdMin;
         tipVelocity[0] *= gain;
         tipVelocity[1] *= gain;
-        console.log(vel);
+//        console.log(vel);
     }
 
 
