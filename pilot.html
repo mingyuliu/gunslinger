@@ -150,7 +150,7 @@ function canvasApp() {
         leapDeviceMgr.start();
 //        leapDeviceMgr.showVerboseInfo();
 //        $(".knob").ccountdown(2015,8,25,'18:00'); //only need to pass target date and time
-//        leapDeviceMgr.showVerboseInfo();
+        leapDeviceMgr.showVerboseInfo();
         initFileSystem();
         initSoundJS();
     }
@@ -355,6 +355,7 @@ function canvasApp() {
     }
 
     function handleAnimation(controls) {
+//        console.log("posture: "+controls.posture);
         switch (controls.posture) {
             case "+thu+ind":
                 var cursorX = controls.x;
@@ -452,6 +453,8 @@ function canvasApp() {
                         clickTimeout = true;
                     }, 200);
                 }
+                controls.cursorEvent = "none";
+
                 break;
             case "clickdown":
                 if (clickTimeout) {
@@ -469,6 +472,7 @@ function canvasApp() {
                     createjs.Sound.play("assets/clickdown.wav");
 
                     records.push(record);
+                    controls.cursorEvent = "none";
                 }
         }
     }

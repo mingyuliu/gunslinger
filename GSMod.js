@@ -6,16 +6,16 @@ var NB_FINGER_WEIGHT = 0.30;
 var GESTURE_ICON_SIZE = 120;
 var SCALE_RATIO = 1.5;
 var FINGER_RENDER_MODE = 0;
-var isVerboseInfoShonw = false;
+var isVerboseInfoShonw = true;
 
-var SCALE_TO_PIXEL = 200/57;
-var SHRINK_RATIO = 541/1900;
+var SCALE_TO_PIXEL = 200 / 57;
+var SHRINK_RATIO = 541 / 1900;
 
 //CD Gain Config
 var vMin = 15,
     vMax = 600,
     cdMin = 0.25,
-    cdMax = 1900/80,
+    cdMax = 1900 / 80,
     ratio_inf = 0.5,
     lambda = 4 / (vMax - vMin),
     vel_inf = ratio_inf * (vMax - vMin) + vMin;
@@ -885,7 +885,7 @@ function quanAnalyzer(tag) {
             // Weighted sum (I suggest starting with all the weights at .33 and see what happens)
             // I'm assuming that .val is the final score and that lower is better
             this._list[p].val = ordinalDistance * ORDINAL_DISTANCE_WEIGHT + thumbTipDistance * THUMB_TIP_WEIGHT + nbDigitDistance * NB_FINGER_WEIGHT;
-            distanceStr += this._gestures[p].type + "\t\tordinal: " + ordinalDistance.toFixed(3) + " thumb: " + thumbTipDistance.toFixed(3) + " digit: " + nbDigitDistance.toFixed(3) + "<br />";
+//            distanceStr += this._gestures[p].type + "\t\tordinal: " + ordinalDistance.toFixed(3) + " thumb: " + thumbTipDistance.toFixed(3) + " digit: " + nbDigitDistance.toFixed(3) + "<br />";
         }
         if (isVerboseInfoShonw) {
 
@@ -899,13 +899,35 @@ function quanAnalyzer(tag) {
                     }
 
                     var distanceToThumb;
-                    distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
-                    distanceStr += "thumbTip to palmCtr: " + distanceToThumb.toFixed(2) + "<br />";
 
                     distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, fingers[1].mcpPosition);
                     distanceStr += "thumbTip to indexMcp: " + distanceToThumb.toFixed(2) + "<br />";
+                    distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
+                    distanceStr += "thumbTip to palmCtr: " + distanceToThumb.toFixed(2) + "<br />";
 
 //                    distanceStr += "pinch:" + hand.pitch()+" roll:"+hand.roll();
+                    //Angle difference
+                    var angle = this.angleBtLines([0, 0, -1], [hand.direction[0], 0, hand.direction[2]]);
+
+                    if (hand.direction[0] < 0) {
+                        angle = -angle;
+                    }
+
+                    distanceStr += "vel: " + vec3.len(fingers[0].tipVelocity).toFixed(2) + "<br />";
+                    distanceStr += "hand roll: " + hand.roll().toFixed(2) + "<br />";
+                    distanceStr += "hand pitch: " + hand.pitch().toFixed(2) + "<br />";
+
+                    var modelView = mat4.create();
+                    mat4.identity(modelView); // Set to identity
+                    mat4.rotateY(modelView, modelView, Math.PI * angle / 180);
+                    mat4.rotateZ(modelView, modelView, -hand.roll().toFixed(2));
+                    mat4.rotateX(modelView, modelView, -hand.pitch().toFixed(2));
+                    var distanceVec = vec3.create();
+                    vec3.sub(distanceVec, fingers[0].tipPosition, hand.palmPosition);
+                    vec3.transformMat4(distanceVec, distanceVec, modelView);
+
+                    distanceStr += "thumb distance: " + distanceVec[0] + "<br />";
+//                    console.log("dis:"+Leap.vec3.str(distanceVec));
 
                     frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:right; padding:5px; position:absolute; top:10px; right:10px'>" + distanceStr + "</div>";
                     break;
@@ -988,17 +1010,18 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.lastFrameTimestamp = 0;
 
     this.setCursorState = function (state) {
+
         switch (state) {
             case "active":
                 if (this.cursorState == "down" || this.cursorState == "dragging") {
-                    this.cursorEvent = "clickup";
+                    this.cursorEvent = this.cursorEvent == "none" ? "clickup" : "none";
                 } else {
                     this.cursorEvent = "none";
                 }
                 break;
             case "down":
                 if (this.cursorState == "active") {
-                    this.cursorEvent = "clickdown";
+                    this.cursorEvent = this.cursorEvent == "none" ? "clickdown" : "none";
                 } else {
                     this.cursorEvent = "none";
                 }
@@ -1007,12 +1030,14 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 this.cursorEvent = "dragging";
                 break;
             case "none":
+//                this.posture = "none";
                 this.cursorEvent = "none";
                 break;
             default:
                 this.cursorEvent = "none";
                 break;
         }
+
         this.cursorState = state;
     }
 
@@ -1021,12 +1046,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
         var gain = (cdMax - cdMin) / (1 + Math.exp(-lambda * (vel - vel_inf))) + cdMin;
         tipVelocity[0] *= gain;
         tipVelocity[1] *= gain;
-        console.log(vel);
     }
-
-
-
-
 
 
     function angleBtLines(v1, v2) {
@@ -1118,75 +1138,89 @@ function Controls(tag_, screenWid_, screenHeight_) {
         }
     }
 
+    this.updateDistance = function (distance) {
+        var startPoint = -75,
+            endPoint = -8;
+        var w_active = 1 / 4,
+            w_down = 1 /  2,
+            w_none = 1 / 4,
+            w_fuzzyRange = 0.5;
+        var range = endPoint - startPoint;
+
+        switch (this.cursorState) {
+            case "active":
+                if (distance > (startPoint + range * w_active +range*w_active* w_fuzzyRange)) {
+                    this.setCursorState("down");
+                }
+                break;
+            case "down":
+                if (distance > (startPoint + range * (w_active+w_down) + range * w_down * w_fuzzyRange)) {
+                    this.setCursorState("none");
+                } else if (distance < (startPoint + range * w_active - range * w_down * w_fuzzyRange)) {
+                    this.setCursorState("active");
+                }
+                break;
+            case "none":
+                if (distance < (endPoint - range * w_none-range*w_none * w_fuzzyRange)) {
+                    this.setCursorState("down");
+                }
+                break;
+
+        }
+
+
+    }
 
     this.update = function (posture, frame) {
         this.posture = posture;
         this.timestamp = frame.timestamp * 0.001;
         if (frame.hands[0] != undefined) {
+            var hand = frame.hands[0];
+            var fingers = hand.fingers;
             this.tipPosition = frame.hands[0].fingers[1].tipPosition;
 
-            if (posture == "+thu+ind") {
-                var velraw = [frame.hands[0].fingers[1].tipVelocity[0], frame.hands[0].fingers[1].tipVelocity[1]];
-                if (vec2.len(velraw) < 5) {
-                    velraw = [0, 0];
+            if (posture == "+thu+ind" || posture == "+ind") {
+
+
+                var angle = angleBtLines([0, 0, -1], [hand.direction[0], 0, hand.direction[2]]);
+                if (hand.direction[0] < 0) {
+                    angle = -angle;
                 }
+
+                var modelView = mat4.create();
+                mat4.identity(modelView); // Set to identity
+                mat4.rotateY(modelView, modelView, Math.PI * angle / 180);
+                mat4.rotateZ(modelView, modelView, -hand.roll().toFixed(2));
+                mat4.rotateX(modelView, modelView, -hand.pitch().toFixed(2));
+                var distanceVec = vec3.create();
+                vec3.sub(distanceVec, fingers[0].tipPosition, hand.palmPosition);
+                vec3.transformMat4(distanceVec, distanceVec, modelView);
+
+                this.updateDistance(distanceVec[0]);
+
+                if (this.cursorState != "none") {
+                    var velraw = [frame.hands[0].fingers[1].tipVelocity[0], frame.hands[0].fingers[1].tipVelocity[1]];
+                    if (vec2.len(velraw) < 5) {
+                        velraw = [0, 0];
+                    }
 //                console.log("before:"+velraw);
 //                var delta = [this.fx.filter(velraw[0], this.timestamp), this.fy.filter(velraw[1], this.timestamp)];
-                var delta = [velraw[0], velraw[1]];
-                CDGainTransfer(delta);
-                vec2.scale(delta, delta, (this.timestamp - this.lastFrameTimestamp) * 0.001 * SCALE_TO_PIXEL);
+                    var delta = [velraw[0], velraw[1]];
+                    CDGainTransfer(delta);
+                    vec2.scale(delta, delta, (this.timestamp - this.lastFrameTimestamp) * 0.001 * SCALE_TO_PIXEL);
 //                console.log("after:" + delta);
 
-                //#convert
-                if (this.use == "wall") {
-                    this.x -= delta[1];
-                    this.y -= delta[0];
-                } else {
-                    this.x -= delta[0];
-                    this.y += delta[1];
-                }
-                this.ReviseCursorPos();
-
-                var clickDownValue = quantitativeAnalysisVel(frame.hands[0], frame.hands[0].fingers[0], "clickdown");
-                var clickUpValue = quantitativeAnalysisVel(frame.hands[0], frame.hands[0].fingers[0], "clickup");
-
-
-                if (clickUpValue < TRESH_CLICKING[0]) {
-                    if (isThumbDown) {
-                        isThumbDown = false;
-                        this.setCursorState("active");
-                        this.isDragging = false;
+                    //#convert
+                    if (this.use == "wall") {
+                        this.x -= delta[1];
+                        this.y -= delta[0];
+                    } else {
+                        this.x -= delta[0];
+                        this.y += delta[1];
                     }
-                } else if (clickDownValue < TRESH_CLICKING[0]) {
-                    if (!isThumbDown) {
-                        this.isDragging = false;
-                        var _this = this;
-                        setTimeout(function () {
-                            _this.isDragging = true;
-
-                        }, 500); //# drag time
-                    }
-                    isThumbDown = true;
-                    this.setCursorState("down");
-
-                } else {
-
-                    if (!isThumbDown) {
-                        this.isDragging = false;
-                        this.setCursorState("active");
-                    }
-
+                    this.ReviseCursorPos();
                 }
-                var hand = frame.hands[0];
-                var fingers = hand.fingers;
-                var distanceToThumb = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
-                if (distanceToThumb > localStorage.handSpan * 0.44) {  //heuristics
-                    this.isDragging = false;
-                    isThumbDown = false;
-                }
-                if (this.isDragging && isThumbDown) {
-                    this.setCursorState("dragging");
-                }
+
             } else {
                 this.setCursorState("none");
                 isThumbDown = false;
@@ -1195,7 +1229,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
         } else {
             this.posture = "none";
         }
-        this.lastFrameTimestamp =  frame.timestamp * 0.001;
+        this.lastFrameTimestamp = frame.timestamp * 0.001;
     }
 }
 
