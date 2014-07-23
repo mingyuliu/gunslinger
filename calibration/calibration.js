@@ -1,3 +1,19 @@
+function angleBtLines(v1, v2) {
+    var m1, n1, p1, m2, n2, p2;
+
+    m1 = v1[0];
+    n1 = v1[1];
+    p1 = v1[2];
+
+
+    m2 = v2[0];
+    n2 = v2[1];
+    p2 = v2[2];
+
+    var cos = (m1 * m2 + n1 * n2 + p1 * p2) / (Math.sqrt(m1 * m1 + n1 * n1 + p1 * p1) * Math.sqrt(m2 * m2 + n2 * n2 + p2 * p2));
+    return Math.acos(cos) * 180.0 / Math.PI;
+};
+
 var calibrator = (function() {
     var data = [];
     var types = [];
@@ -39,6 +55,37 @@ var calibrator = (function() {
                         thumbDist = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
                         console.log(thumbDist);
                         data.push(new Gesture(types[currentIndex], extended, thumbDist));
+                        if(types[currentIndex] == "+ind") {
+                            var angle = angleBtLines([0, 0, -1], [hand.direction[0], 0, hand.direction[2]]);
+
+                            if (hand.direction[0] < 0) {
+                                angle = -angle;
+                            }
+                            var modelView = mat4.create();
+                            mat4.identity(modelView); // Set to identity
+                            mat4.rotateY(modelView, modelView, Math.PI * angle / 180);
+                            mat4.rotateZ(modelView, modelView, -hand.roll().toFixed(2));
+                            mat4.rotateX(modelView, modelView, -hand.pitch().toFixed(2));
+                            var distanceVec = vec3.create();
+                            vec3.sub(distanceVec, fingers[0].tipPosition, hand.palmPosition);
+                            vec3.transformMat4(distanceVec, distanceVec, modelView);
+                            localStorage.thumbBent = distanceVec[0];
+                        } else if (types[currentIndex] == "+thu+ind") {
+                            var angle = angleBtLines([0, 0, -1], [hand.direction[0], 0, hand.direction[2]]);
+
+                            if (hand.direction[0] < 0) {
+                                angle = -angle;
+                            }
+                            var modelView = mat4.create();
+                            mat4.identity(modelView); // Set to identity
+                            mat4.rotateY(modelView, modelView, Math.PI * angle / 180);
+                            mat4.rotateZ(modelView, modelView, -hand.roll().toFixed(2));
+                            mat4.rotateX(modelView, modelView, -hand.pitch().toFixed(2));
+                            var distanceVec = vec3.create();
+                            vec3.sub(distanceVec, fingers[0].tipPosition, hand.palmPosition);
+                            vec3.transformMat4(distanceVec, distanceVec, modelView);
+                            localStorage.thumbExtended = distanceVec[0];
+                        }
                         currentIndex++;
                         if (currentIndex < types.length) {
                             stepsEl.innerHTML = (currentIndex + 1) + "/" + (types.length);
