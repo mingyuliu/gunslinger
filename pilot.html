@@ -68,12 +68,33 @@
 
 
 $(document).keyup(function (event) {
+    console.log(event.which)
     switch (event.which) {
-        case 84: //"t" toggle cursor view
-            FINGER_RENDER_MODE = (FINGER_RENDER_MODE + 1) % 2;
+        case 84: //"t" toggle leapDevice
+            //FINGER_RENDER_MODE = (FINGER_RENDER_MODE + 1) % 2;
+            toggleTechnique();
             break;
+        case 83: //"s"
+
+            leapDeviceMgr.enableDeviceByTag("right");
+            break;
+        case 80: // "p"
+            leapDeviceMgr.disableDeviceByTag("right");
+            break
     }
 });
+
+function toggleTechnique() {
+    if (isDownMode) {
+        leapDeviceMgr.disableDeviceByTag("rightFront");
+        leapDeviceMgr.enableDeviceByTag("right");
+
+    } else {
+        leapDeviceMgr.disableDeviceByTag("right");
+        leapDeviceMgr.enableDeviceByTag("rightFront");
+    }
+    isDownMode = !isDownMode;
+}
 
 
 function canvasSupport() {
@@ -102,6 +123,7 @@ var isInputValid = false;
 var isCursorDown = false;
 var sections = [];
 var clickTimeout = true;
+var isDownMode = true;
 
 var records = [];
 function canvasApp() {
@@ -146,8 +168,9 @@ function canvasApp() {
 
         leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
         leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
-        // leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_LEFT, leftOnFrame);
+//        leapDeviceMgr.addDevice("192.168.20.128", "rightFront", GESTURE_ALL_RIGHT, rightOnFrame);
         leapDeviceMgr.start();
+//        leapDeviceMgr.disableDeviceByTag("right");
 //        leapDeviceMgr.showVerboseInfo();
 //        $(".knob").ccountdown(2015,8,25,'18:00'); //only need to pass target date and time
 

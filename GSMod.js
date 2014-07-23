@@ -681,6 +681,7 @@ var leapDeviceMgr = (function () {
             useAllPlugins: true
         });
 
+        controller.valid = true;
         controller.tag = tag;
         controller.gestureList = gestureList;
         controller.analyzer = new quanAnalyzer(tag);
@@ -706,7 +707,7 @@ var leapDeviceMgr = (function () {
             _controllers[i].loop(function (frame) {
                 //for test gui
 
-
+                if(!this.valid) return;
                 //Filter out folded fingers
                 filterFingers(frame, this.tag);
 
@@ -737,6 +738,27 @@ var leapDeviceMgr = (function () {
         return _controllers[controllerIndex];
     };
 
+    api.disableDeviceByTag = function (tag_) {
+        var len = _controllers.length;
+        while(len--) {
+            if(_controllers[len].tag == tag_) {
+                _controllers[len].valid = false;
+                break;
+            }
+        }
+    };
+
+    api.enableDeviceByTag = function (tag_) {
+        var len = _controllers.length;
+        while(len--) {
+            if(_controllers[len].tag == tag_) {
+                _controllers[len].valid = true;
+                break;
+            }
+        }
+    };
+
+
     return api;
 })();
 
@@ -752,7 +774,9 @@ function quanAnalyzer(tag) {
             break;
         case "left":
             this._gestures = JSON.parse(localStorage.leftGestures);
-
+            break;
+        case "rightFront":
+            this._gestures = JSON.parse(localStorage.rightGestures);
             break;
     }
     for (var i = 0; i < this._gestures.length; i++) {
@@ -1027,7 +1051,8 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.valid = false;
     this.posture = "none";
     this.use = GetURLParameter("use");
-    
+    this.thumbExtended = Number(localStorage.thumbExtended)*.92 || -75;
+    this.thumbBent = Number(localStorage.thumbBent) || -10;
     this.fx = OneEuroFilter(freq, mincutoff, beta, dcutoff);
     this.fy = OneEuroFilter(freq, mincutoff, beta, dcutoff);
     this.cursorState = "none";
@@ -1113,29 +1138,28 @@ function Controls(tag_, screenWid_, screenHeight_) {
     }
 
     this.updateDistance = function (distance) {
-        var startPoint = -75,
-            endPoint = -8;
+
         var w_active = 1 / 4,
             w_down = 1 / 2,
             w_none = 1 / 4,
             w_fuzzyRange = 0.2;
-        var range = endPoint - startPoint;
+        var range = this.thumbBent - this.thumbExtended;
 
         switch (this.cursorState) {
             case "active":
-                if (distance > (startPoint + range * w_active + range * w_active * w_fuzzyRange)) {
+                if (distance > (this.thumbExtended + range * w_active + range * w_active * w_fuzzyRange)) {
                     this.setCursorState("down");
                 }
                 break;
             case "down":
-                if (distance > (startPoint + range * (w_active + w_down) + range * w_down * w_fuzzyRange)) {
+                if (distance > (this.thumbExtended + range * (w_active + w_down) + range * w_down * w_fuzzyRange)) {
                     this.setCursorState("none");
-                } else if (distance < (startPoint + range * w_active - range * w_down * w_fuzzyRange)) {
+                } else if (distance < (this.thumbExtended + range * w_active - range * w_down * w_fuzzyRange)) {
                     this.setCursorState("active");
                 }
                 break;
             case "none":
-                if (distance < (endPoint - range * w_none - range * w_none * w_fuzzyRange)) {
+                if (distance < (this.thumbBent - range * w_none - range * w_none * w_fuzzyRange)) {
                     this.setCursorState("down");
                 }
                 break;
