@@ -707,7 +707,7 @@ var leapDeviceMgr = (function () {
             _controllers[i].loop(function (frame) {
                 //for test gui
 
-                if(!this.valid) return;
+                if (!this.valid) return;
                 //Filter out folded fingers
                 filterFingers(frame, this.tag);
 
@@ -740,8 +740,8 @@ var leapDeviceMgr = (function () {
 
     api.disableDeviceByTag = function (tag_) {
         var len = _controllers.length;
-        while(len--) {
-            if(_controllers[len].tag == tag_) {
+        while (len--) {
+            if (_controllers[len].tag == tag_) {
                 _controllers[len].valid = false;
                 break;
             }
@@ -750,8 +750,8 @@ var leapDeviceMgr = (function () {
 
     api.enableDeviceByTag = function (tag_) {
         var len = _controllers.length;
-        while(len--) {
-            if(_controllers[len].tag == tag_) {
+        while (len--) {
+            if (_controllers[len].tag == tag_) {
                 _controllers[len].valid = true;
                 break;
             }
@@ -1046,12 +1046,12 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.tag = tag_;
     this.screenHeight = screenHeight_;
     this.screenWidth = screenWid_;
-    this.x = 0;
-    this.y = 0;
+    this.x = screenWid_ / 2;
+    this.y = screenHeight_ / 2;
     this.valid = false;
     this.posture = "none";
     this.use = GetURLParameter("use");
-    this.thumbExtended = Number(localStorage.thumbExtended)*.92 || -75;
+    this.thumbExtended = Number(localStorage.thumbExtended) * .92 || -75;
     this.thumbBent = Number(localStorage.thumbBent) || -10;
     this.fx = OneEuroFilter(freq, mincutoff, beta, dcutoff);
     this.fy = OneEuroFilter(freq, mincutoff, beta, dcutoff);
@@ -1089,7 +1089,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
 
                 this.cursorEvent = "none";
 
-                this.posture = "none";
+                this.posture = "+ind";
                 break;
             default:
                 this.cursorEvent = "none";
@@ -1142,7 +1142,9 @@ function Controls(tag_, screenWid_, screenHeight_) {
         var w_active = 1 / 4,
             w_down = 1 / 2,
             w_none = 1 / 4,
-            w_fuzzyRange = 0.2;
+            w_fuzzyRange = 0.15;
+        var w_fuzzyRangeNone = 0.20;
+
         var range = this.thumbBent - this.thumbExtended;
 
         switch (this.cursorState) {
@@ -1159,13 +1161,16 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 }
                 break;
             case "none":
-                if (distance < (this.thumbBent - range * w_none - range * w_none * w_fuzzyRange)) {
+                if (distance < (this.thumbExtended + range * w_active)) {
                     this.setCursorState("down");
                 }
                 break;
 
         }
+        if (this.cursorState == "none") {
+            this.posture = "+ind";
 
+        }
 
     }
 
