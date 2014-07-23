@@ -507,6 +507,10 @@ function canvasApp() {
     }
 
     function Record(timestamp_, posture_, tipPosition_, block_, set_, target_, targetSize_, distance_, targetX_, targetY_, cursorX_, cursorY_, isHit_, cursorEvent_) {
+        cursorX_ /= (SCALE_TO_PIXEL*SHRINK_RATIO);
+        cursorY_ /= (SCALE_TO_PIXEL*SHRINK_RATIO);
+
+        SHRINK_RATIO
         this.timestamp = timestamp_;
         this.posture = posture_;
         this.tipPosition = tipPosition_;
@@ -517,8 +521,8 @@ function canvasApp() {
         this.targetY = targetY_;
         this.targetSize = targetSize_;
         this.distance = distance_;
-        this.cursorX = cursorX_;
-        this.cursorY = cursorY_;
+        this.cursorX = cursorX_.toFixed(2);
+        this.cursorY = cursorY_.toFixed(2);
         this.isHit = isHit_;
         this.cursorEvent = cursorEvent_;
     }
