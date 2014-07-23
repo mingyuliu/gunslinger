@@ -134,6 +134,8 @@ function canvasApp() {
     var theCanvas = document.getElementById("canvasOne");
     var context = theCanvas.getContext("2d");
 
+    var cursorIdleTimeout = false;
+
     init();
 
 
@@ -391,6 +393,8 @@ function canvasApp() {
                 ctx.stroke();
 
 
+                window.clearTimeout(cursorIdleTimeout);
+                cursorIdleTimeout = false;
                 break;
             case "+ind":
                 var cursorX = controls.x;
@@ -402,7 +406,12 @@ function canvasApp() {
                 ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * scaleFactor, 0, 2 * Math.PI);
                 ctx.fill();
 
-                isCursorDown = false;
+                if (!cursorIdleTimeout) {
+                    cursorIdleTimeout = setTimeout(function () {
+                        isCursorDown = false;
+                    }, 200);
+                }
+
                 break;
         }
     }
@@ -443,7 +452,7 @@ function canvasApp() {
                     clickTimeout = false;
                     setTimeout(function () {
                         clickTimeout = true;
-                    }, 200);
+                    }, 50);
                     isCursorDown = false;
                 }
                 controls.cursorEvent = "none";
