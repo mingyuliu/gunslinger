@@ -8,11 +8,10 @@ var SCALE_RATIO = 1.5;
 var FINGER_RENDER_MODE = 0;
 var isVerboseInfoShonw = false;
 
-var SCALE_TO_PIXEL = 200 / 57;
-//var SCALE_TO_PIXEL = 40 / 53;
+
+//screen
 var SHRINK_RATIO = 541 / 1900;
-//var SHRINK_RATIO = 541 / 1900;?
-//var SHRINK_RATIO = 1;
+var SCALE_TO_PIXEL = 200 / 57;
 
 //CD Gain Config
 var vMin = 15,
@@ -22,6 +21,11 @@ var vMin = 15,
     ratio_inf = 0.5,
     lambda = 4 / (vMax - vMin),
     vel_inf = ratio_inf * (vMax - vMin) + vMin;
+
+var freq = 60,
+    mincutoff = 0.5,
+    beta = 0.8,
+    dcutoff = 0.3;
 
 var leapDeviceMgr = (function () {
 
@@ -1038,11 +1042,6 @@ function quanAnalyzer(tag) {
 }
 
 function Controls(tag_, screenWid_, screenHeight_) {
-    var freq = 100,
-        mincutoff = 1,
-        beta = 1,
-        dcutoff = 3;
-
     this.tag = tag_;
     this.screenHeight = screenHeight_;
     this.screenWidth = screenWid_;
@@ -1063,6 +1062,11 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.isDragging = false;
     this.timestamp = 0;
     this.lastFrameTimestamp = 0;
+    if (this.use == "wall") {
+        //wall
+        SCALE_TO_PIXEL = 40 / 53;
+        SHRINK_RATIO = 1;
+    }
 
 
     this.setCursorState = function (state) {
@@ -1143,20 +1147,20 @@ function Controls(tag_, screenWid_, screenHeight_) {
             w_down = 1 / 2,
             w_none = 1 / 4,
             w_fuzzyRange = 0.15;
-        var w_fuzzyRangeNone = 0.20;
+        var w_fuzzyRangeActive = 0.10;
 
         var range = this.thumbBent - this.thumbExtended;
 
         switch (this.cursorState) {
             case "active":
-                if (distance > (this.thumbExtended + range * w_active + range * w_active * w_fuzzyRange)) {
+                if (distance > (this.thumbExtended + range * w_active + range * w_active * w_fuzzyRangeActive)) {
                     this.setCursorState("down");
                 }
                 break;
             case "down":
                 if (distance > (this.thumbExtended + range * (w_active + w_down) + range * w_down * w_fuzzyRange)) {
                     this.setCursorState("none");
-                } else if (distance < (this.thumbExtended + range * w_active - range * w_down * w_fuzzyRange)) {
+                } else if (distance < (this.thumbExtended + range * w_active - range * w_down * w_fuzzyRangeActive)) {
                     this.setCursorState("active");
                 }
                 break;
@@ -1203,13 +1207,19 @@ function Controls(tag_, screenWid_, screenHeight_) {
 
                 if (this.posture == "+thu+ind") {
                     var velraw = [frame.hands[0].fingers[1].tipVelocity[0], frame.hands[0].fingers[1].tipVelocity[1]];
-                    if (vec2.len(velraw) < 5) {
+                    if (vec2.len(velraw) < 15) {
                         velraw = [0, 0];
                     }
 //                console.log("before:"+velraw);
-//                var delta = [this.fx.filter(velraw[0], this.timestamp), this.fy.filter(velraw[1], this.timestamp)];
-                    var delta = [velraw[0], velraw[1]];
+                    var delta = [this.fx.filter(velraw[0], this.timestamp * 0.001), this.fy.filter(velraw[1], this.timestamp * 0.001)];
+//                    var delta = [velraw[0], velraw[1]];
                     CDGainTransfer(delta);
+                    if (this.use == "wall") {  //scale cdgain
+                        vec2.scale(delta, delta, 1 / (800 / 1900));
+                    }
+                    if (this.cursorState == "down") {
+                        vec2.scale(delta, delta, 0.4);
+                    }
                     vec2.scale(delta, delta, (this.timestamp - this.lastFrameTimestamp) * 0.001 * SCALE_TO_PIXEL);
 //                console.log("after:" + delta);
 
@@ -1222,6 +1232,9 @@ function Controls(tag_, screenWid_, screenHeight_) {
                         this.y += delta[1];
                     }
                     this.ReviseCursorPos();
+                } else {
+                    this.fx.filter(0, this.timestamp * 0.001);
+                    this.fy.filter(0, this.timestamp * 0.001);
                 }
 
             } else {

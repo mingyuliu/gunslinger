@@ -104,7 +104,7 @@ var ACCELERATION_FACTOR = 3;
 var canvas;
 var ctx;
 var CURSOR_SIZE = 40;
-var scaleFactor = 1; //temporal
+var scaleFactor = 0.6; //temporal
 var distanceAlphaProj = 1;
 var shapeTarget;
 
@@ -281,8 +281,16 @@ function canvasApp() {
         var tempRad;
         var tempColor;
 
+        if (particNote != "practice") {
 
-        tempRad = WIDTH_ORDER[currentWidth] / 2 * SCALE_TO_PIXEL;
+            tempRad = WIDTH_ORDER[currentWidth] / 2 * SCALE_TO_PIXEL;
+        } else {
+            if (Math.random() > .7) {
+                tempRad = WIDTH_ORDER[1] / 2 * SCALE_TO_PIXEL;
+            } else {
+                tempRad = WIDTH_ORDER[2] / 2 * SCALE_TO_PIXEL;
+            }
+        }
 
 //        setTimeout(function(){console.log(sections.length)},3000)
         var blockText = document.getElementById("blocktext");
@@ -410,7 +418,7 @@ function canvasApp() {
                 if (!cursorIdleTimeout) {
                     cursorIdleTimeout = setTimeout(function () {
                         isCursorDown = false;
-                    }, 200);
+                    }, 400);
                 }
 
                 break;
@@ -496,7 +504,7 @@ function canvasApp() {
         //reference rectangle
         var tempShape = new SimpleSquareParticle(120, 120);
         tempShape.color = "rgba(255, 255, 255, 1.0)";
-        tempShape.radius = 20;
+        tempShape.radius = 20 * SCALE_TO_PIXEL;
         tempShape.drawToContext(ctx);
     }
 
@@ -507,8 +515,8 @@ function canvasApp() {
     }
 
     function Record(timestamp_, posture_, tipPosition_, block_, set_, target_, targetSize_, distance_, targetX_, targetY_, cursorX_, cursorY_, isHit_, cursorEvent_) {
-        cursorX_ /= (SCALE_TO_PIXEL*SHRINK_RATIO);
-        cursorY_ /= (SCALE_TO_PIXEL*SHRINK_RATIO);
+        cursorX_ /= (SCALE_TO_PIXEL * SHRINK_RATIO);
+        cursorY_ /= (SCALE_TO_PIXEL * SHRINK_RATIO);
 
         SHRINK_RATIO
         this.timestamp = timestamp_;
