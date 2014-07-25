@@ -21,11 +21,19 @@ var vMin = 15,
     ratio_inf = 0.5,
     lambda = 4 / (vMax - vMin),
     vel_inf = ratio_inf * (vMax - vMin) + vMin;
-
+//OneEuroFilter
 var freq = 60,
     mincutoff = 0.5,
     beta = 0.8,
     dcutoff = 0.3;
+
+//Distance in mm
+var DP_START = 100,
+    DP_END = 290,
+    DP_DANGER_RANGE = 30;
+
+var DV_BOUND = 150,
+    DV_DANGER_RANGE = 40;
 
 var leapDeviceMgr = (function () {
 
@@ -723,14 +731,10 @@ var leapDeviceMgr = (function () {
                 }
 
                 this.controls.update(this.gestureList[this.analyzer.getMinIndex()], frame);
-
                 this.onFrameLoop(this.controls);
 
                 var frameOutput = document.getElementById("frameDataLeft");
-
-
                 frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + fps.getFPS() + "</div>";
-
                 $("#frameDataLeft").show();
             });
 
@@ -1062,12 +1066,41 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.isDragging = false;
     this.timestamp = 0;
     this.lastFrameTimestamp = 0;
+    this.depthVal = 1;
+    this.devianceVal = 1;
     if (this.use == "wall") {
         //wall
-        SCALE_TO_PIXEL = 40 / 53;
+        SCALE_TO_PIXEL = 45 / 53;
         SHRINK_RATIO = 1;
     }
 
+    this.updateRelativeVals = function (palmPos) {
+        var depth = palmPos[1];
+        var deviance = vec2.len([palmPos[0], palmPos[2]]);
+
+        this.depthVal = 1;
+        this.devianceVal = 1;
+        if (depth > DP_END) {
+            var minDp = Math.min(DP_END + DP_DANGER_RANGE, depth);
+            this.depthVal = 1 - (minDp - DP_END) / (DP_DANGER_RANGE * 2);
+        } else if (depth < DP_START) {
+            var maxDP = Math.max(DP_START - DP_DANGER_RANGE, depth);
+            maxDP -= (DP_START - DP_DANGER_RANGE);
+            this.depthVal = 2 - maxDP / (DP_DANGER_RANGE);
+        }
+
+        if (deviance > DV_BOUND) {
+            var minDV = Math.min(DV_BOUND + DV_DANGER_RANGE, deviance);
+            this.devianceVal = 1 - (minDV - DV_BOUND) / (DV_DANGER_RANGE);
+        }
+
+        if (this.depthVal <= 0.5 || this.depthVal >= 1.8) {
+            this.posture = "invalid";
+        } else if (this.devianceVal <= 0.3) {
+            this.posture = "invalid";
+        }
+
+    }
 
     this.setCursorState = function (state) {
 
@@ -1090,14 +1123,11 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 this.cursorEvent = "dragging";
                 break;
             case "none":
-
                 this.cursorEvent = "none";
+                if (this.posture != "invalid")
+                    this.posture = "+ind";
+                break;
 
-                this.posture = "+ind";
-                break;
-            default:
-                this.cursorEvent = "none";
-                break;
         }
 
         this.cursorState = state;
@@ -1173,7 +1203,6 @@ function Controls(tag_, screenWid_, screenHeight_) {
         }
         if (this.cursorState == "none") {
             this.posture = "+ind";
-
         }
 
     }
@@ -1183,10 +1212,11 @@ function Controls(tag_, screenWid_, screenHeight_) {
         this.timestamp = frame.timestamp * 0.001;
         if (frame.hands[0] != undefined) {
             var hand = frame.hands[0];
+            this.updateRelativeVals(hand.palmPosition);
             var fingers = hand.fingers;
             this.tipPosition = frame.hands[0].fingers[1].tipPosition;
 
-            if (posture == "+thu+ind" || posture == "+ind") {
+            if (this.posture == "+thu+ind" || this.posture == "+ind") {
 
 
                 var angle = angleBtLines([0, 0, -1], [hand.direction[0], 0, hand.direction[2]]);
@@ -1207,9 +1237,14 @@ function Controls(tag_, screenWid_, screenHeight_) {
 
                 if (this.posture == "+thu+ind") {
                     var velraw = [frame.hands[0].fingers[1].tipVelocity[0], frame.hands[0].fingers[1].tipVelocity[1]];
-                    if (vec2.len(velraw) < 15) {
+                    if (vec2.len(velraw) < 10) {
                         velraw = [0, 0];
+                    } else if (vec2.len(velraw) < 15) {
+                        vec2.scale(velraw, velraw, 0.4);
                     }
+                    //compare vel
+
+
 //                console.log("before:"+velraw);
                     var delta = [this.fx.filter(velraw[0], this.timestamp * 0.001), this.fy.filter(velraw[1], this.timestamp * 0.001)];
 //                    var delta = [velraw[0], velraw[1]];

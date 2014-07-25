@@ -13,25 +13,25 @@
 // Set 2
 // Activate Task
 (250, 893) // initial pointer position 
-(871,571) // target position (distance 700)
+(1800,100) // target position (distance 350)
 // Sequence Task
-(1182,410) // target position (distance 350)
-(1493,571) // target position (distance 350)
-(93,571) // target position (distance 1400)
-(793,571) // target position (distance 700)
-(1414,248) // target position (distance 700)
-(1103,410) // target position (distance 350)
+(1600,100) // target position (distance 700)
+(1300,100) // target position (distance 700)
+(1000,100) // target position (distance 1400)
+(700,100) // target position (distance 350)
+(100,100) // target position (distance 700)
+(400,100) // target position (distance 350)
 // Set 3
 // Activate Task
 (250, 167) // initial pointer position 
-(1493,812) // target position (distance 1400)
+(1800,100) // target position (distance 1400)
 // Sequence Task
-(1143,812) // target position (distance 350)
-(832,650) // target position (distance 350)
-(211,973) // target position (distance 700)
-(1611,973) // target position (distance 1400)
-(368,328) // target position (distance 1400)
-(1611,973) // target position (distance 1400)
+(1800,300) // target position (distance 350)
+(1800,500) // target position (distance 350)
+(1800,700) // target position (distance 700)
+(1800,900) // target position (distance 1400)
+(100,900) // target position (distance 1400)
+(1800,100) // target position (distance 1400)
 
 // Section
 // Set 1

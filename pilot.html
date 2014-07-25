@@ -103,8 +103,8 @@ function canvasSupport() {
 var ACCELERATION_FACTOR = 3;
 var canvas;
 var ctx;
-var CURSOR_SIZE = 40;
-var scaleFactor = 0.6; //temporal
+var CURSOR_SIZE = 30;
+
 var distanceAlphaProj = 1;
 var shapeTarget;
 
@@ -285,7 +285,7 @@ function canvasApp() {
 
             tempRad = WIDTH_ORDER[currentWidth] / 2 * SCALE_TO_PIXEL;
         } else {
-            if (Math.random() > .7) {
+            if (Math.random() > .4) {
                 tempRad = WIDTH_ORDER[1] / 2 * SCALE_TO_PIXEL;
             } else {
                 tempRad = WIDTH_ORDER[2] / 2 * SCALE_TO_PIXEL;
@@ -348,6 +348,8 @@ function canvasApp() {
 //        console.log("posture: "+controls.posture);
         switch (controls.posture) {
             case "+thu+ind":
+                var depthScale = controls.depthVal;
+                distanceAlphaProj = controls.devianceVal;
                 var cursorX = controls.x;
                 var cursorY = controls.y;
 
@@ -371,21 +373,21 @@ function canvasApp() {
                 }
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
-                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * scaleFactor, 0, 2 * Math.PI);
+                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * depthScale, 0, 2 * Math.PI);
                 ctx.fill();
 //                ctx.beginPath();
 //                ctx.fillStyle = "rgba(255,0,0,0.5)";
 //                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, 2, 0, 2 * Math.PI);
 //                ctx.fill();
                 ctx.strokeStyle = "rgba(0,0,0," + distanceAlphaProj + ")";
-                ctx.lineWidth = 8 * scaleFactor;
+                ctx.lineWidth = 8 * depthScale;
                 ctx.beginPath();
-                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * scaleFactor, 0, 2 * Math.PI);
+                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * depthScale, 0, 2 * Math.PI);
                 ctx.stroke();
 
-                var targetSize = 6 * scaleFactor;
-                var lineLen = 60 * scaleFactor;
-                ctx.lineWidth = 4 * scaleFactor;
+                var targetSize = 6 * depthScale;
+                var lineLen = 50 * depthScale;
+                ctx.lineWidth = 4 * depthScale;
                 ctx.beginPath();
 
                 ctx.moveTo(-cursorX + canvasWidth, -cursorY + canvasHeight + targetSize);
@@ -406,13 +408,17 @@ function canvasApp() {
                 cursorIdleTimeout = false;
                 break;
             case "+ind":
+                distanceAlphaProj = controls.devianceVal;
+
+                var depthScale = controls.depthVal;
+
                 var cursorX = controls.x;
                 var cursorY = controls.y;
                 ctx.fillStyle = "rgba(0,0,0," + distanceAlphaProj + ")";
                 ctx.shadowBlur = 20;
                 ctx.shadowColor = '#999';
                 ctx.beginPath();
-                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * scaleFactor, 0, 2 * Math.PI);
+                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * depthScale, 0, 2 * Math.PI);
                 ctx.fill();
 
                 if (!cursorIdleTimeout) {
@@ -497,14 +503,42 @@ function canvasApp() {
         }
     }
 
+    function handleInvalidAnimation(controls) {
+        var depthScale = controls.depthVal;
+        var cursorX = controls.x;
+        var cursorY = controls.y;
+
+        ctx.fillStyle = "rgba(84,84,84,0.4)";
+
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * depthScale, 0, 2 * Math.PI);
+        ctx.fill();
+//                ctx.beginPath();
+//                ctx.fillStyle = "rgba(255,0,0,0.5)";
+//                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, 2, 0, 2 * Math.PI);
+//                ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0," + distanceAlphaProj + ")";
+        ctx.lineWidth = 8 * depthScale;
+        ctx.beginPath();
+        ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * depthScale, 0, 2 * Math.PI);
+        ctx.stroke();
+
+
+    }
+
     function rightOnFrame(controls) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        handleAnimation(controls);
-        handleEvent(controls);
+        if (controls.posture == "invalid") {
+            handleInvalidAnimation(controls);
+        } else {
+            handleAnimation(controls);
+            handleEvent(controls);
+        }
         //reference rectangle
         var tempShape = new SimpleSquareParticle(120, 120);
         tempShape.color = "rgba(255, 255, 255, 1.0)";
-        tempShape.radius = 20 * SCALE_TO_PIXEL;
+        tempShape.radius = 10 * SCALE_TO_PIXEL;
         tempShape.drawToContext(ctx);
     }
 
