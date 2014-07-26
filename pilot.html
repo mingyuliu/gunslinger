@@ -380,7 +380,7 @@ function canvasApp() {
 //                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, 2, 0, 2 * Math.PI);
 //                ctx.fill();
                 ctx.strokeStyle = "rgba(0,0,0," + distanceAlphaProj + ")";
-                ctx.lineWidth = 8 * depthScale;
+                ctx.lineWidth = 6 * depthScale;
                 ctx.beginPath();
                 ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * depthScale, 0, 2 * Math.PI);
                 ctx.stroke();
@@ -424,7 +424,7 @@ function canvasApp() {
                 if (!cursorIdleTimeout) {
                     cursorIdleTimeout = setTimeout(function () {
                         isCursorDown = false;
-                    }, 400);
+                    }, 600);
                 }
 
                 break;
@@ -519,7 +519,7 @@ function canvasApp() {
 //                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, 2, 0, 2 * Math.PI);
 //                ctx.fill();
         ctx.strokeStyle = "rgba(0,0,0," + distanceAlphaProj + ")";
-        ctx.lineWidth = 8 * depthScale;
+        ctx.lineWidth = 6 * depthScale;
         ctx.beginPath();
         ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * depthScale, 0, 2 * Math.PI);
         ctx.stroke();

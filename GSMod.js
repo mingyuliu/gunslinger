@@ -14,9 +14,9 @@ var SHRINK_RATIO = 541 / 1900;
 var SCALE_TO_PIXEL = 200 / 57;
 
 //CD Gain Config
-var vMin = 15,
+var vMin = 10,
     vMax = 600,
-    cdMin = 0.25,
+    cdMin = 0.2,
     cdMax = 1900 / 80,
     ratio_inf = 0.5,
     lambda = 4 / (vMax - vMin),
@@ -28,12 +28,14 @@ var freq = 60,
     dcutoff = 0.3;
 
 //Distance in mm
-var DP_START = 100,
-    DP_END = 290,
+var DP_START = 110,
+    DP_END = 270,
     DP_DANGER_RANGE = 30;
 
-var DV_BOUND = 150,
-    DV_DANGER_RANGE = 40;
+
+var DV_DANGER_RANGE = 40,
+    DV_RATIO = 0.8,
+    DV_BOUND = 0.3;
 
 var leapDeviceMgr = (function () {
 
@@ -735,6 +737,7 @@ var leapDeviceMgr = (function () {
 
                 var frameOutput = document.getElementById("frameDataLeft");
                 frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + fps.getFPS() + "</div>";
+//                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + this.controls.devianceVal + "</div>";
                 $("#frameDataLeft").show();
             });
 
@@ -1089,14 +1092,17 @@ function Controls(tag_, screenWid_, screenHeight_) {
             this.depthVal = 2 - maxDP / (DP_DANGER_RANGE);
         }
 
-        if (deviance > DV_BOUND) {
-            var minDV = Math.min(DV_BOUND + DV_DANGER_RANGE, deviance);
-            this.devianceVal = 1 - (minDV - DV_BOUND) / (DV_DANGER_RANGE);
+        var dv_close = depth * DV_RATIO;
+        var dv_far = depth * (DV_RATIO + DV_BOUND);
+
+        if (deviance > dv_close) {
+            var minDV = Math.min(deviance, dv_far);
+            this.devianceVal = 1 - (minDV - dv_close) / (depth * DV_BOUND);
         }
 
         if (this.depthVal <= 0.5 || this.depthVal >= 1.8) {
             this.posture = "invalid";
-        } else if (this.devianceVal <= 0.3) {
+        } else if (this.devianceVal <= 0.6) {
             this.posture = "invalid";
         }
 
@@ -1124,7 +1130,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 break;
             case "none":
                 this.cursorEvent = "none";
-                if (this.posture != "invalid")
+                if (this.posture == "+thu+ind")
                     this.posture = "+ind";
                 break;
 
@@ -1237,10 +1243,8 @@ function Controls(tag_, screenWid_, screenHeight_) {
 
                 if (this.posture == "+thu+ind") {
                     var velraw = [frame.hands[0].fingers[1].tipVelocity[0], frame.hands[0].fingers[1].tipVelocity[1]];
-                    if (vec2.len(velraw) < 10) {
+                    if (vec2.len(velraw) < 14) {
                         velraw = [0, 0];
-                    } else if (vec2.len(velraw) < 15) {
-                        vec2.scale(velraw, velraw, 0.4);
                     }
                     //compare vel
 
@@ -1250,7 +1254,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
 //                    var delta = [velraw[0], velraw[1]];
                     CDGainTransfer(delta);
                     if (this.use == "wall") {  //scale cdgain
-                        vec2.scale(delta, delta, 1 / (800 / 1900));
+                        vec2.scale(delta, delta, 1 / (800 / 1700));
                     }
                     if (this.cursorState == "down") {
                         vec2.scale(delta, delta, 0.4);
