@@ -17,52 +17,7 @@ function filterByPartic(set, partic) {
 }
 
 
-function getDataset(rawdata) {
-    var recordData = [];
-    var valid = true;
-    var currentTarget = 0;
-    var invalidFramesCounter = 0;
-    var clutchTime, invalidTime = 0;
-    var cluthStart, invalidStart = 0;
-    for (var i = 0; i < rawdata.length; i++) {
-        if (rawdata[i].cursorEvent == "clickup" && !rawdata[i].isHit) {
-            valid = false;
-        }
-        if (rawdata[i].posture == "none" || rawdata[i].posture == "full" || rawdata[i].posture == "invalid" || rawdata[i].posture == "-thu" || rawdata[i].posture == "+ind+mid" || rawdata[i].posture == "+thu" || rawdata[i].posture == "fist") {
-            invalidFramesCounter++;
-            if (invalidStart == 0) {
-                invalidStart = rawdata[i].timestamp;
-            }
-        } else {
-            if (invalidStart != 0) {
-                invalidTime += (rawdata[i].timestamp - invalidStart);
-                invalidStart = 0;
-            }
-        }
-        if (rawdata[i].posture == "+ind") {
-            if (cluthStart == 0) {
-                cluthStart = rawdata[i].timestamp;
-            }
-        } else {
-            if (cluthStart != 0) {
-                clutchTime += (rawdata[i].timestamp - cluthStart);
-                cluthStart = 0;
-            }
-        }
-        if (currentTarget != rawdata[i].target) {
-            recordData.push([rawdata[i - 1], searchForClickdown(rawdata, i - 1) , valid, invalidFramesCounter, (invalidTime* 0.001).toFixed(3), (clutchTime* 0.001).toFixed(3)]);
-            currentTarget = rawdata[i].target;
-            invalidFramesCounter = 0;
-            clutchTime = 0;
-            invalidTime = 0;
-            cluthStart= 0;
-            invalidStart = 0;
-            valid = true;
-        }
-    }
-    recordData.push([rawdata[rawdata.length - 1], searchForClickdown(rawdata, i - 1) , valid, invalidFramesCounter, (invalidTime* 0.001).toFixed(3), (clutchTime* 0.001).toFixed(3)]);
-    return recordData;
-}
+
 
 function searchForClickdown(data, index) {
     var oldIndex = index;
@@ -171,6 +126,52 @@ for (var i = 1; i <= particNum; i++) {
 
 }
 
+function getDataset(rawdata) {
+    var recordData = [];
+    var valid = true;
+    var currentTarget = 0;
+    var invalidFramesCounter = 0;
+    var clutchTime, invalidTime = 0;
+    var cluthStart, invalidStart = 0;
+    for (var i = 0; i < rawdata.length; i++) {
+        if (rawdata[i].cursorEvent == "clickup" && !rawdata[i].isHit) {
+            valid = false;
+        }
+        if (rawdata[i].posture == "none" || rawdata[i].posture == "full" || rawdata[i].posture == "invalid" || rawdata[i].posture == "-thu" || rawdata[i].posture == "+ind+mid" || rawdata[i].posture == "+thu" || rawdata[i].posture == "fist") {
+            invalidFramesCounter++;
+            if (invalidStart == 0) {
+                invalidStart = rawdata[i].timestamp;
+            }
+        } else {
+            if (invalidStart != 0) {
+                invalidTime += (rawdata[i].timestamp - invalidStart);
+                invalidStart = 0;
+            }
+        }
+        if (rawdata[i].posture == "+ind") {
+            if (cluthStart == 0) {
+                cluthStart = rawdata[i].timestamp;
+            }
+        } else {
+            if (cluthStart != 0) {
+                clutchTime += (rawdata[i].timestamp - cluthStart);
+                cluthStart = 0;
+            }
+        }
+        if (currentTarget != rawdata[i].target) {
+            recordData.push([rawdata[i - 1], searchForClickdown(rawdata, i - 1) , valid, invalidFramesCounter, (invalidTime* 0.001).toFixed(3), (clutchTime* 0.001).toFixed(3)]);
+            currentTarget = rawdata[i].target;
+            invalidFramesCounter = 0;
+            clutchTime = 0;
+            invalidTime = 0;
+            cluthStart= 0;
+            invalidStart = 0;
+            valid = true;
+        }
+    }
+    recordData.push([rawdata[rawdata.length - 1], searchForClickdown(rawdata, i - 1) , valid, invalidFramesCounter, (invalidTime* 0.001).toFixed(3), (clutchTime* 0.001).toFixed(3)]);
+    return recordData;
+}
 
 function getTrialInfo(rawdata, header) {
     var recordData = getDataset(rawdata);
@@ -212,7 +213,7 @@ function getTrialInfo(rawdata, header) {
                 }
                 metadata = [valid, ( (downItem.timestamp - recordData[trailCounter - 1][0].timestamp) * 0.001).toFixed(3),
                     ( (rawdata[i-1].timestamp - recordData[trailCounter - 1][0].timestamp) * 0.001).toFixed(3),
-                        clickdownError - (clickdownCounter - clickupCounter), clickupError, isClutching,
+                        clickdownError - (clickdownCounter - clickupCounter), clickupError,clickupCounter-1, clickdownCounter-clickupCounter, isClutching,
                     recordData[trailCounter][4], recordData[trailCounter][5]];
             } else {
                 var isClutching =  clickdownCounter == clickupCounter ? false : true;
@@ -223,7 +224,7 @@ function getTrialInfo(rawdata, header) {
                         recordData[trailCounter][5]=0;
                     }
                 }
-                metadata = [valid, 0, 0,clickdownError - (clickdownCounter - clickupCounter), clickupError, clickdownCounter == clickupCounter ? false : true, 0];
+                metadata = [valid, 0, 0,clickdownError - (clickdownCounter - clickupCounter), clickupError,clickupCounter-1, clickdownCounter-clickupCounter, clickdownCounter == clickupCounter ? false : true, 0];
 
             }
             strinfo += header + "," + rawdata[i - 1].distance + "," + rawdata[i - 1].targetSize + "," + rawdata[i - 1].block %3+ "," + rawdata[i - 1].set
@@ -241,6 +242,7 @@ function getTrialInfo(rawdata, header) {
     if(!isClutching) {
         if( recordData[recordData.length - 1][5] > 0.5) {
             isClutching = true;
+
         } else {
             recordData[recordData.length - 1][5]=0;
         }
@@ -248,14 +250,14 @@ function getTrialInfo(rawdata, header) {
     var downItem = searchForClickdown(rawdata, rawdata.length - 1);
     var metadata = [valid, ((downItem.timestamp - recordData[recordData.length - 2][0].timestamp) * 0.001).toFixed(3),
         ((rawdata[i-1].timestamp - recordData[recordData.length - 2][0].timestamp) * 0.001).toFixed(3),
-            clickdownError - (clickdownCounter - clickupCounter), clickupError, isClutching,
+            clickdownError - (clickdownCounter - clickupCounter), clickupError,clickupCounter-1, clickdownCounter-clickupCounter, isClutching,
         recordData[recordData.length - 1][4], recordData[recordData.length - 1][5]];
     strinfo += header + "," + rawdata[rawdata.length - 1].distance + "," + rawdata[rawdata.length - 1].targetSize + "," + rawdata[rawdata.length - 1].block %3+ "," + rawdata[rawdata.length - 1].set
         + "," + rawdata[rawdata.length - 1].target + "," + metadata.join() + "\n";
     return strinfo;
 }
 
-var names = "participants,technique,distance,size,block,set,target,valid,duration_down,duration_up,err_dn,err_up,clutch,invalid_time,clutch_time\n";
+var names = "participants,technique,distance,size,block,set,target,valid,duration_down,duration_up,err_dn,err_up,err_num,clutch_num,clutch,invalid_time,clutch_time\n";
 for (var i = 0; i < particFrontData.length; i++) {
     var trial = particFrontData[i][0][0][2];
     var header = particFrontData[i][0][0][1];

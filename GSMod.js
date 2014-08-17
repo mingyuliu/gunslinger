@@ -37,6 +37,7 @@ var DV_DANGER_RANGE = 40,
     DV_RATIO = 0.8,
     DV_BOUND = 0.3;
 
+
 var leapDeviceMgr = (function () {
 
     var api = {};
@@ -117,9 +118,9 @@ var leapDeviceMgr = (function () {
 
         var leftGesturePanel = document.getElementById("leftGesturePanel");
 
-        leftGesturePanel.width = GESTURE_ICON_SIZE * leftGestureList.length;
+        leftGesturePanel.width = GESTURE_ICON_SIZE * rightGestureList.length;
         leftGesturePanel.height = GESTURE_ICON_SIZE;
-        leftGesturePanelContainer.width = GESTURE_ICON_SIZE * leftGestureList.length;
+        leftGesturePanelContainer.width = GESTURE_ICON_SIZE * rightGestureList.length;
         leftGesturePanelContainer.height = GESTURE_ICON_SIZE * 1.2;
 
         ctxLeftGestures = leftGesturePanel.getContext("2d");
@@ -169,7 +170,7 @@ var leapDeviceMgr = (function () {
         //left
         startPosX = (canvas.width / 2 - leftGesturePanel.width) / 2;
         startPosY = canvas.height - GESTURE_ICON_SIZE * 0.7;
-        for (var i = 0; i < leftGestureList.length; i++) {
+        for (var i = 0; i < rightGestureList.length; i++) {
 
             var div = document.createElement('div');
             div.setAttribute('class', 'meter red');
@@ -469,7 +470,6 @@ var leapDeviceMgr = (function () {
                         startX = fingerProjPos[0];
                     }
                     extendedAlpha = (fingers[i].extended ? 1 : 0.2);
-                    ;
                     context.shadowBlur = 5;
                     context.shadowColor = '#000000';
                     context.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";
@@ -550,7 +550,7 @@ var leapDeviceMgr = (function () {
         ctxLeftGestures.lineCap = "round";
 
 
-        for (var i = 0; i < leftGestureList.length; i++) {
+        for (var i = 0; i < rightGestureList.length; i++) {
             var handX = (i + 0.5) * GESTURE_ICON_SIZE;
             var handY = GESTURE_ICON_SIZE / 1.6;
 
@@ -558,10 +558,10 @@ var leapDeviceMgr = (function () {
             ctxLeftGestures.strokeStyle = "rgba(255, 153, 0, 1.0)";
 
 
-            var startX = leftGestureList[i].hand.start[0] / SCALE_RATIO;
-            var startY = leftGestureList[i].hand.start[1] / SCALE_RATIO;
-            var endX = leftGestureList[i].hand.end[0] / SCALE_RATIO;
-            var endY = leftGestureList[i].hand.end[1] / SCALE_RATIO;
+            var startX = rightGestureList[i].hand.start[0] / SCALE_RATIO;
+            var startY = rightGestureList[i].hand.start[1] / SCALE_RATIO;
+            var endX = rightGestureList[i].hand.end[0] / SCALE_RATIO;
+            var endY = rightGestureList[i].hand.end[1] / SCALE_RATIO;
             ctxLeftGestures.shadowBlur = 2;
             ctxLeftGestures.shadowColor = '#2B2B2B';
 
@@ -575,12 +575,12 @@ var leapDeviceMgr = (function () {
 
             ctxLeftGestures.stroke();
 
-            for (var j = 0; j < leftGestureList[i].fingers.length; j++) {
+            for (var j = 0; j < rightGestureList[i].fingers.length; j++) {
 
-                var startX = leftGestureList[i].fingers[j].start[0] / SCALE_RATIO;
-                var startY = leftGestureList[i].fingers[j].start[1] / SCALE_RATIO;
-                var endX = leftGestureList[i].fingers[j].end[0] / SCALE_RATIO;
-                var endY = leftGestureList[i].fingers[j].end[1] / SCALE_RATIO;
+                var startX = rightGestureList[i].fingers[j].start[0] / SCALE_RATIO;
+                var startY = rightGestureList[i].fingers[j].start[1] / SCALE_RATIO;
+                var endX = rightGestureList[i].fingers[j].end[0] / SCALE_RATIO;
+                var endY = rightGestureList[i].fingers[j].end[1] / SCALE_RATIO;
 
                 ctxLeftGestures.shadowBlur = 2;
                 ctxLeftGestures.shadowColor = '#2B2B2B';
@@ -594,8 +594,8 @@ var leapDeviceMgr = (function () {
 
             ctxLeftGestures.fillStyle = "rgba(0,0,0,1.0)";
             ctxLeftGestures.font = "20px Verdana bold";
-            var textLen = leftHandGesture[i].type.length * 20;
-            ctxLeftGestures.fillText(leftHandGesture[i].type, handX - textLen / 4, GESTURE_ICON_SIZE * 0.92);
+            var textLen = rightHandGesture[i].type.length * 20;
+            ctxLeftGestures.fillText(rightHandGesture[i].type, handX - textLen / 4, GESTURE_ICON_SIZE * 0.92);
         }
     }
 
@@ -616,6 +616,23 @@ var leapDeviceMgr = (function () {
 
         }
     };
+
+//    updateTouches = function (touches) {
+//        for (var i = 0; i<touches.length; i++) {
+//            var px = touches[i].pageX;
+//            var py = touches[i].pageY;
+//
+//            ctxTouch.beginPath();
+//            ctxTouch.arc(px, py, 20, 0, 2*Math.PI, true);
+//
+//            ctxTouch.fillStyle = "rgba(0, 0, 200, 0.2)";
+//            ctxTouch.fill();
+//
+//            ctxTouch.lineWidth = 2.0;
+//            ctxTouch.strokeStyle = "rgba(0, 0, 200, 0.8)";
+//            ctxTouch.stroke();
+//        }
+//    }
 
     filterFingers = function (frame, tag) {
         if (frame.hands.length > 0) {
@@ -656,7 +673,12 @@ var leapDeviceMgr = (function () {
                 var differ = Leap.vec3.distance(thumbProj, indexProj);
 
                 if (differ > 20 && thumbProj[0] < indexProj[0]) {
-                    fingers[0].extended = true;
+                    if (thumbProj[0] < indexProj[0] && tag == "right") {
+                        fingers[0].extended = true;
+                    }
+                    if (thumbProj[0] > indexProj[0] && tag == "left") {
+                        fingers[0].extended = true;
+                    }
                 }
 
             }
@@ -717,6 +739,7 @@ var leapDeviceMgr = (function () {
         //for test gui
         createProgress();
         createDebugTextElement();
+        touchMgr.setupTouches();
         for (var i = 0; i < _controllers.length; i++) {
             _controllers[i].loop(function (frame) {
                 //for test gui
@@ -735,8 +758,16 @@ var leapDeviceMgr = (function () {
                 this.controls.update(this.gestureList[this.analyzer.getMinIndex()], frame);
                 this.onFrameLoop(this.controls);
 
+                if(this.controls.valid) {
+                    window["interstate"]["fsm"]["leap"+this.tag]();
+                } else {
+                    window["interstate"]["fsm"]["noLeap"+this.tag]();
+                }
+
+//                interstate.update();
+                //debug info: fps
                 var frameOutput = document.getElementById("frameDataLeft");
-                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + fps.getFPS() + "</div>";
+                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + fps.getFPS()+"<br/>"+interstate.fsm.current + "</div>";
 //                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + this.controls.devianceVal + "</div>";
                 $("#frameDataLeft").show();
             });
@@ -773,8 +804,6 @@ var leapDeviceMgr = (function () {
     return api;
 })();
 
-var LENGTH_WEIGHT = 0.5;
-var ANGLE_WEIGHT = 0.5;
 
 function quanAnalyzer(tag) {
     this._list = [];
@@ -784,9 +813,6 @@ function quanAnalyzer(tag) {
             this._gestures = JSON.parse(localStorage.rightGestures);
             break;
         case "left":
-            this._gestures = JSON.parse(localStorage.leftGestures);
-            break;
-        case "rightFront":
             this._gestures = JSON.parse(localStorage.rightGestures);
             break;
     }
@@ -995,15 +1021,6 @@ function quanAnalyzer(tag) {
 
                     frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:right; padding:5px; position:absolute; top:10px; right:10px'>" + distanceStr + "</div>";
                     break;
-                case "left":
-                    var frameOutput = document.getElementById("frameDataLeft");
-
-                    var str = "";
-                    for (var i = 0; i < this._list.length; i++) {
-                        str += this._list[i].val + " , ";
-                    }
-                    frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + distanceStr + "</div>";
-                    break;
             }
         }
 
@@ -1048,6 +1065,399 @@ function quanAnalyzer(tag) {
     };
 }
 
+var touchMgr = (function () {
+    var currentTouches = [];
+
+    var api = {};
+    var canvas = document.getElementById("leap-overlay3");
+    var ctx = canvas.getContext("2d");
+
+    // Finds the array index of a touch in the currentTouches array.
+    var findCurrentTouchIndex = function (id) {
+        for (var i = 0; i < currentTouches.length; i++) {
+            if (currentTouches[i].id === id) {
+                return i;
+            }
+        }
+
+        // Touch not found! Return -1.
+        return -1;
+    };
+
+    var toggleHand = function (whichhand) {
+        if (whichhand == "right") {
+            return "left";
+        } else {
+            return "right"
+        }
+    }
+
+
+    var calculateCenter = function (whichhand) {
+        var posX = 0, posY = 0;
+        var counter = 0;
+        switch (whichhand) {
+            case "right":
+                for (var i = 0; i < currentTouches.length; i++) {
+                    if (currentTouches[i].whichhand == "right") {
+                        posX += currentTouches[i].pageX;
+                        posY += currentTouches[i].pageY;
+                        counter++;
+                    }
+                }
+                posX /= counter;
+                posY /= counter;
+                break;
+            case "left":
+                for (var i = 0; i < currentTouches.length; i++) {
+                    if (currentTouches[i].whichhand == "left") {
+                        posX += currentTouches[i].pageX;
+                        posY += currentTouches[i].pageY;
+                        counter++;
+                    }
+                }
+                posX /= counter;
+                posY /= counter;
+                break;
+            case "all":
+                for (var i = 0; i < currentTouches.length; i++) {
+                    posX += currentTouches[i].pageX;
+                    posY += currentTouches[i].pageY;
+                    counter++;
+                }
+                posX /= counter;
+                posY /= counter;
+                break;
+        }
+        return [posX, posY];
+    };
+
+    var countTouches = function (whichhand) {
+        var counter = 0;
+        switch (whichhand) {
+            case "right":
+                for (var i = 0; i < currentTouches.length; i++) {
+                    if (currentTouches[i].whichhand == "right") {
+                        counter++;
+                    }
+                }
+                break;
+            case "left":
+                for (var i = 0; i < currentTouches.length; i++) {
+                    if (currentTouches[i].whichhand == "left") {
+                        counter++;
+                    }
+                }
+                break;
+            case "all":
+                for (var i = 0; i < currentTouches.length; i++) {
+                    counter++;
+                }
+                break;
+        }
+        return counter;
+    };
+
+    // Creates a new touch in the currentTouches array and draws the starting
+    // point on the canvas.
+    var touchStarted = function (event) {
+        var touches = event.changedTouches;
+
+        for (var i = 0; i < touches.length; i++) {
+            var touch = touches[i];
+            var hand = "right";
+            if(interstate.fsm.current == "waitLeft" || interstate.fsm.current == "unknownLeft") {
+                hand = "left";
+            }
+
+            if (currentTouches.length == 0) {
+                interstate.fsm.newTouch();
+                currentTouches.push({
+                    id: touch.identifier,
+                    pageX: touch.pageX,
+                    pageY: touch.pageY,
+                    whichhand: hand
+                });
+            } else if (interstate.fsm.current == "twoTouches") {
+                var newTouchVec = vec2.fromValues(touch.pageX, touch.pageY);
+                var rightCtr = calculateCenter("right");
+                var leftCtr = calculateCenter("left");
+
+                var leftDis = vec2.dist(newTouchVec, leftCtr);
+                var rightDis = vec2.dist(newTouchVec, rightCtr);
+
+                if (leftDis < rightDis) {
+                    currentTouches.push({
+                        id: touch.identifier,
+                        pageX: touch.pageX,
+                        pageY: touch.pageY,
+                        whichhand: "left"
+                    });
+                } else {
+                    currentTouches.push({
+                        id: touch.identifier,
+                        pageX: touch.pageX,
+                        pageY: touch.pageY,
+                        whichhand: "right"
+                    });
+                }
+
+            } else {
+                var newTouchVec = vec2.fromValues(touch.pageX, touch.pageY);
+                var touchCtr = calculateCenter("all");
+
+                var dis = vec2.dist(newTouchVec, touchCtr);
+                if (dis > 300) {
+                    currentTouches.push({
+                        id: touch.identifier,
+                        pageX: touch.pageX,
+                        pageY: touch.pageY,
+                        whichhand: toggleHand(currentTouches[0].whichhand)
+                    });
+                    interstate.fsm.newTouchFar();
+                } else {
+                    currentTouches.push({
+                        id: touch.identifier,
+                        pageX: touch.pageX,
+                        pageY: touch.pageY,
+                        whichhand: currentTouches[0].whichhand
+                    });
+                }
+            }
+        }
+
+    };
+
+
+    // Draws a line on the canvas between the previous touch location and
+    // the new location.
+    var touchMoved = function (event) {
+        var touches = event.changedTouches;
+
+//        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (var i = 0; i < touches.length; i++) {
+            var touch = touches[i];
+            var currentTouchIndex = findCurrentTouchIndex(touch.identifier);
+
+            if (currentTouchIndex >= 0) {
+                var currentTouch = currentTouches[currentTouchIndex];
+
+
+                // Update the touch record.
+                currentTouch.pageX = touch.pageX;
+                currentTouch.pageY = touch.pageY;
+
+                var px = touch.pageX;
+                var py = touch.pageY;
+
+                ctx.beginPath();
+                ctx.arc(px, py, 20, 0, 2 * Math.PI, true);
+
+                if (currentTouch.whichhand == "right") {
+
+                    ctx.fillStyle = "rgba(0, 0, 200, 0.2)";
+                    ctx.strokeStyle = "rgba(0, 0, 200, 0.8)";
+                } else {
+                    ctx.fillStyle = "rgba(200, 0, 200, 0.2)";
+                    ctx.strokeStyle = "rgba(200, 0, 200, 0.8)";
+                }
+
+                ctx.fill();
+
+                ctx.lineWidth = 2.0;
+                ctx.stroke();
+
+                // Store the record.
+                currentTouches.splice(currentTouchIndex, 1, currentTouch);
+            }
+            else {
+                console.log('Touch was not found!');
+            }
+
+        }
+
+    };
+
+
+    // Draws a line to the final touch position on the canvas and then
+    // removes the touh from the currentTouches array.
+    var touchEnded = function (event) {
+        var touches = event.changedTouches;
+
+        for (var i = 0; i < touches.length; i++) {
+            var touch = touches[i];
+            var currentTouchIndex = findCurrentTouchIndex(touch.identifier);
+
+            if (currentTouchIndex >= 0) {
+                var currentTouch = currentTouches[currentTouchIndex];
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+
+                // Remove the record.
+                currentTouches.splice(currentTouchIndex, 1);
+
+                var counts = countTouches("all");
+                if (counts == 0) {
+                    interstate.fsm.noTouch();
+                } else {
+                    var countsLeft = countTouches("left");
+                    var countsRight = countTouches("right");
+                    if (countsLeft == 0) {
+                        interstate.fsm.noTouchLeft();
+                    } else if (countsRight == 0) {
+                        interstate.fsm.noTouchRight();
+                    }
+                }
+            } else {
+                console.log('Touch was not found!');
+            }
+
+        }
+
+    };
+
+
+    // Removes cancelled touches from the currentTouches array.
+    var touchCancelled = function (event) {
+        var touches = event.changedTouches;
+
+        for (var i = 0; i < touches.length; i++) {
+            var currentTouchIndex = findCurrentTouchIndex(touches[i].identifier);
+
+            if (currentTouchIndex >= 0) {
+                // Remove the touch record.
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                currentTouches.splice(currentTouchIndex, 1);
+            } else {
+                console.log('Touch was not found!');
+            }
+        }
+    };
+
+
+    api.setupTouches = function () {
+        var canvas = document.getElementById("touch-overlay");
+
+
+        // Set up an event listener for new touches.
+        canvas.addEventListener('touchstart', function (e) {
+            e.preventDefault();
+            touchStarted(event);
+        });
+
+
+        // Set up an event listener for when a touch ends.
+        canvas.addEventListener('touchend', function (e) {
+            e.preventDefault();
+            touchEnded(e);
+        });
+
+
+        // Set up an event listener for when a touch leaves the canvas.
+        canvas.addEventListener('touchleave', function (e) {
+            e.preventDefault();
+            touchEnded(e);
+        });
+
+
+        // Set up an event listener for when the touch instrument is moved.
+        canvas.addEventListener('touchmove', function (e) {
+            e.preventDefault();
+            touchMoved(e);
+        });
+
+
+    };
+
+    api.touches = currentTouches;
+
+    return api;
+})();
+
+var testOutput = function () {
+    console.log("test");
+}
+
+var interstate = (function () {
+    var api = {};
+
+
+    api.fsm = StateMachine.create({
+        initial: 'unknown',
+        error: function (eventName, from, to, args, errorCode, errorMessage) {
+            return 'event ' + eventName + ' was naughty :- ' + errorMessage;
+        },
+        events: [
+            { name: 'leapright', from: 'unknown', to: 'waitLeft' },
+            { name: 'noLeapright', from: 'waitLeft', to: 'unknown' },
+            { name: 'leapleft', from: 'unknown', to: 'waitRight' },
+            { name: 'noLeapleft', from: 'waitRight', to: 'unknown' },
+
+            { name: 'newTouch', from: 'unknown', to: 'touchRight'  },
+
+            { name: 'newTouch', from: 'waitRight', to: 'touchRight'  },
+            { name: 'noTouch', from: 'touchRight', to: 'waitRight'  },
+            { name: 'newTouch', from: 'waitLeft', to: 'touchLeft'  },
+            { name: 'noTouch', from: 'touchLeft', to: 'waitLeft'  },
+
+            { name: 'leapright', from: 'waitRight', to: 'neutral'  },
+            { name: 'noLeapright', from: 'neutral', to: 'waitRight'  },
+            { name: 'leapleft', from: 'waitLeft', to: 'neutral'  },
+            { name: 'noLeapleft', from: 'neutral', to: 'waitLeft'  },
+            //reassign
+            { name: 'leapleft', from: 'touchLeft', to: 'neutral'  },
+            { name: 'leapright', from: 'touchRight', to: 'neutral'  },
+
+            { name: 'leapright', from: 'touchLeftWait', to: 'touchLeft'  },
+            { name: 'noLeapright', from: 'touchLeft', to: 'touchLeftWait'  },
+            { name: 'leapleft', from: 'touchRightWait', to: 'touchRight'  },
+            { name: 'noLeapleft', from: 'touchRight', to: 'touchRightWait'  },
+
+            { name: 'leapleft', from: 'touchLeftWait', to: 'touchRight'  },
+            { name: 'leapright', from: 'touchRightWait', to: 'touchLeft'  },
+
+            { name: 'newTouchFar', from: 'touchRightWait', to: 'twoTouches'  },
+            { name: 'newTouchFar', from: 'touchLeftWait', to: 'twoTouches'  },
+            { name: 'noTouchRight', from: 'twoTouches', to: 'touchLeftWait'  },
+            { name: 'noTouchLeft', from: 'twoTouches', to: 'touchRightWait'  },
+            //reassign
+            { name: 'leapleft', from: 'twoTouches', to: 'touchRight'  },
+            { name: 'leapright', from: 'twoTouches', to: 'touchLeft'  },
+
+            { name: 'noTouch', from: 'touchLeftWait', to: 'unknownLeft'  },
+            { name: 'noTouch', from: 'touchRightWait', to: 'unknownRight'  },
+
+            { name: 'newTouch', from: 'unknownRight', to: 'touchRight'  },
+            { name: 'leapleft', from: 'unknownRight', to: 'waitRight'  },
+            { name: 'leapright', from: 'unknownRight', to: 'waitLeft'  },
+            { name: 'newTouch', from: 'unknownLeft', to: 'touchLeft'  },
+            { name: 'leapleft', from: 'unknownLeft', to: 'waitRight'  },
+            { name: 'leapright', from: 'unknownLeft', to: 'waitLeft'  }
+
+        ],
+        callbacks: {
+//            onentertouchRight:  function(event, from, to) {
+//                api.update = touchRightHandle;
+//                console.log("ontouchright");
+//            },
+//            ontouchRight: function(event, from, to) {
+//                console.log("event: "+event+" from "+from+ " to "+to);
+//            },
+            onenterstate: function (event, from, to) {
+                console.log("enter " + to);
+            }
+
+
+
+        }
+    });
+
+    api.update = api.fsm.onenterstate;
+
+    return api;
+})();
+
 function Controls(tag_, screenWid_, screenHeight_) {
     this.tag = tag_;
     this.screenHeight = screenHeight_;
@@ -1071,6 +1481,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.lastFrameTimestamp = 0;
     this.depthVal = 1;
     this.devianceVal = 1;
+    this.fingerList = [40, 1,1,1,1];
     if (this.use == "wall") {
         //wall
         SCALE_TO_PIXEL = 45 / 53;
@@ -1211,35 +1622,59 @@ function Controls(tag_, screenWid_, screenHeight_) {
             this.posture = "+ind";
         }
 
+
+
+    };
+
+    this.updateThumbAngle = function(distance) {
+        var range = this.thumbBent - this.thumbExtended;
+        //update thumbAngle
+        distance -= this.thumbExtended;
+        distance = Math.min(range, distance);
+
+        distance = range - distance;
+        var angle = 60+distance/range*50;
+        this.fingerList[0]=angle;
     }
 
     this.update = function (posture, frame) {
         this.posture = posture;
         this.timestamp = frame.timestamp * 0.001;
         if (frame.hands[0] != undefined) {
+            this.valid = true;
             var hand = frame.hands[0];
             this.updateRelativeVals(hand.palmPosition);
             var fingers = hand.fingers;
             this.tipPosition = frame.hands[0].fingers[1].tipPosition;
 
+            //viz info
+            var angle = angleBtLines([0, 0, -1], [hand.direction[0], 0, hand.direction[2]]);
+            if (hand.direction[0] < 0) {
+                angle = -angle;
+            }
+
+            var modelView = mat4.create();
+            mat4.identity(modelView); // Set to identity
+            mat4.rotateY(modelView, modelView, Math.PI * angle / 180);
+            mat4.rotateZ(modelView, modelView, -hand.roll().toFixed(2));
+            mat4.rotateX(modelView, modelView, -hand.pitch().toFixed(2));
+            var distanceVec = vec3.create();
+            vec3.sub(distanceVec, fingers[0].tipPosition, hand.palmPosition);
+            vec3.transformMat4(distanceVec, distanceVec, modelView);
+            this.updateThumbAngle(distanceVec[0]);
+            for(var i = 1;i<fingers.length;i++) {
+                this.fingerList[i] = fingers[i].extended;
+            }
+            if(!fingers[0].extended) {
+                this.fingerList[0] = -this.fingerList[0];
+            }
+
             if (this.posture == "+thu+ind" || this.posture == "+ind") {
 
 
-                var angle = angleBtLines([0, 0, -1], [hand.direction[0], 0, hand.direction[2]]);
-                if (hand.direction[0] < 0) {
-                    angle = -angle;
-                }
-
-                var modelView = mat4.create();
-                mat4.identity(modelView); // Set to identity
-                mat4.rotateY(modelView, modelView, Math.PI * angle / 180);
-                mat4.rotateZ(modelView, modelView, -hand.roll().toFixed(2));
-                mat4.rotateX(modelView, modelView, -hand.pitch().toFixed(2));
-                var distanceVec = vec3.create();
-                vec3.sub(distanceVec, fingers[0].tipPosition, hand.palmPosition);
-                vec3.transformMat4(distanceVec, distanceVec, modelView);
 
                 this.updateDistance(distanceVec[0]);
+
 
                 if (this.posture == "+thu+ind") {
                     var velraw = [frame.hands[0].fingers[1].tipVelocity[0], frame.hands[0].fingers[1].tipVelocity[1]];
@@ -1283,6 +1718,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
             }
         } else {
             this.posture = "none";
+            this.valid = false;
         }
         this.lastFrameTimestamp = frame.timestamp * 0.001;
     }
@@ -1305,8 +1741,8 @@ for (var i = 0; i < rightHandGesture.length; i++) {
     GESTURE_ALL_RIGHT.push(rightHandGesture[i].type);
 }
 var GESTURE_ALL_LEFT = [];
-for (var i = 0; i < leftHandGesture.length; i++) {
-    GESTURE_ALL_LEFT.push(leftHandGesture[i].type);
+for (var i = 0; i < rightHandGesture.length; i++) {
+    GESTURE_ALL_LEFT.push(rightHandGesture[i].type);
 }
 
 

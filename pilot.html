@@ -170,10 +170,10 @@ function canvasApp() {
 
         leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
         leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
-//        leapDeviceMgr.addDevice("192.168.20.128", "rightFront", GESTURE_ALL_RIGHT, rightOnFrame);
+        leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_RIGHT);
         leapDeviceMgr.start();
 //        leapDeviceMgr.disableDeviceByTag("right");
-//        leapDeviceMgr.showVerboseInfo();
+        leapDeviceMgr.showVerboseInfo();
 //        $(".knob").ccountdown(2015,8,25,'18:00'); //only need to pass target date and time
 
         initSoundJS();
