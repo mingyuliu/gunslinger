@@ -1,6 +1,8 @@
 <canvas id="canvasOne"></canvas>
 <canvas id="leap-overlay"></canvas>
-
+<canvas id="leap-overlay3" class="overlay"></canvas>
+<canvas id="leap-overlay2" class="overlay"></canvas>
+<canvas id="touch-overlay"></canvas>
 <style>
     html, body {
         width: 100%;
@@ -50,7 +52,7 @@
 <script src="1euro.js"></script>
 <script src="move.min.js"></script>
 <script src="gestures.js"></script>
-<script src="GSMod.js"></script>
+
 <script src="gl-matrix.js"></script>
 <script src="soundjs-0.5.2.min.js"></script>
 <script src="FileSaver.js"></script>
@@ -62,8 +64,9 @@
     <h1>block #1 Set #1</h1> <h4>start your task by clicking the the target</h4>
 
 </div>
-
-
+<script src="v3/circular-progress.js"></script>
+<script src="v3/state-machine.js"></script>
+<script src="GSMod.js"></script>
 <script>
 
 
@@ -140,6 +143,7 @@ function canvasApp() {
 
 
     var recorder = false;
+    var progressRight;
 
     function init() {
         //get block number
@@ -173,10 +177,21 @@ function canvasApp() {
         leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_RIGHT);
         leapDeviceMgr.start();
 //        leapDeviceMgr.disableDeviceByTag("right");
-        leapDeviceMgr.showVerboseInfo();
+//        leapDeviceMgr.showVerboseInfo();
 //        $(".knob").ccountdown(2015,8,25,'18:00'); //only need to pass target date and time
 
         initSoundJS();
+        progressRight = new CircularProgress({
+            radius: 35 * CURSOR_SCALE,
+            strokeStyle: 'green',
+            lineCap: 'round',
+            lineWidth: 4
+        });
+
+        document.body.appendChild(progressRight.el);
+
+        progressRight.el.style.position = "absolute";
+        progressRight.el.style.zIndex = "500000000";
     }
 
     function initSoundJS() {
@@ -285,7 +300,7 @@ function canvasApp() {
 
             tempRad = WIDTH_ORDER[currentWidth] / 2 * SCALE_TO_PIXEL;
         } else {
-            if (Math.random() > .4) {
+            if (Math.random() > .8) {
                 tempRad = WIDTH_ORDER[1] / 2 * SCALE_TO_PIXEL;
             } else {
                 tempRad = WIDTH_ORDER[2] / 2 * SCALE_TO_PIXEL;
@@ -346,98 +361,97 @@ function canvasApp() {
 
     function handleAnimation(controls) {
 //        console.log("posture: "+controls.posture);
+
+
+
+        var screenX = -controls.x + canvasWidth;
+        var screenY = -controls.y + canvasHeight;
+        ctx.save();
+        var ratio = utilities.getRatio(controls.palmPosition, controls.use);
+        ctx.globalAlpha = 1 - ratio;
+        ctx.translate(screenX, screenY);
+        ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
+
+
         switch (controls.posture) {
             case "+thu+ind":
                 var depthScale = controls.depthVal;
                 distanceAlphaProj = controls.devianceVal;
-                var cursorX = controls.x;
-                var cursorY = controls.y;
+
 
                 switch (controls.cursorState) {
                     case "active":
-                        ctx.fillStyle = "rgba(255,255,0,0.4)";
+                        utilities.drawPoint(ctx);
                         break;
                     case "down":
                         if (isCursorDown) {
+                            utilities.drawPoint(ctx);
+                            utilities.drawDown(ctx);
 
-                            ctx.fillStyle = "rgba(200,0,0,0.6)";
+
                         } else {
-
-                            ctx.fillStyle = "rgba(255,255,0,0.4)";
+                            utilities.drawPoint(ctx);
+//                                ctx.fillStyle = "rgba(255,255,0,0.4)";
                         }
 
                         break;
                     case "dragging":
-                        ctx.fillStyle = "rgba(255,0,0,0.9)";
+//                            ctx.fillStyle = "rgba(255,0,0,0.9)";
                         break;
                 }
-                ctx.shadowBlur = 0;
-                ctx.beginPath();
-                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * depthScale, 0, 2 * Math.PI);
-                ctx.fill();
-//                ctx.beginPath();
-//                ctx.fillStyle = "rgba(255,0,0,0.5)";
-//                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, 2, 0, 2 * Math.PI);
-//                ctx.fill();
-                ctx.strokeStyle = "rgba(0,0,0," + distanceAlphaProj + ")";
-                ctx.lineWidth = 6 * depthScale;
-                ctx.beginPath();
-                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * depthScale, 0, 2 * Math.PI);
-                ctx.stroke();
-
-                var targetSize = 6 * depthScale;
-                var lineLen = 50 * depthScale;
-                ctx.lineWidth = 4 * depthScale;
-                ctx.beginPath();
-
-                ctx.moveTo(-cursorX + canvasWidth, -cursorY + canvasHeight + targetSize);
-                ctx.lineTo(-cursorX + canvasWidth, -cursorY + canvasHeight + lineLen);
-
-                ctx.moveTo(-cursorX + canvasWidth, -cursorY + canvasHeight - targetSize);
-                ctx.lineTo(-cursorX + canvasWidth, -cursorY + canvasHeight - lineLen);
-
-                ctx.moveTo(-cursorX + canvasWidth + targetSize, -cursorY + canvasHeight);
-                ctx.lineTo(-cursorX + canvasWidth + lineLen, -cursorY + canvasHeight);
-
-                ctx.moveTo(-cursorX + canvasWidth - targetSize, -cursorY + canvasHeight);
-                ctx.lineTo(-cursorX + canvasWidth - lineLen, -cursorY + canvasHeight);
-                ctx.stroke();
-
 
                 window.clearTimeout(cursorIdleTimeout);
                 cursorIdleTimeout = false;
                 break;
             case "+ind":
+
                 distanceAlphaProj = controls.devianceVal;
 
                 var depthScale = controls.depthVal;
 
-                var cursorX = controls.x;
-                var cursorY = controls.y;
-                ctx.fillStyle = "rgba(0,0,0," + distanceAlphaProj + ")";
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = '#999';
-                ctx.beginPath();
-                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * depthScale, 0, 2 * Math.PI);
-                ctx.fill();
+                utilities.drawClutch(ctx);
 
                 if (!cursorIdleTimeout) {
                     cursorIdleTimeout = setTimeout(function () {
                         isCursorDown = false;
                     }, 600);
                 }
-
                 break;
+
+            default :
+                utilities.drawGeneric(ctx);
+
         }
+        var offset = utilities.getOffsetPosition(controls.palmPosition, controls.use);
+        ctx.translate(-offset[0], -offset[1]);
+        utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+
+        progressRight.el.style.top = screenY + (-offset[1] + 65) * CURSOR_SCALE + "px";
+        progressRight.el.style.left = screenX + (-offset[0] + 65) * CURSOR_SCALE + "px";
+        if (controls.confidence >= 80) {
+            progressRight.options["strokeStyle"] = "green";
+        } else if (controls.confidence < 80 && controls.confidence >= 40) {
+            progressRight.options["strokeStyle"] = "yellow";
+        } else if (controls.confidence < 40 && controls.confidence > 0) {
+            progressRight.options["strokeStyle"] = "red";
+        } else {
+            progressRight.options["strokeStyle"] = "grey";
+        }
+        progressRight.update(controls.confidence / 4);
+        ctx.restore();
+
     }
 
     function handleEvent(controls) {
+
         switch (controls.cursorEvent) {
             case "clickup":
+                var cursorX = controls.getHistoryPoint()[0];
+                var cursorY = controls.getHistoryPoint()[1];
                 if (clickTimeout && isCursorDown) {
 
-                    var screenX = -controls.x + canvasWidth;
-                    var screenY = -controls.y + canvasHeight;
+                    var screenX = -cursorX + canvasWidth + 100 * CURSOR_SCALE;
+                    var screenY = -cursorY + canvasHeight + 100 * CURSOR_SCALE;
 
                     if (!shapeTarget.hitTest(screenX, screenY)) {
                         isInputValid = false;
@@ -475,9 +489,11 @@ function canvasApp() {
 
                 break;
             case "clickdown":
+                var cursorX = controls.getHistoryPoint()[0];
+                var cursorY = controls.getHistoryPoint()[1];
                 if (clickTimeout) {
-                    var screenX = -controls.x + canvasWidth;
-                    var screenY = -controls.y + canvasHeight;
+                    var screenX = -cursorX + canvasWidth + 100 * CURSOR_SCALE;
+                    var screenY = -cursorY + canvasHeight + 100 * CURSOR_SCALE;
 
                     if (shapeTarget.hitTest(screenX, screenY)) {
                         isInputValid = true;
@@ -504,32 +520,26 @@ function canvasApp() {
     }
 
     function handleInvalidAnimation(controls) {
-        var depthScale = controls.depthVal;
-        var cursorX = controls.x;
-        var cursorY = controls.y;
 
-        ctx.fillStyle = "rgba(84,84,84,0.4)";
+        var screenX, screenY;
 
-        ctx.shadowBlur = 0;
-        ctx.beginPath();
-        ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * depthScale, 0, 2 * Math.PI);
-        ctx.fill();
-//                ctx.beginPath();
-//                ctx.fillStyle = "rgba(255,0,0,0.5)";
-//                ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, 2, 0, 2 * Math.PI);
-//                ctx.fill();
-        ctx.strokeStyle = "rgba(0,0,0," + distanceAlphaProj + ")";
-        ctx.lineWidth = 6 * depthScale;
-        ctx.beginPath();
-        ctx.arc(-cursorX + canvasWidth, -cursorY + canvasHeight, CURSOR_SIZE * depthScale, 0, 2 * Math.PI);
-        ctx.stroke();
+        screenX = -controls.x + canvasWidth;
+        screenY = -controls.y + canvasHeight;
 
-
+        ctx.save();
+        ctx.translate(screenX, screenY);
+        ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
+        ctx.globalAlpha = 0.2;
+        utilities.drawGeneric(ctx);
+        var offset = utilities.getOffsetPosition(controls.palmPosition, controls.use);
+        ctx.translate(-offset[0], -offset[1]);
+        utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+        ctx.restore();
     }
 
     function rightOnFrame(controls) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (controls.posture == "invalid") {
+        if (controls.posture == "invalid" || !controls.valid) {
             handleInvalidAnimation(controls);
         } else {
             handleAnimation(controls);

@@ -1,5 +1,5 @@
 //Config
-var THR_HAND_CONFIDENCE = 0.4;
+var THR_HAND_CONFIDENCE = 0.1;
 var ORDINAL_DISTANCE_WEIGHT = 0.60;
 var THUMB_TIP_WEIGHT = 0.10;
 var NB_FINGER_WEIGHT = 0.30;
@@ -8,6 +8,8 @@ var SCALE_RATIO = 1.5;
 var FINGER_RENDER_MODE = 0;
 var isVerboseInfoShonw = false;
 
+//scale of cursor
+var CURSOR_SCALE = 2;
 
 //screen
 var SHRINK_RATIO = 541 / 1900;
@@ -672,7 +674,7 @@ var leapDeviceMgr = (function () {
 
                 var differ = Leap.vec3.distance(thumbProj, indexProj);
 
-                if (differ > 20 && thumbProj[0] < indexProj[0]) {
+                if (differ > 20) {
                     if (thumbProj[0] < indexProj[0] && tag == "right") {
                         fingers[0].extended = true;
                     }
@@ -758,16 +760,16 @@ var leapDeviceMgr = (function () {
                 this.controls.update(this.gestureList[this.analyzer.getMinIndex()], frame);
                 this.onFrameLoop(this.controls);
 
-                if(this.controls.valid) {
-                    window["interstate"]["fsm"]["leap"+this.tag]();
+                if (this.controls.valid) {
+                    window["interstate"]["fsm"]["leap" + this.tag]();
                 } else {
-                    window["interstate"]["fsm"]["noLeap"+this.tag]();
+                    window["interstate"]["fsm"]["noLeap" + this.tag]();
                 }
 
 //                interstate.update();
                 //debug info: fps
                 var frameOutput = document.getElementById("frameDataLeft");
-                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + fps.getFPS()+"<br/>"+interstate.fsm.current + "</div>";
+                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + fps.getFPS() + "<br/>" + interstate.fsm.current + "</div>";
 //                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + this.controls.devianceVal + "</div>";
                 $("#frameDataLeft").show();
             });
@@ -1166,7 +1168,7 @@ var touchMgr = (function () {
         for (var i = 0; i < touches.length; i++) {
             var touch = touches[i];
             var hand = "right";
-            if(interstate.fsm.current == "waitLeft" || interstate.fsm.current == "unknownLeft") {
+            if (interstate.fsm.current == "waitLeft" || interstate.fsm.current == "unknownLeft") {
                 hand = "left";
             }
 
@@ -1335,6 +1337,12 @@ var touchMgr = (function () {
         }
     };
 
+    api.changeTouchHand = function (hand) {
+        for (var i = 0; i < currentTouches.length; i++) {
+            currentTouches[i].whichhand = hand;
+        }
+    }
+
 
     api.setupTouches = function () {
         var canvas = document.getElementById("touch-overlay");
@@ -1446,7 +1454,14 @@ var interstate = (function () {
 //            },
             onenterstate: function (event, from, to) {
                 console.log("enter " + to);
+            },
+            onentertouchRight: function (event, from, to) {
+                touchMgr.changeTouchHand("right");
+            },
+            onentertouchLeft: function (event, from, to) {
+                touchMgr.changeTouchHand("left");
             }
+
 
 
 
@@ -1467,26 +1482,37 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.valid = false;
     this.posture = "none";
     this.use = GetURLParameter("use");
-    this.thumbExtended = Number(localStorage.thumbExtended) * .92 || -75;
-    this.thumbBent = Number(localStorage.thumbBent) || -10;
+    if (this.tag == "right") {
+
+        this.thumbExtended = Number(localStorage.rightThumbExtended) * .92 || -75;
+        this.thumbBent = Number(localStorage.rightThumbBent) || -10;
+    } else if (this.tag == "left") {
+        this.thumbExtended = Number(localStorage.leftThumbExtended) * .92 || 75;
+        this.thumbBent = Number(localStorage.leftThumbBent) || 10;
+
+    }
     this.fx = OneEuroFilter(freq, mincutoff, beta, dcutoff);
     this.fy = OneEuroFilter(freq, mincutoff, beta, dcutoff);
     this.cursorState = "none";
     this.cursorEvent = "none";
     this.tipPosition = Leap.vec3.create();
-    var TRESH_CLICKING = [0.30, 0.35];
+
     var isThumbDown = false;
     this.isDragging = false;
     this.timestamp = 0;
     this.lastFrameTimestamp = 0;
     this.depthVal = 1;
     this.devianceVal = 1;
-    this.fingerList = [40, 1,1,1,1];
+    this.fingerList = [40, 1, 1, 1, 1];
+    this.confidence = 0;
+    this.palmPosition = vec3.fromValues(0, 200, 0);
     if (this.use == "wall") {
         //wall
         SCALE_TO_PIXEL = 45 / 53;
         SHRINK_RATIO = 1;
     }
+    this.historyPoints = [];
+
 
     this.updateRelativeVals = function (palmPos) {
         var depth = palmPos[1];
@@ -1511,11 +1537,11 @@ function Controls(tag_, screenWid_, screenHeight_) {
             this.devianceVal = 1 - (minDV - dv_close) / (depth * DV_BOUND);
         }
 
-        if (this.depthVal <= 0.5 || this.depthVal >= 1.8) {
-            this.posture = "invalid";
-        } else if (this.devianceVal <= 0.6) {
-            this.posture = "invalid";
-        }
+//        if (this.depthVal <= 0.5 || this.depthVal >= 1.8) {
+//            this.posture = "invalid";
+//        } else if (this.devianceVal <= 0.6) {
+//            this.posture = "invalid";
+//        }
 
     }
 
@@ -1548,14 +1574,14 @@ function Controls(tag_, screenWid_, screenHeight_) {
         }
 
         this.cursorState = state;
-    }
+    };
 
     function CDGainTransfer(tipVelocity) {
         var vel = vec2.len(tipVelocity);
         var gain = (cdMax - cdMin) / (1 + Math.exp(-lambda * (vel - vel_inf))) + cdMin;
         tipVelocity[0] *= gain;
         tipVelocity[1] *= gain;
-    }
+    };
 
 
     function angleBtLines(v1, v2) {
@@ -1574,17 +1600,44 @@ function Controls(tag_, screenWid_, screenHeight_) {
         return Math.acos(cos) * 180.0 / Math.PI;
     }
 
+    this.addPoints = function (posX, posY, vel, timestampe) {
+        if (this.historyPoints.length > 15) {
+            this.historyPoints.splice(0, 1);
+        }
+        ;
+        this.historyPoints.push([posX, posY, vel, timestampe]);
+    };
+
+    this.getHistoryPoint = function () {
+        var vel = Number.MAX_VALUE;
+        var tempPoint = [this.x, this.y];
+        for (var i = 0; i < this.historyPoints.length; i++) {
+            var posX = this.historyPoints[i][0];
+            var posY = this.historyPoints[i][1];
+            var time = this.historyPoints[i][3];
+            if (this.historyPoints[i][2] < vel && this.timestamp - time < 250) {
+                tempPoint[0] = posX;
+                tempPoint[1] = posY;
+                vel = this.historyPoints[i][2];
+                var timediff = this.timestamp - time
+            }
+        }
+        var diff = this.x - tempPoint[0];
+        if (vel < 100)
+            return tempPoint;
+        return [this.x, this.y];
+    }
 
     this.ReviseCursorPos = function () {
-        if (this.x > this.screenWidth) {
-            this.x = this.screenWidth;
-        } else if (this.x < 0) {
-            this.x = 0;
+        if (this.x > this.screenWidth + 100 * CURSOR_SCALE) {
+            this.x = this.screenWidth + 100 * CURSOR_SCALE;
+        } else if (this.x < 0 + 100 * CURSOR_SCALE) {
+            this.x = 0 + 100 * CURSOR_SCALE;
         }
-        if (this.y > this.screenHeight) {
-            this.y = this.screenHeight;
-        } else if (this.y < 0) {
-            this.y = 0;
+        if (this.y > this.screenHeight + 100 * CURSOR_SCALE) {
+            this.y = this.screenHeight + 100 * CURSOR_SCALE;
+        } else if (this.y < 0 + 100 * CURSOR_SCALE) {
+            this.y = 0 + 100 * CURSOR_SCALE;
         }
     }
 
@@ -1605,7 +1658,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 }
                 break;
             case "down":
-                if (distance > (this.thumbExtended + range * (w_active + w_down) + range * w_down * w_fuzzyRange)) {
+                if (distance > (this.thumbExtended + range * (w_active + w_down) )) {  //to-do
                     this.setCursorState("none");
                 } else if (distance < (this.thumbExtended + range * w_active - range * w_down * w_fuzzyRangeActive)) {
                     this.setCursorState("active");
@@ -1623,19 +1676,28 @@ function Controls(tag_, screenWid_, screenHeight_) {
         }
 
 
-
     };
 
-    this.updateThumbAngle = function(distance) {
-        var range = this.thumbBent - this.thumbExtended;
-        //update thumbAngle
-        distance -= this.thumbExtended;
-        distance = Math.min(range, distance);
+    this.updateThumbAngle = function (distance, whichhand) {
 
-        distance = range - distance;
-        var angle = 60+distance/range*50;
-        this.fingerList[0]=angle;
-    }
+        var range = Math.abs(this.thumbBent - this.thumbExtended);
+        if (whichhand == "right") {
+            distance -= this.thumbExtended;
+            //update thumbAngle
+            distance = Math.min(range, distance);
+
+            distance = range - distance;
+        } else if (whichhand == "left") {
+            distance -= this.thumbBent;
+            //update thumbAngle
+            distance = Math.min(range, distance);
+            distance = Math.max(0, distance);
+
+        }
+
+        var angle = 70 + distance / range * 50;
+        this.fingerList[0] = angle;
+    };
 
     this.update = function (posture, frame) {
         this.posture = posture;
@@ -1643,7 +1705,9 @@ function Controls(tag_, screenWid_, screenHeight_) {
         if (frame.hands[0] != undefined) {
             this.valid = true;
             var hand = frame.hands[0];
-            this.updateRelativeVals(hand.palmPosition);
+            this.confidence = hand.confidence * 100;
+            this.palmPosition = hand.palmPosition;
+//            this.updateRelativeVals(hand.palmPosition);
             var fingers = hand.fingers;
             this.tipPosition = frame.hands[0].fingers[1].tipPosition;
 
@@ -1661,16 +1725,15 @@ function Controls(tag_, screenWid_, screenHeight_) {
             var distanceVec = vec3.create();
             vec3.sub(distanceVec, fingers[0].tipPosition, hand.palmPosition);
             vec3.transformMat4(distanceVec, distanceVec, modelView);
-            this.updateThumbAngle(distanceVec[0]);
-            for(var i = 1;i<fingers.length;i++) {
+            this.updateThumbAngle(distanceVec[0], this.tag);
+            for (var i = 1; i < fingers.length; i++) {
                 this.fingerList[i] = fingers[i].extended;
             }
-            if(!fingers[0].extended) {
+            if (!fingers[0].extended) {
                 this.fingerList[0] = -this.fingerList[0];
             }
 
             if (this.posture == "+thu+ind" || this.posture == "+ind") {
-
 
 
                 this.updateDistance(distanceVec[0]);
@@ -1711,6 +1774,9 @@ function Controls(tag_, screenWid_, screenHeight_) {
                     this.fy.filter(0, this.timestamp * 0.001);
                 }
 
+
+                this.addPoints(this.x, this.y, vec3.len(fingers[1].tipVelocity), this.timestamp);
+
             } else {
                 this.setCursorState("none");
                 isThumbDown = false;
@@ -1719,6 +1785,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
         } else {
             this.posture = "none";
             this.valid = false;
+//            this.confidence = 0;
         }
         this.lastFrameTimestamp = frame.timestamp * 0.001;
     }
@@ -1734,6 +1801,506 @@ function GetURLParameter(sParam) {
         }
     }
 }
+
+var utilities = (function () {
+    var api = {};
+
+    api.getRatio = function (position, use) {
+        var posX, posY;
+        var ctrPos = 200,
+            radius = 120;
+
+
+        var threshold = .8;
+        if (use == "wall") {
+            posY = position[0];
+            posX = (position[1] - ctrPos);
+        } else {
+            posX = position[0];
+            posY = -(position[1] - ctrPos);
+        }
+        var pos = vec2.fromValues(posX, posY);
+
+        var len = vec2.len(pos);
+        len = Math.min(len, radius);
+        var ratio = len / radius;
+        if (ratio > threshold) {
+            ratio = (ratio - threshold) * 1 / (1 - threshold);
+            return ratio;
+        }
+        ;
+
+        return 0;
+    };
+
+    api.getOffsetPosition = function (position, use) {
+        var posX, posY;
+        var ctrPos = 200,
+            radius = 120;
+        var offsetRange = 16; //pixel ralated
+
+
+        if (use == "wall") {
+            posY = position[0];
+            posX = (position[1] - ctrPos);
+        } else {
+            posX = position[0];
+            posY = -(position[1] - ctrPos);
+        }
+        var pos = vec2.fromValues(posX, posY);
+
+        var len = vec2.len(pos);
+        len = Math.min(len, radius);
+        var ratio = this.getRatio(position, use);
+
+        vec2.scale(pos, pos, offsetRange * ratio / vec2.len(pos));
+        return pos;
+
+    };
+    api.drawGeneric = function (ctx) {
+
+
+        // genericfeedback/generic
+        ctx.save();
+
+        ctx.beginPath();
+        ctx.moveTo(103.7, 101.5);
+        ctx.bezierCurveTo(104.5, 99.5, 103.6, 97.2, 101.5, 96.3);
+        ctx.bezierCurveTo(99.5, 95.5, 97.2, 96.4, 96.3, 98.5);
+        ctx.bezierCurveTo(95.5, 100.5, 96.4, 102.8, 98.5, 103.7);
+        ctx.bezierCurveTo(100.5, 104.5, 102.8, 103.6, 103.7, 101.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    api.drawClutch = function (ctx) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(112.1, 108.8);
+        ctx.bezierCurveTo(112.8, 107.9, 113.4, 106.9, 113.8, 105.8);
+        ctx.bezierCurveTo(115.9, 100.8, 115.1, 95.3, 112.1, 91.2);
+        ctx.lineWidth = 4.0;
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.lineCap = "square";
+        ctx.stroke();
+
+        // pointingfeedback/clutch/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(108.8, 87.9);
+        ctx.bezierCurveTo(107.9, 87.2, 106.9, 86.6, 105.8, 86.2);
+        ctx.bezierCurveTo(100.8, 84.1, 95.3, 84.9, 91.2, 87.9);
+        ctx.stroke();
+
+        // pointingfeedback/clutch/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(91.2, 112.1);
+        ctx.bezierCurveTo(92.1, 112.8, 93.1, 113.4, 94.2, 113.8);
+        ctx.bezierCurveTo(99.2, 115.9, 104.7, 115.1, 108.8, 112.1);
+        ctx.stroke();
+
+        // pointingfeedback/clutch/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(87.9, 91.2);
+        ctx.bezierCurveTo(87.2, 92.1, 86.6, 93.1, 86.2, 94.2);
+        ctx.bezierCurveTo(84.1, 99.2, 84.9, 104.7, 87.9, 108.8);
+        ctx.stroke();
+
+        // pointingfeedback/clutch/Group
+        ctx.restore();
+
+        // pointingfeedback/clutch/Group/Path
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(112.1, 108.8);
+        ctx.bezierCurveTo(112.8, 107.9, 113.4, 106.9, 113.8, 105.8);
+        ctx.bezierCurveTo(115.9, 100.8, 115.1, 95.3, 112.1, 91.2);
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+
+        // pointingfeedback/clutch/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(108.8, 87.9);
+        ctx.bezierCurveTo(107.9, 87.2, 106.9, 86.6, 105.8, 86.2);
+        ctx.bezierCurveTo(100.8, 84.1, 95.3, 84.9, 91.2, 87.9);
+        ctx.stroke();
+
+        // pointingfeedback/clutch/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(91.2, 112.1);
+        ctx.bezierCurveTo(92.1, 112.8, 93.1, 113.4, 94.2, 113.8);
+        ctx.bezierCurveTo(99.2, 115.9, 104.7, 115.1, 108.8, 112.1);
+        ctx.stroke();
+
+        // pointingfeedback/clutch/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(87.9, 91.2);
+        ctx.bezierCurveTo(87.2, 92.1, 86.6, 93.1, 86.2, 94.2);
+        ctx.bezierCurveTo(84.1, 99.2, 84.9, 104.7, 87.9, 108.8);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    api.drawPoint = function (ctx) {
+        // pointingfeedback/point/Group/Path
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(89.7, 100.0);
+        ctx.lineTo(95.1, 100.0);
+        ctx.fill();
+        ctx.lineWidth = 3.0;
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.lineCap = "square";
+        ctx.stroke();
+
+        // pointingfeedback/point/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(89.7, 100.0);
+        ctx.lineTo(95.1, 100.0);
+        ctx.fillStyle = "rgb(255, 255, 255)";
+        ctx.fill();
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = "rgb(0, 0, 0)";
+        ctx.lineCap = "butt";
+        ctx.stroke();
+
+        // pointingfeedback/point/Group
+        ctx.restore();
+
+        // pointingfeedback/point/Group/Path
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(104.9, 100.0);
+        ctx.lineTo(110.3, 100.0);
+        ctx.fill();
+        ctx.lineWidth = 3.0;
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.lineCap = "square";
+        ctx.stroke();
+
+        // pointingfeedback/point/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(104.9, 100.0);
+        ctx.lineTo(110.3, 100.0);
+        ctx.fillStyle = "rgb(255, 255, 255)";
+        ctx.fill();
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = "rgb(0, 0, 0)";
+        ctx.lineCap = "butt";
+        ctx.stroke();
+
+        // pointingfeedback/point/Group
+        ctx.restore();
+
+        // pointingfeedback/point/Group/Path
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(100.0, 110.3);
+        ctx.lineTo(100.0, 104.9);
+        ctx.fill();
+        ctx.lineWidth = 3.0;
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.lineCap = "square";
+        ctx.stroke();
+
+        // pointingfeedback/point/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(100.0, 110.3);
+        ctx.lineTo(100.0, 104.9);
+        ctx.fillStyle = "rgb(255, 255, 255)";
+        ctx.fill();
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = "rgb(0, 0, 0)";
+        ctx.lineCap = "butt";
+        ctx.stroke();
+
+        // pointingfeedback/point/Group
+        ctx.restore();
+
+        // pointingfeedback/point/Group/Path
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(100.0, 95.1);
+        ctx.lineTo(100.0, 89.7);
+        ctx.fill();
+        ctx.lineWidth = 3.0;
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.lineCap = "square";
+        ctx.stroke();
+
+        // pointingfeedback/point/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(100.0, 95.1);
+        ctx.lineTo(100.0, 89.7);
+        ctx.fillStyle = "rgb(255, 255, 255)";
+        ctx.fill();
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = "rgb(0, 0, 0)";
+        ctx.lineCap = "butt";
+        ctx.stroke();
+
+        // pointingfeedback/clickdown
+        ctx.restore();
+    };
+
+    api.drawDown = function (ctx) {
+        // pointingfeedback/clickdown/Group/Path
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(92.7, 107.3);
+        ctx.lineTo(96.6, 103.4);
+        ctx.fill();
+        ctx.lineWidth = 3.0;
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.lineCap = "square";
+        ctx.stroke();
+
+        // pointingfeedback/clickdown/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(92.7, 107.3);
+        ctx.lineTo(96.6, 103.4);
+        ctx.fillStyle = "rgb(255, 255, 255)";
+        ctx.fill();
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = "rgb(0, 0, 0)";
+        ctx.lineCap = "butt";
+        ctx.stroke();
+
+        // pointingfeedback/clickdown/Group
+        ctx.restore();
+
+        // pointingfeedback/clickdown/Group/Path
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(103.4, 96.6);
+        ctx.lineTo(107.3, 92.7);
+        ctx.fill();
+        ctx.lineWidth = 3.0;
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.lineCap = "square";
+        ctx.stroke();
+
+        // pointingfeedback/clickdown/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(103.4, 96.6);
+        ctx.lineTo(107.3, 92.7);
+        ctx.fillStyle = "rgb(255, 255, 255)";
+        ctx.fill();
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = "rgb(0, 0, 0)";
+        ctx.lineCap = "butt";
+        ctx.stroke();
+
+        // pointingfeedback/clickdown/Group
+        ctx.restore();
+
+        // pointingfeedback/clickdown/Group/Path
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(107.3, 107.3);
+        ctx.lineTo(103.4, 103.4);
+        ctx.fill();
+        ctx.lineWidth = 3.0;
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.lineCap = "square";
+        ctx.stroke();
+
+        // pointingfeedback/clickdown/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(107.3, 107.3);
+        ctx.lineTo(103.4, 103.4);
+        ctx.fillStyle = "rgb(255, 255, 255)";
+        ctx.fill();
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = "rgb(0, 0, 0)";
+        ctx.lineCap = "butt";
+        ctx.stroke();
+
+        // pointingfeedback/clickdown/Group
+        ctx.restore();
+
+        // pointingfeedback/clickdown/Group/Path
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(96.6, 96.6);
+        ctx.lineTo(92.7, 92.7);
+        ctx.fill();
+        ctx.lineWidth = 3.0;
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.lineCap = "square";
+        ctx.stroke();
+
+        // pointingfeedback/clickdown/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(96.6, 96.6);
+        ctx.lineTo(92.7, 92.7);
+        ctx.fillStyle = "rgb(255, 255, 255)";
+        ctx.fill();
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = "rgb(0, 0, 0)";
+        ctx.lineCap = "butt";
+        ctx.stroke();
+
+        // pointingfeedback/clutch
+        ctx.restore();
+    };
+
+    api.drawRingnFingers = function (ctx, fingersList, whichhand) {
+        ctx.shadowBlur = 0;
+        ctx.save();
+        ctx.beginPath();
+
+        // handfeedback/ring/Path
+        ctx.moveTo(100.0, 132.0);
+        ctx.bezierCurveTo(82.3, 132.0, 68.0, 117.7, 68.0, 100.0);
+        ctx.bezierCurveTo(68.0, 82.3, 82.3, 68.0, 100.0, 68.0);
+        ctx.bezierCurveTo(117.7, 68.0, 132.0, 82.3, 132.0, 100.0);
+        ctx.bezierCurveTo(132.0, 117.7, 117.7, 132.0, 100.0, 132.0);
+        ctx.closePath();
+
+        // handfeedback/ring/Path
+        ctx.moveTo(129.8, 100.0);
+        ctx.bezierCurveTo(129.8, 83.6, 116.4, 70.2, 100.0, 70.2);
+        ctx.bezierCurveTo(83.6, 70.2, 70.2, 83.6, 70.2, 100.0);
+        ctx.bezierCurveTo(70.2, 116.4, 83.6, 129.8, 100.0, 129.8);
+        ctx.bezierCurveTo(116.4, 129.8, 129.8, 116.4, 129.8, 100.0);
+        ctx.closePath();
+        ctx.fillStyle = "rgb(255, 255, 255)";
+        ctx.fill();
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+        var rotateAngle;
+        if (whichhand == "right") {
+            rotateAngle = -fingersList[0];
+        } else if (whichhand == "left") {
+            rotateAngle = fingersList[0] + 1.5;
+//        console.log(fingersList[0]);
+        }
+
+        if (fingersList[0] > 0) {
+            ctx.save();
+            ctx.translate(100, 100);
+            ctx.rotate(rotateAngle * Math.PI / 180);
+            ctx.translate(-100, -100);
+            ctx.beginPath();
+            ctx.moveTo(94.3, 69.5);
+            ctx.bezierCurveTo(96.2, 69.2, 98.1, 69.0, 100.0, 69.0);
+            ctx.bezierCurveTo(101.9, 69.0, 103.8, 69.2, 105.7, 69.5);
+            ctx.bezierCurveTo(105.9, 68.6, 106.0, 67.7, 105.8, 66.7);
+            ctx.bezierCurveTo(105.1, 63.6, 101.9, 61.5, 98.7, 62.2);
+            ctx.bezierCurveTo(95.6, 62.9, 93.5, 66.1, 94.2, 69.3);
+            ctx.bezierCurveTo(94.3, 69.3, 94.3, 69.4, 94.3, 69.5);
+            ctx.closePath();
+            ctx.fill();
+
+            // handfeedback/fingerout/Path
+            ctx.beginPath();
+            ctx.moveTo(105.9, 68.5);
+            ctx.bezierCurveTo(105.9, 68.0, 105.9, 67.4, 105.8, 66.7);
+            ctx.bezierCurveTo(105.1, 63.6, 101.9, 61.5, 98.7, 62.2);
+            ctx.bezierCurveTo(95.8, 62.9, 93.9, 65.6, 94.1, 68.5);
+            ctx.fill();
+            ctx.lineWidth = 1.0;
+            ctx.lineCap = "square";
+            ctx.stroke();
+            ctx.restore();
+        } else {
+            ctx.save();
+            ctx.translate(100, 100);
+            ctx.rotate(-rotateAngle * Math.PI / 180);
+            ctx.translate(-100, -100);
+            ctx.beginPath();
+            ctx.moveTo(94.3, 69.3);
+            ctx.bezierCurveTo(96.2, 69.1, 98.1, 69.0, 100.0, 69.0);
+            ctx.bezierCurveTo(101.9, 69.0, 103.8, 69.1, 105.7, 69.3);
+            ctx.bezierCurveTo(105.9, 68.9, 105.9, 68.4, 105.7, 68.0);
+            ctx.bezierCurveTo(105.0, 66.4, 101.9, 65.5, 98.8, 65.8);
+            ctx.bezierCurveTo(95.6, 66.1, 93.6, 67.6, 94.3, 69.2);
+            ctx.bezierCurveTo(94.3, 69.2, 94.3, 69.2, 94.3, 69.3);
+            ctx.closePath();
+            ctx.fill();
+
+            // handfeedback/fingerin/Path
+            ctx.beginPath();
+            ctx.moveTo(105.8, 68.5);
+            ctx.bezierCurveTo(105.9, 68.3, 105.9, 68.0, 105.7, 67.8);
+            ctx.bezierCurveTo(105.0, 66.4, 101.9, 65.5, 98.8, 65.8);
+            ctx.bezierCurveTo(95.8, 66.1, 93.9, 67.3, 94.2, 68.5);
+            ctx.lineWidth = 0.9;
+            ctx.lineCap = "square";
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        for (var i = 1; i < fingersList.length; i++) {
+            var rotateAngel;
+            if (whichhand == "right") {
+                rotateAngel = i - 2.5;
+            } else if (whichhand == "left") {
+                rotateAngel = 2.5 - i;
+            }
+            if (fingersList[i]) {
+                ctx.save();
+                ctx.translate(100, 100);
+                ctx.rotate(rotateAngel * 30 * Math.PI / 180);
+                ctx.translate(-100, -100);
+                ctx.beginPath();
+                ctx.moveTo(94.3, 69.5);
+                ctx.bezierCurveTo(96.2, 69.2, 98.1, 69.0, 100.0, 69.0);
+                ctx.bezierCurveTo(101.9, 69.0, 103.8, 69.2, 105.7, 69.5);
+                ctx.bezierCurveTo(105.9, 68.6, 106.0, 67.7, 105.8, 66.7);
+                ctx.bezierCurveTo(105.1, 63.6, 101.9, 61.5, 98.7, 62.2);
+                ctx.bezierCurveTo(95.6, 62.9, 93.5, 66.1, 94.2, 69.3);
+                ctx.bezierCurveTo(94.3, 69.3, 94.3, 69.4, 94.3, 69.5);
+                ctx.closePath();
+                ctx.fill();
+
+                // handfeedback/fingerout/Path
+                ctx.beginPath();
+                ctx.moveTo(105.9, 68.5);
+                ctx.bezierCurveTo(105.9, 68.0, 105.9, 67.4, 105.8, 66.7);
+                ctx.bezierCurveTo(105.1, 63.6, 101.9, 61.5, 98.7, 62.2);
+                ctx.bezierCurveTo(95.8, 62.9, 93.9, 65.6, 94.1, 68.5);
+                ctx.fill();
+                ctx.lineWidth = 1.0;
+                ctx.lineCap = "square";
+                ctx.stroke();
+                ctx.restore();
+            } else {
+                ctx.save();
+                ctx.translate(100, 100);
+                ctx.rotate(rotateAngel * 30 * Math.PI / 180);
+                ctx.translate(-100, -100);
+                ctx.beginPath();
+                ctx.moveTo(94.3, 69.3);
+                ctx.bezierCurveTo(96.2, 69.1, 98.1, 69.0, 100.0, 69.0);
+                ctx.bezierCurveTo(101.9, 69.0, 103.8, 69.1, 105.7, 69.3);
+                ctx.bezierCurveTo(105.9, 68.9, 105.9, 68.4, 105.7, 68.0);
+                ctx.bezierCurveTo(105.0, 66.4, 101.9, 65.5, 98.8, 65.8);
+                ctx.bezierCurveTo(95.6, 66.1, 93.6, 67.6, 94.3, 69.2);
+                ctx.bezierCurveTo(94.3, 69.2, 94.3, 69.2, 94.3, 69.3);
+                ctx.closePath();
+                ctx.fill();
+
+                // handfeedback/fingerin/Path
+                ctx.beginPath();
+                ctx.moveTo(105.8, 68.5);
+                ctx.bezierCurveTo(105.9, 68.3, 105.9, 68.0, 105.7, 67.8);
+                ctx.bezierCurveTo(105.0, 66.4, 101.9, 65.5, 98.8, 65.8);
+                ctx.bezierCurveTo(95.8, 66.1, 93.9, 67.3, 94.2, 68.5);
+                ctx.lineWidth = 0.9;
+                ctx.lineCap = "square";
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+        ctx.restore();
+    }
+
+    return api;
+})();
 
 
 var GESTURE_ALL_RIGHT = [];

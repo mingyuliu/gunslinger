@@ -69,7 +69,16 @@ var calibrator = (function() {
                             var distanceVec = vec3.create();
                             vec3.sub(distanceVec, fingers[0].tipPosition, hand.palmPosition);
                             vec3.transformMat4(distanceVec, distanceVec, modelView);
-                            localStorage.thumbBent = distanceVec[0];
+//                            localStorage.thumbBent = distanceVec[0];
+                            switch (whichhand) {
+                                case "right":
+                                    localStorage.rightThumbBent = distanceVec[0];
+
+                                    break;
+                                case "left":
+                                    localStorage.leftThumbBent = distanceVec[0];
+                                    break;
+                            }
                         } else if (types[currentIndex] == "+thu+ind") {
                             var angle = angleBtLines([0, 0, -1], [hand.direction[0], 0, hand.direction[2]]);
 
@@ -84,7 +93,15 @@ var calibrator = (function() {
                             var distanceVec = vec3.create();
                             vec3.sub(distanceVec, fingers[0].tipPosition, hand.palmPosition);
                             vec3.transformMat4(distanceVec, distanceVec, modelView);
-                            localStorage.thumbExtended = distanceVec[0];
+                            switch (whichhand) {
+                                case "right":
+                                    localStorage.rightThumbExtended = distanceVec[0];
+
+                                    break;
+                                case "left":
+                                    localStorage.leftThumbExtended = distanceVec[0];
+                                    break;
+                            }
                         }
                         currentIndex++;
                         if (currentIndex < types.length) {
