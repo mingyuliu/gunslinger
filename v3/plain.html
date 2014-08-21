@@ -111,10 +111,9 @@ function canvasApp() {
         var screenY = -controls.y + canvasHeight;
         ctx.save();
         var ratio = utilities.getRatio(controls.palmPosition, controls.use);
-        ctx.globalAlpha = 1-ratio;
+        ctx.globalAlpha = 1 - ratio;
         ctx.translate(screenX, screenY);
         ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
-
 
 
         switch (controls.posture) {
@@ -160,6 +159,11 @@ function canvasApp() {
                         isCursorDown = false;
                     }, 600);
                 }
+
+
+
+
+
                 break;
 
             default :
@@ -170,8 +174,8 @@ function canvasApp() {
         ctx.translate(-offset[0], -offset[1]);
         utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
 
-        progressRight.el.style.top = screenY+(-offset[1] + 65) * CURSOR_SCALE + "px";
-        progressRight.el.style.left = screenX+(-offset[0] + 65) * CURSOR_SCALE + "px";
+        progressRight.el.style.top = screenY + (-offset[1] + 65) * CURSOR_SCALE + "px";
+        progressRight.el.style.left = screenX + (-offset[0] + 65) * CURSOR_SCALE + "px";
         if (controls.confidence >= 80) {
             progressRight.options["strokeStyle"] = "green";
         } else if (controls.confidence < 80 && controls.confidence >= 40) {
@@ -184,7 +188,7 @@ function canvasApp() {
         progressRight.update(controls.confidence / 4);
         ctx.restore();
 
-    }
+    };
 
     function handleRightEvent(controls) {
         switch (controls.cursorEvent) {
@@ -244,8 +248,8 @@ function canvasApp() {
 
         var screenX = 0;
         var screenY = canvasHeight - CURSOR_SCALE * 200;
-        progressRight.el.style.top = screenY+(-offset[1] + 65) * CURSOR_SCALE + "px";
-        progressRight.el.style.left = screenX+(-offset[0] + 65) * CURSOR_SCALE + "px";
+        progressRight.el.style.top = screenY + (-offset[1] + 65) * CURSOR_SCALE + "px";
+        progressRight.el.style.left = screenX + (-offset[0] + 65) * CURSOR_SCALE + "px";
         if (controls.confidence >= 80) {
             progressRight.options["strokeStyle"] = "green";
         } else if (controls.confidence < 80 && controls.confidence >= 40) {
@@ -258,9 +262,17 @@ function canvasApp() {
         progressRight.update(controls.confidence / 4);
         ctx.save();
         var ratio = utilities.getRatio(controls.palmPosition, controls.use);
-        ctx.globalAlpha = 1-ratio;
+        ctx.globalAlpha = 1 - ratio;
         ctx.translate(screenX, screenY);
         ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
+        switch (controls.posture) {
+            case "+ind":
+
+                utilities.drawPan(ctx);
+                break;
+
+        }
+        console.log(controls.posture);
         utilities.drawGeneric(ctx);
         ctx.translate(-offset[0], -offset[1]);
         utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);

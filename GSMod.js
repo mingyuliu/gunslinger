@@ -308,8 +308,10 @@ var leapDeviceMgr = (function () {
         document.body.appendChild(div);
         document.body.appendChild(div2);
 
-        $("#frameDataRight").hide();
-        $("#frameDataLeft").hide();
+        $("#frameDataRight").hide()
+        $("#frameDataRight").css("z-index", "200000");
+        $("#frameDataLeft").hide()
+        $("#frameDataRight").css("z-index", "200000");
     }
 
     function angle2Lines2dCos(v1, v2) {
@@ -696,7 +698,7 @@ var leapDeviceMgr = (function () {
         $("#fingersPanel").show();
         drawGestures();
         isVerboseInfoShonw = true;
-    }
+    };
 
     api.initDevice = function (screenWid_, screenHeight_) {
         screenWidth = screenWid_;
@@ -1506,6 +1508,8 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.fingerList = [40, 1, 1, 1, 1];
     this.confidence = 0;
     this.palmPosition = vec3.fromValues(0, 200, 0);
+    this.palmNormal = vec3.create();
+    this.stablePalmPosition = vec3.create();
     if (this.use == "wall") {
         //wall
         SCALE_TO_PIXEL = 45 / 53;
@@ -1705,8 +1709,17 @@ function Controls(tag_, screenWid_, screenHeight_) {
         if (frame.hands[0] != undefined) {
             this.valid = true;
             var hand = frame.hands[0];
-            this.confidence = hand.confidence * 100;
+            if(Math.abs(hand.confidence*100-this.confidence)>2)
+            this.confidence += (hand.confidence*100-this.confidence)/4;
+//            this.confidence = hand.confidence * 100;
             this.palmPosition = hand.palmPosition;
+            this.palmNormal = hand.palmNormal;
+            this.stablePalmPosition = hand.stabilizedPalmPosition;
+            var ratio = utilities.getRatio(this.palmPosition, this.use);
+            if(ratio >= 0.8) {
+                this.posture = "invalid";
+            }
+
 //            this.updateRelativeVals(hand.palmPosition);
             var fingers = hand.fingers;
             this.tipPosition = frame.hands[0].fingers[1].tipPosition;
@@ -1733,10 +1746,10 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 this.fingerList[0] = -this.fingerList[0];
             }
 
-            if (this.posture == "+thu+ind" || this.posture == "+ind") {
+            if (this.posture == "+thu+ind" || this.posture == "+ind" || this.posture == "+thu") {
 
-
-                this.updateDistance(distanceVec[0]);
+                if (this.tag == "right")  //to-do
+                    this.updateDistance(distanceVec[0]);
 
 
                 if (this.posture == "+thu+ind") {
@@ -1785,7 +1798,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
         } else {
             this.posture = "none";
             this.valid = false;
-//            this.confidence = 0;
+            this.confidence = 0;
         }
         this.lastFrameTimestamp = frame.timestamp * 0.001;
     }
@@ -1828,7 +1841,7 @@ var utilities = (function () {
             ratio = (ratio - threshold) * 1 / (1 - threshold);
             return ratio;
         }
-        ;
+
 
         return 0;
     };
@@ -1875,6 +1888,32 @@ var utilities = (function () {
         ctx.stroke();
         ctx.restore();
     }
+
+    api.drawPan = function (ctx) {
+        ctx.save();
+        ctx.beginPath();
+
+        // panzoomfeedback/pan/Path
+        ctx.moveTo(71.0, 169.1);
+        ctx.bezierCurveTo(32.8, 153.1, 14.8, 109.2, 30.9, 71.0);
+        ctx.bezierCurveTo(46.9, 32.8, 90.8, 14.8, 129.0, 30.9);
+        ctx.bezierCurveTo(167.2, 46.9, 185.2, 90.8, 169.1, 129.0);
+        ctx.bezierCurveTo(153.1, 167.2, 109.2, 185.2, 71.0, 169.1);
+        ctx.closePath();
+
+        // panzoomfeedback/pan/Path
+        ctx.moveTo(164.5, 127.1);
+        ctx.bezierCurveTo(179.5, 91.4, 162.7, 50.4, 127.1, 35.5);
+        ctx.bezierCurveTo(91.4, 20.5, 50.4, 37.3, 35.5, 72.9);
+        ctx.bezierCurveTo(20.5, 108.6, 37.3, 149.6, 72.9, 164.5);
+        ctx.bezierCurveTo(108.6, 179.5, 149.6, 162.7, 164.5, 127.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.stroke();
+        ctx.restore();
+
+    };
 
     api.drawClutch = function (ctx) {
         ctx.save();
