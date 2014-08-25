@@ -741,7 +741,7 @@ var leapDeviceMgr = (function () {
 
     api.start = function () {
         //for test gui
-        createProgress();
+       // createProgress();
         createDebugTextElement();
         touchMgr.setupTouches();
         for (var i = 0; i < _controllers.length; i++) {
@@ -771,14 +771,18 @@ var leapDeviceMgr = (function () {
 //                interstate.update();
                 //debug info: fps
                 var frameOutput = document.getElementById("frameDataLeft");
-                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + fps.getFPS() + "<br/>" + interstate.fsm.current + "</div>";
-//                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + this.controls.devianceVal + "</div>";
+                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" +interstate.fsm.current+ "</div>";
                 $("#frameDataLeft").show();
             });
 
         }
     };
 
+    api.printInfo = function(msg) {
+        var frameOutput = document.getElementById("frameDataLeft");
+        frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" +interstate.fsm.current+"<br/>"+ msg + "</div>";
+        $("#frameDataLeft").show();
+    }
 
     api.getController = function (controllerIndex) {
         return _controllers[controllerIndex];
@@ -1887,7 +1891,138 @@ var utilities = (function () {
         ctx.strokeStyle = "rgb(255, 255, 255)";
         ctx.stroke();
         ctx.restore();
-    }
+    };
+
+    api.drawZoom = function (ctx) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(127.1, 35.5);
+        ctx.bezierCurveTo(129.8, 36.6, 132.5, 37.9, 135.0, 39.4);
+        ctx.lineTo(137.5, 35.1);
+        ctx.bezierCurveTo(134.8, 33.5, 132.0, 32.1, 129.0, 30.9);
+        ctx.bezierCurveTo(106.5, 21.4, 82.1, 23.8, 62.5, 35.1);
+        ctx.lineTo(65.0, 39.4);
+        ctx.bezierCurveTo(83.3, 28.9, 106.1, 26.7, 127.1, 35.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // panzoomfeedback/zoom/Path
+        ctx.beginPath();
+        ctx.moveTo(72.9, 164.5);
+        ctx.bezierCurveTo(69.6, 163.2, 66.5, 161.5, 63.5, 159.7);
+        ctx.lineTo(61.0, 164.1);
+        ctx.bezierCurveTo(64.2, 166.0, 67.5, 167.7, 71.0, 169.1);
+        ctx.bezierCurveTo(92.9, 178.3, 116.7, 176.3, 136.0, 165.8);
+        ctx.lineTo(133.5, 161.4);
+        ctx.bezierCurveTo(115.5, 171.2, 93.3, 173.1, 72.9, 164.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // panzoomfeedback/zoom/Group
+
+        // panzoomfeedback/zoom/Group/Compound Path
+        ctx.save();
+        ctx.beginPath();
+
+        // panzoomfeedback/zoom/Group/Compound Path/Path
+        ctx.moveTo(103.9, 9.5);
+        ctx.bezierCurveTo(101.5, 7.1, 97.6, 7.1, 95.2, 9.5);
+        ctx.bezierCurveTo(92.8, 11.9, 92.8, 15.8, 95.2, 18.2);
+        ctx.bezierCurveTo(97.2, 20.2, 100.2, 20.5, 102.6, 19.2);
+        ctx.lineTo(107.4, 24.0);
+        ctx.lineTo(109.7, 21.7);
+        ctx.lineTo(104.9, 16.9);
+        ctx.bezierCurveTo(106.2, 14.5, 105.9, 11.5, 103.9, 9.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // panzoomfeedback/zoom/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(102.4, 16.8);
+        ctx.bezierCurveTo(100.8, 18.4, 98.2, 18.4, 96.6, 16.8);
+        ctx.bezierCurveTo(95.0, 15.2, 95.0, 12.6, 96.6, 11.0);
+        ctx.bezierCurveTo(98.2, 9.4, 100.8, 9.4, 102.4, 11.0);
+        ctx.bezierCurveTo(104.1, 12.6, 104.1, 15.2, 102.4, 16.8);
+        ctx.closePath();
+        ctx.fillStyle = "rgb(255, 255, 255)";
+        ctx.fill();
+
+        // panzoomfeedback/zoom/Group
+        ctx.restore();
+
+        // panzoomfeedback/zoom/Group/Compound Path
+        ctx.save();
+        ctx.beginPath();
+
+        // panzoomfeedback/zoom/Group/Compound Path/Path
+        ctx.moveTo(96.6, 14.5);
+        ctx.lineTo(96.6, 13.0);
+        ctx.lineTo(98.8, 13.0);
+        ctx.lineTo(98.8, 10.8);
+        ctx.lineTo(100.3, 10.8);
+        ctx.lineTo(100.3, 13.0);
+        ctx.lineTo(102.5, 13.0);
+        ctx.lineTo(102.5, 14.5);
+        ctx.lineTo(100.3, 14.5);
+        ctx.lineTo(100.3, 16.7);
+        ctx.lineTo(98.8, 16.7);
+        ctx.lineTo(98.8, 14.5);
+        ctx.lineTo(96.6, 14.5);
+        ctx.closePath();
+        ctx.fill();
+
+        // panzoomfeedback/zoom/Group
+        ctx.restore();
+
+        // panzoomfeedback/zoom/Group/Compound Path
+        ctx.save();
+        ctx.beginPath();
+
+        // panzoomfeedback/zoom/Group/Compound Path/Path
+        ctx.moveTo(104.1, 179.5);
+        ctx.bezierCurveTo(101.7, 177.1, 97.9, 177.1, 95.5, 179.5);
+        ctx.bezierCurveTo(93.1, 181.9, 93.1, 185.8, 95.5, 188.2);
+        ctx.bezierCurveTo(97.5, 190.1, 100.5, 190.5, 102.8, 189.1);
+        ctx.lineTo(107.6, 193.9);
+        ctx.lineTo(109.9, 191.6);
+        ctx.lineTo(105.1, 186.8);
+        ctx.bezierCurveTo(106.5, 184.5, 106.1, 181.5, 104.1, 179.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // panzoomfeedback/zoom/Group/Path
+        ctx.beginPath();
+        ctx.moveTo(102.7, 186.8);
+        ctx.bezierCurveTo(101.1, 188.4, 98.5, 188.4, 96.9, 186.8);
+        ctx.bezierCurveTo(95.3, 185.1, 95.3, 182.5, 96.9, 180.9);
+        ctx.bezierCurveTo(98.5, 179.3, 101.1, 179.3, 102.7, 180.9);
+        ctx.bezierCurveTo(104.3, 182.5, 104.3, 185.1, 102.7, 186.8);
+        ctx.closePath();
+        ctx.fillStyle = "rgb(255, 255, 255)";
+        ctx.fill();
+
+        // panzoomfeedback/zoom/Group
+        ctx.restore();
+
+        // panzoomfeedback/zoom/Group/Compound Path
+        ctx.save();
+        ctx.beginPath();
+
+        // panzoomfeedback/zoom/Group/Compound Path/Path
+        ctx.moveTo(98.0, 183.0);
+        ctx.lineTo(101.9, 183.0);
+        ctx.lineTo(101.9, 184.6);
+        ctx.lineTo(98.0, 184.6);
+        ctx.lineTo(98.0, 183.0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        ctx.restore();
+    };
 
     api.drawPan = function (ctx) {
         ctx.save();

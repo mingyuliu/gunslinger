@@ -32,6 +32,12 @@ rightHandGesture.push({
     finAngle: [-40, 10, 0, 0, 0]
 });
 rightHandGesture.push({
+    type: "-rin-pin",
+    count: 2,
+    finLen: [35, 55, 0, 0, 0],
+    finAngle: [-40, 10, 0, 0, 0]
+});
+rightHandGesture.push({
     type: "-thu",
     count: 4,
     finLen: [60, 71, 61, 48, 0],

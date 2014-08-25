@@ -18,7 +18,7 @@
 <canvas id="leap-overlay"></canvas>
 <canvas id="leap-overlay2" class="overlay"></canvas>
 <canvas id="leap-overlay3" class="overlay"></canvas>
-<canvas id="touch-overlay"></canvas>
+<canvas id="touch-overlay" class="touch-overlay"></canvas>
 <img id="item1" src="img/draw.png">
 <img id="item2" src="img/navigation.png">
 <img id="item3" src="img/clear.png">
@@ -292,16 +292,19 @@ function canvasApp() {
     function handleInvalidAnimation(controls) {
         var ctx;
         var screenX, screenY;
+        var progressEle;
         if (controls.tag == "right") {
             ctx = ctxRight;
             screenX = -controls.x + canvasWidth;
             screenY = -controls.y + canvasHeight;
+            progressEle = progressRight;
             closeWidgets(controls);
 
         } else if (controls.tag == "left") {
             ctx = ctxLeft;
             screenX = 0;
             screenY = canvasHeight - CURSOR_SCALE * 200;
+            progressEle = progressLeft;
         }
         ctx.save();
         ctx.translate(screenX, screenY);
@@ -311,12 +314,15 @@ function canvasApp() {
         var offset = utilities.getOffsetPosition(controls.palmPosition, controls.use);
         ctx.translate(-offset[0], -offset[1]);
         utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
-        progressRight.el.style.top = screenY + (-offset[1] + 65) * CURSOR_SCALE + "px";
-        progressRight.el.style.left = screenX + (-offset[0] + 65) * CURSOR_SCALE + "px";
+        progressEle.el.style.top = screenY + (-offset[1] + 65) * CURSOR_SCALE + "px";
+        progressEle.el.style.left = screenX + (-offset[0] + 65) * CURSOR_SCALE + "px";
         ctx.restore();
 //        console.log("invalid draing" + controls.fingerList);
 
     }
+
+    var zoomTimeout = true;
+    var olderLeftPosture = "none";
 
     function handleLeftAnimation(controls) {
         var ctx = ctxLeft;
@@ -324,18 +330,17 @@ function canvasApp() {
 
         var screenX = 0;
         var screenY = canvasHeight - CURSOR_SCALE * 200;
-        progressRight.el.style.top = screenY + (-offset[1] + 65) * CURSOR_SCALE + "px";
-        progressRight.el.style.left = screenX + (-offset[0] + 65) * CURSOR_SCALE + "px";
+
         if (controls.confidence >= 80) {
-            progressRight.options["strokeStyle"] = "green";
+            progressLeft.options["strokeStyle"] = "green";
         } else if (controls.confidence < 80 && controls.confidence >= 40) {
-            progressRight.options["strokeStyle"] = "yellow";
+            progressLeft.options["strokeStyle"] = "yellow";
         } else if (controls.confidence < 40 && controls.confidence > 0) {
-            progressRight.options["strokeStyle"] = "red";
+            progressLeft.options["strokeStyle"] = "red";
         } else {
-            progressRight.options["strokeStyle"] = "grey";
+            progressLeft.options["strokeStyle"] = "grey";
         }
-        progressRight.update(controls.confidence / 4);
+        progressLeft.update(controls.confidence / 4);
         ctx.save();
         var ratio = utilities.getRatio(controls.palmPosition, controls.use);
         ctx.globalAlpha = 1 - ratio;
@@ -343,34 +348,63 @@ function canvasApp() {
         ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
         switch (controls.posture) {
             case "+ind":
-
+                if (olderLeftPosture !== "+ind") {
+                        ctrPosY = controls.palmPosition[1];
+                        ctrPosX = controls.palmPosition[0];
+                }
                 utilities.drawPan(ctx);
-
-
-
-
-                var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use);
+                var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, false);
                 map.panBy(ballPos[0], ballPos[1]);
 
                 ctx.translate(-offset[0] + ballPos[0], -offset[1] + ballPos[1]);
-                progressRight.el.style.top = screenY + (-offset[1] + ballPos[1] + 65) * CURSOR_SCALE + "px";
-                progressRight.el.style.left = screenX + (-offset[0] + ballPos[0] + 65) * CURSOR_SCALE + "px";
+                progressLeft.el.style.top = screenY + (-offset[1] + ballPos[1] + 65) * CURSOR_SCALE + "px";
+                progressLeft.el.style.left = screenX + (-offset[0] + ballPos[0] + 65) * CURSOR_SCALE + "px";
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
-            default :
+            case "+thu+ind":
+                if (olderLeftPosture !== "+thu+ind") {
+                    ctrPosY = controls.palmPosition[1];
+                    ctrPosX = controls.palmPosition[0];
+                }
+                utilities.drawZoom(ctx);
+                var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, true);
+                var offsetRange = 40;
+                var zoomRatio = ballPos[1] / 40;
+                zoomRatio /= 0.5;
+                if (zoomRatio !== 0 && zoomTimeout) {
+                    map.setZoom(map.getZoom() + Math.ceil(zoomRatio));
 
+
+                    zoomTimeout = false;
+                    setTimeout(function () {
+                        zoomTimeout = true;
+                    }, 250);
+
+                }
+
+
+                ctx.translate(-offset[0] + ballPos[0], -offset[1] + ballPos[1]);
+                progressLeft.el.style.top = screenY + (-offset[1] + ballPos[1] + 65) * CURSOR_SCALE + "px";
+                progressLeft.el.style.left = screenX + (-offset[0] + ballPos[0] + 65) * CURSOR_SCALE + "px";
+                utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+                break;
+
+            default :
+                progressLeft.el.style.top = screenY + (-offset[1] + 65) * CURSOR_SCALE + "px";
+                progressLeft.el.style.left = screenX + (-offset[0] + 65) * CURSOR_SCALE + "px";
 
                 utilities.drawGeneric(ctx);
                 ctx.translate(-offset[0], -offset[1]);
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
         }
+        olderLeftPosture = controls.posture;
         ctx.restore();
     }
 
 
     function rightOnFrame(controls) {
         ctxRight.clearRect(0, 0, canvas.width, canvas.height);
-
+        leapDeviceMgr.printInfo(controls.posture);
         if (controls.posture == "invalid" || !controls.valid) {
             handleInvalidAnimation(controls);
         } else {
@@ -412,13 +446,14 @@ var directionsService = new google.maps.DirectionsService();
 
 function initialize() {
     var rendererOptions = {
-        draggable: true
+        draggable: true,
+        preserveViewport: true
     };
     directionsDisplay = new google.maps.DirectionsRenderer(rendererOptions);
     var mapOptions = {
         zoom: 5,
         panControl: false,
-        zoomControl: false,
+        zoomControl: true,
         streetViewControl: false,
         center: new google.maps.LatLng(39.958099, -75.167805)
     };
@@ -436,6 +471,22 @@ function Shape() {
     }
 }
 
+
+function smoothZoom(max, cnt) {
+    if (cnt >= max) {
+        return;
+    }
+    else {
+        z = google.maps.event.addListener(map, 'zoom_changed', function (event) {
+            google.maps.event.removeListener(z);
+            smoothZoom(max, cnt + .1);
+        });
+        setTimeout(function () {
+            map.setZoom(cnt)
+        }, 80); // 80ms is what I found to work well on my system -- it might not work well on all systems
+    }
+    console.log(map.getCenter());
+}
 
 var shapeManager = (function () {
 
@@ -747,22 +798,66 @@ var bigCirR = 120;
 var ballR = 50;
 var smallCirR = 80;
 
+function transferPointToLatLng() {
+    var offset = .2;
+    var neBound = map.getBounds().getNorthEast();
+    var swBound = map.getBounds().getSouthWest();
 
-function drawNaviBall(ctx, position, use) {
+    var proj = map.getProjection();
+
+    var neBoundWorld = proj.fromLatLngToPoint(neBound);
+    var swBoundWorld = proj.fromLatLngToPoint(swBound);
+    // centerPiWorld.x = centerPiWorld.x / 256 * canvas.width;
+    // centerPiWorld.y = centerPiWorld.y / 256 * canvas.height;
+
+    var neBoundWorldX = neBoundWorld.x * (Math.pow(2, map.getZoom()));
+    var neBoundWorldY = neBoundWorld.y * (Math.pow(2, map.getZoom()));
+
+    neBoundWorldX -= canvasWidth * offset;
+    neBoundWorldY -= canvasHeight * offset;
+
+    neBoundWorldX = neBoundWorldX / (Math.pow(2, map.getZoom()));
+    neBoundWorldY = neBoundWorldY / (Math.pow(2, map.getZoom()));
+
+    var newNEBoundWorld = new google.maps.Point(neBoundWorldX, neBoundWorldY);
+    var newNEBound = proj.fromPointToLatLng(newNEBoundWorld);
+
+    var swBoundWorldX = neBoundWorld.x * (Math.pow(2, map.getZoom()));
+    var swBoundWorldY = neBoundWorld.y * (Math.pow(2, map.getZoom()));
+
+    swBoundWorldX += canvasWidth * offset;
+    swBoundWorldY += canvasHeight * offset;
+
+    swBoundWorldX = swBoundWorldX / (Math.pow(2, map.getZoom()));
+    swBoundWorldY = swBoundWorldY / (Math.pow(2, map.getZoom()));
+
+    var newSWBoundWorld = new google.maps.Point(swBoundWorldX, swBoundWorldY);
+    var newSWBound = proj.fromPointToLatLng(newNEBoundWorld);
+
+    var bounds = new google.maps.LatLngBounds();
+    bounds.extend(newNEBound);
+    bounds.extend(newSWBound);
+    map.fitBounds(bounds);
+}
+
+
+var ctrPosY = 200;
+var ctrPosX = 0;
+
+function drawNaviBall(ctx, position, use, oneDirection) {
     ctx.save();
     var posX, posY;
-    var ctrPos = 200,
-            radius = 60;
+    var radius = 60;
     var offsetRange = 40; //pixel ralated
 
 
     var threshold = .8;
     if (use == "wall") {
-        posY = -position[0];
-        posX = -(position[1] - ctrPos);
+        posY = -(position[0] - ctrPosX);
+        posX = -(position[1] - ctrPosY);
     } else {
-        posX = position[0];
-        posY = -(position[1] - ctrPos);
+        posX = (position[0] - ctrPosX);
+        posY = -(position[1] - ctrPosY);
     }
     var pos = vec2.fromValues(posX, posY);
 
@@ -779,6 +874,7 @@ function drawNaviBall(ctx, position, use) {
 
 
     vec2.scale(pos, pos, offsetRange * ratio / vec2.len(pos));
+    pos[0] = oneDirection ? 0 : pos[0];
     ctx.translate(pos[0], pos[1]);
     utilities.drawGeneric(ctx);
     ctx.restore();
