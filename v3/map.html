@@ -38,6 +38,8 @@ var ACCELERATION_FACTOR = 3;
 var canvas;
 var ctxRight;
 var ctxLeft;
+var canvasLeft;
+var canvasRight;
 var ctxTouch;
 var CURSOR_SIZE = 30;
 var cursorIdleTimeout = false;
@@ -52,28 +54,48 @@ function canvasApp() {
     canvasWidth = document.body.clientWidth;
     canvasHeight = document.body.clientHeight;
 
-    canvas = document.getElementById("leap-overlay");
+    canvasRight = document.getElementById("leap-overlay");
     // fullscreen
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    ctxRight = canvas.getContext("2d");
+    canvasRight.width = 200 * CURSOR_SCALE;
+    canvasRight.height = 200 * CURSOR_SCALE;
+    ctxRight = canvasRight.getContext("2d");
 
-    canvas = document.getElementById("leap-overlay2");
+    canvasLeft = document.getElementById("leap-overlay2");
     // fullscreen
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    ctxLeft = canvas.getContext("2d");
+    canvasLeft.width = 200 * CURSOR_SCALE;
+    canvasLeft.height = 200 * CURSOR_SCALE;
+    ctxLeft = canvasLeft.getContext("2d");
 
-    canvas = document.getElementById("leap-overlay3");
-    // fullscreen
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
 
     canvas = document.getElementById("touch-overlay");
     // fullscreen
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     ctxTouch = canvas.getContext("2d");
+
+    touchMgr.touchMoveHandler = function (currentTouch, moveX, moveY) {
+        if (currentTouch.whichhand == "left") {
+            if (touchMgr.countTouches("left") == 1) {
+                map.panBy(moveX, moveY);
+            } else if (touchMgr.countTouches("left") == 2) {
+                canvasLeft.style.top = touchMgr.calculateCenter("left")[1] + "px";
+                canvasLeft.style.left = touchMgr.calculateCenter("left")[0] + "px";
+                utilities.drawZoom(ctxLeft);
+            }
+        }
+    };
+
+    touchMgr.touchEndHandler = function (currentTouch) {
+        var d = new Date().getTime();
+        if (currentTouch.whichhand == "right") {
+            if (touchMgr.countTouches("right") == 1) {
+                if (d - currentTouch.starttime < 100) {
+                    shapeManager.getInstance().addCoordbyXY(currentTouch.pageX, currentTouch.pageY);
+                }
+            }
+        }
+
+    };
 
     leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
     leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
@@ -121,7 +143,8 @@ function canvasApp() {
         ctx.save();
         var ratio = utilities.getRatio(controls.palmPosition, controls.use);
         ctx.globalAlpha = 1 - ratio;
-        ctx.translate(screenX, screenY);
+        canvasRight.style.top = screenY + "px";
+        canvasRight.style.left = screenX + "px";
         ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
 
 
@@ -293,21 +316,30 @@ function canvasApp() {
         var ctx;
         var screenX, screenY;
         var progressEle;
+        var canvas;
+        if (interstate.fsm.current === "twoTouches") {
+            return;
+        }
         if (controls.tag == "right") {
+            if (interstate.fsm.current === "touchRightWait") return;
             ctx = ctxRight;
+            canvas = canvasRight;
             screenX = -controls.x + canvasWidth;
             screenY = -controls.y + canvasHeight;
             progressEle = progressRight;
             closeWidgets(controls);
 
         } else if (controls.tag == "left") {
+            if (interstate.fsm.current === "touchLeftWait") return;
             ctx = ctxLeft;
+            canvas = canvasLeft;
             screenX = 0;
             screenY = canvasHeight - CURSOR_SCALE * 200;
             progressEle = progressLeft;
         }
         ctx.save();
-        ctx.translate(screenX, screenY);
+        canvas.style.top = screenY + "px";
+        canvas.style.left = screenX + "px";
         ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
         ctx.globalAlpha = 0.2;
         utilities.drawGeneric(ctx);
@@ -344,13 +376,16 @@ function canvasApp() {
         ctx.save();
         var ratio = utilities.getRatio(controls.palmPosition, controls.use);
         ctx.globalAlpha = 1 - ratio;
-        ctx.translate(screenX, screenY);
+//        ctx.translate(screenX, screenY);
+
+        canvasLeft.style.top = screenY + "px";
+        canvasLeft.style.left = screenX + "px";
         ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
         switch (controls.posture) {
             case "+ind":
                 if (olderLeftPosture !== "+ind") {
-                        ctrPosY = controls.palmPosition[1];
-                        ctrPosX = controls.palmPosition[0];
+                    ctrPosY = controls.palmPosition[1];
+                    ctrPosX = controls.palmPosition[0];
                 }
                 utilities.drawPan(ctx);
                 var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, false);
@@ -582,6 +617,52 @@ var shapeManager = (function () {
                 }
 
 
+            },
+
+            addCoordbyXY: function (cursorX, cursorY) {
+
+                var screenX = canvas.width - cursorX;
+                var screenY = canvas.height - cursorY;
+                var point = new google.maps.Point(screenX, screenY);
+                var proj = map.getProjection();
+                var center = map.getCenter();
+                var centerPiWorld = proj.fromLatLngToPoint(center);
+                // centerPiWorld.x = centerPiWorld.x / 256 * canvas.width;
+                // centerPiWorld.y = centerPiWorld.y / 256 * canvas.height;
+
+                var centerPiLocalX = centerPiWorld.x * (Math.pow(2, map.getZoom()));
+                var centerPiLocalY = centerPiWorld.y * (Math.pow(2, map.getZoom()));
+
+                var panDelta = [
+                    (screenX - canvas.width / 2), (screenY - canvas.height / 2)
+                ];
+
+
+                centerPiLocalX -= panDelta[0];
+                centerPiLocalY -= panDelta[1];
+                centerPiLocalX = centerPiLocalX / (Math.pow(2, map.getZoom()));
+                centerPiLocalY = centerPiLocalY / (Math.pow(2, map.getZoom()));
+
+                var newPoint = new google.maps.Point(centerPiLocalX, centerPiLocalY);
+                var newCoord = proj.fromPointToLatLng(newPoint);
+
+                if (isInMakerProgress) {
+                    currentShape.addCoord(newCoord);
+                } else {
+                    currentShape = new Shape();
+                    currentShape.addCoord(newCoord);
+                    isInMakerProgress = true;
+                }
+                var marker = new google.maps.Marker({
+                    position: newCoord,
+                    map: map,
+                    draggable: true,
+                    animation: google.maps.Animation.DROP,
+                    title: "Shape maker"
+                });
+
+
+                markersArray.push(marker);
             },
 
             addCoord: function (coord) {
@@ -881,6 +962,42 @@ function drawNaviBall(ctx, position, use, oneDirection) {
     return pos;
 }
 
+//document.addEventListener("touchstart", touchHandler, true);
+//document.addEventListener("touchmove", touchHandler, true);
+//document.addEventListener("touchend", touchHandler, true);
+//document.addEventListener("touchcancel", touchHandler, true);
+
+function touchHandler(event) {
+    var touches = event.changedTouches,
+            first = touches[0],
+            type = "";
+    switch (event.type) {
+        case "touchstart":
+            type = "mousedown";
+            break;
+        case "touchmove":
+            type = "mousemove";
+            break;
+        case "touchend":
+            type = "mouseup";
+            break;
+        default:
+            return;
+    }
+
+    //initMouseEvent(type, canBubble, cancelable, view, clickCount,
+    //           screenX, screenY, clientX, clientY, ctrlKey,
+    //           altKey, shiftKey, metaKey, button, relatedTarget);
+
+    var simulatedEvent = document.createEvent("MouseEvent");
+    simulatedEvent.initMouseEvent(type, true, true, window, 1,
+            first.screenX, first.screenY,
+            first.clientX, first.clientY, false,
+            false, false, false, 0/*left*/, null);
+
+    first.target.dispatchEvent(simulatedEvent);
+    event.preventDefault();
+}
 
 </script>
 </html>

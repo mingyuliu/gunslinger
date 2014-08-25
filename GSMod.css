@@ -17,7 +17,7 @@ html, body {
     box-shadow: 0px 0px 20px #000000;
 }
 #leap-overlay {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     z-index: 200000;
@@ -25,7 +25,7 @@ html, body {
 }
 
 .overlay {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     z-index: 200001;

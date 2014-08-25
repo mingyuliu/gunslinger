@@ -741,7 +741,7 @@ var leapDeviceMgr = (function () {
 
     api.start = function () {
         //for test gui
-       // createProgress();
+        // createProgress();
         createDebugTextElement();
         touchMgr.setupTouches();
         for (var i = 0; i < _controllers.length; i++) {
@@ -771,16 +771,16 @@ var leapDeviceMgr = (function () {
 //                interstate.update();
                 //debug info: fps
                 var frameOutput = document.getElementById("frameDataLeft");
-                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" +interstate.fsm.current+ "</div>";
+                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + interstate.fsm.current + "</div>";
                 $("#frameDataLeft").show();
             });
 
         }
     };
 
-    api.printInfo = function(msg) {
+    api.printInfo = function (msg) {
         var frameOutput = document.getElementById("frameDataLeft");
-        frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" +interstate.fsm.current+"<br/>"+ msg + "</div>";
+        frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + interstate.fsm.current + "<br/>" + msg + "</div>";
         $("#frameDataLeft").show();
     }
 
@@ -1077,8 +1077,12 @@ var touchMgr = (function () {
     var currentTouches = [];
 
     var api = {};
-    var canvas = document.getElementById("leap-overlay3");
+    api.touchMoveHandler = {};
+    api.touchEndHandler = {};
+
+    var canvas = document.getElementById("touch-overlay");
     var ctx = canvas.getContext("2d");
+
 
     // Finds the array index of a touch in the currentTouches array.
     var findCurrentTouchIndex = function (id) {
@@ -1091,6 +1095,13 @@ var touchMgr = (function () {
         // Touch not found! Return -1.
         return -1;
     };
+
+    api.getTouchByIndex = function (id) {
+        var currentTouchIndex = findCurrentTouchIndex(id);
+
+
+        return currentTouches[currentTouchIndex];
+    }
 
     var toggleHand = function (whichhand) {
         if (whichhand == "right") {
@@ -1139,6 +1150,7 @@ var touchMgr = (function () {
         }
         return [posX, posY];
     };
+    api.calculateCenter = calculateCenter;
 
     var countTouches = function (whichhand) {
         var counter = 0;
@@ -1166,12 +1178,15 @@ var touchMgr = (function () {
         return counter;
     };
 
+    api.countTouches = countTouches;
+
     // Creates a new touch in the currentTouches array and draws the starting
     // point on the canvas.
     var touchStarted = function (event) {
         var touches = event.changedTouches;
-
+        var d = new Date().getTime();
         for (var i = 0; i < touches.length; i++) {
+
             var touch = touches[i];
             var hand = "right";
             if (interstate.fsm.current == "waitLeft" || interstate.fsm.current == "unknownLeft") {
@@ -1180,11 +1195,13 @@ var touchMgr = (function () {
 
             if (currentTouches.length == 0) {
                 interstate.fsm.newTouch();
+
                 currentTouches.push({
                     id: touch.identifier,
                     pageX: touch.pageX,
                     pageY: touch.pageY,
-                    whichhand: hand
+                    whichhand: hand,
+                    starttime: d
                 });
             } else if (interstate.fsm.current == "twoTouches") {
                 var newTouchVec = vec2.fromValues(touch.pageX, touch.pageY);
@@ -1199,14 +1216,16 @@ var touchMgr = (function () {
                         id: touch.identifier,
                         pageX: touch.pageX,
                         pageY: touch.pageY,
-                        whichhand: "left"
+                        whichhand: "left",
+                        starttime: d
                     });
                 } else {
                     currentTouches.push({
                         id: touch.identifier,
                         pageX: touch.pageX,
                         pageY: touch.pageY,
-                        whichhand: "right"
+                        whichhand: "right",
+                        starttime: d
                     });
                 }
 
@@ -1220,7 +1239,8 @@ var touchMgr = (function () {
                         id: touch.identifier,
                         pageX: touch.pageX,
                         pageY: touch.pageY,
-                        whichhand: toggleHand(currentTouches[0].whichhand)
+                        whichhand: toggleHand(currentTouches[0].whichhand),
+                        starttime: d
                     });
                     interstate.fsm.newTouchFar();
                 } else {
@@ -1228,7 +1248,8 @@ var touchMgr = (function () {
                         id: touch.identifier,
                         pageX: touch.pageX,
                         pageY: touch.pageY,
-                        whichhand: currentTouches[0].whichhand
+                        whichhand: currentTouches[0].whichhand,
+                        starttime: d
                     });
                 }
             }
@@ -1251,6 +1272,10 @@ var touchMgr = (function () {
                 var currentTouch = currentTouches[currentTouchIndex];
 
 
+                //handle event
+
+                touchMgr.touchMoveHandler(currentTouch, currentTouch.pageX -touch.pageX, currentTouch.pageY - touch.pageY);
+
                 // Update the touch record.
                 currentTouch.pageX = touch.pageX;
                 currentTouch.pageY = touch.pageY;
@@ -1266,8 +1291,10 @@ var touchMgr = (function () {
                     ctx.fillStyle = "rgba(0, 0, 200, 0.2)";
                     ctx.strokeStyle = "rgba(0, 0, 200, 0.8)";
                 } else {
+                    //left handler
                     ctx.fillStyle = "rgba(200, 0, 200, 0.2)";
                     ctx.strokeStyle = "rgba(200, 0, 200, 0.8)";
+
                 }
 
                 ctx.fill();
@@ -1281,6 +1308,7 @@ var touchMgr = (function () {
             else {
                 console.log('Touch was not found!');
             }
+
 
         }
 
@@ -1298,6 +1326,7 @@ var touchMgr = (function () {
 
             if (currentTouchIndex >= 0) {
                 var currentTouch = currentTouches[currentTouchIndex];
+                touchMgr.touchEndHandler(currentTouch);
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1459,7 +1488,7 @@ var interstate = (function () {
 //                console.log("event: "+event+" from "+from+ " to "+to);
 //            },
             onenterstate: function (event, from, to) {
-                console.log("enter " + to);
+                console.log("from "+from+" enter " + to);
             },
             onentertouchRight: function (event, from, to) {
                 touchMgr.changeTouchHand("right");
@@ -1713,14 +1742,14 @@ function Controls(tag_, screenWid_, screenHeight_) {
         if (frame.hands[0] != undefined) {
             this.valid = true;
             var hand = frame.hands[0];
-            if(Math.abs(hand.confidence*100-this.confidence)>2)
-            this.confidence += (hand.confidence*100-this.confidence)/4;
+            if (Math.abs(hand.confidence * 100 - this.confidence) > 2)
+                this.confidence += (hand.confidence * 100 - this.confidence) / 4;
 //            this.confidence = hand.confidence * 100;
             this.palmPosition = hand.palmPosition;
             this.palmNormal = hand.palmNormal;
             this.stablePalmPosition = hand.stabilizedPalmPosition;
             var ratio = utilities.getRatio(this.palmPosition, this.use);
-            if(ratio >= 0.8) {
+            if (ratio >= 0.8) {
                 this.posture = "invalid";
             }
 
