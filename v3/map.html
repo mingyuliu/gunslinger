@@ -9,19 +9,72 @@
 <script src="../jquery-2.1.0.min.js"></script>
 <script src="../leap-0.6.0.min.js"></script>
 <script src="../1euro.js"></script>
-
+<script src="../jquery.popmenu.js"></script>
+<link rel="stylesheet" href="lib/font-awesome/css/font-awesome.min.css"/>
+<link rel="stylesheet" href="iconmoon.css"/>
 
 <body>
 <script src="../move.min.js"></script>
 <script src="state-machine.js"></script>
 <div id="map-canvas"></div>
-<canvas id="leap-overlay"></canvas>
-<canvas id="leap-overlay2" class="overlay"></canvas>
-<canvas id="leap-overlay3" class="overlay"></canvas>
+<canvas id="leap-overlay-right" class="overlay"></canvas>
+<canvas id="leap-overlay-left" class="overlay"></canvas>
+
 <canvas id="touch-overlay" class="touch-overlay"></canvas>
 <img id="item1" src="img/draw.png">
 <img id="item2" src="img/navigation.png">
 <img id="item3" src="img/clear.png">
+
+<div id="menu_box_right">
+    <div class="pop_ctrl" id="pop_ctrl_right"><i class="fa fa-bars"></i></div>
+    <ul id="menu_box_right_ele">
+        <li class="demo_li">
+            <div><i class="fa icon-earth fa-2x"></i></div>
+            <div>Satellite</div>
+            </a></li>
+        <li class="demo_li">
+            <div><i class="fa fa-trash fa-2x"></i></div>
+            <div>Clear</div>
+        </li>
+        <li class="demo_li">
+            <div><i class="fa fa-pencil fa-2x"></i></div>
+            <div>Shape</div>
+        </li>
+        <li class="demo_li">
+            <div><i class="fa fa-car fa-2x"></i></div>
+            <div>Route</div>
+        </li>
+        <li class="demo_li">
+            <div><i class="fa fa-times fa-2x"></i></div>
+            <div>Exit</div>
+        </li>
+    </ul>
+</div>
+<div id="menu_box_left">
+    <div class="pop_ctrl" id="pop_ctrl_left"><i class="fa fa-bars"></i></div>
+    <ul id="menu_box_left_ele">
+        <li class="demo_li">
+            <div><i class="fa fa-eye fa-2x"></i></div>
+            <div>Something</div>
+            </a></li>
+        <li class="demo_li">
+            <div><i class="fa fa-trash fa-2x"></i></div>
+            <div>Something</div>
+        </li>
+        <li class="demo_li">
+            <div><i class="fa fa-pencil fa-2x"></i></div>
+            <div>Something</div>
+        </li>
+        <li class="demo_li">
+            <div><i class="fa fa-car fa-2x"></i></div>
+            <div>Something</div>
+        </li>
+        <li class="demo_li">
+            <div><i class="fa fa-times fa-2x"></i></div>
+            <div>Exit</div>
+        </li>
+    </ul>
+</div>
 </body>
 
 
@@ -44,6 +97,8 @@ var ctxTouch;
 var CURSOR_SIZE = 30;
 var cursorIdleTimeout = false;
 var itemSelected = 1;
+var leftItemSelected = 0;
+var rightItemSelected = 0
 function canvasApp() {
 
     var distanceAlphaProj = 1;
@@ -54,13 +109,13 @@ function canvasApp() {
     canvasWidth = document.body.clientWidth;
     canvasHeight = document.body.clientHeight;
 
-    canvasRight = document.getElementById("leap-overlay");
+    canvasRight = document.getElementById("leap-overlay-right");
     // fullscreen
     canvasRight.width = 200 * CURSOR_SCALE;
     canvasRight.height = 200 * CURSOR_SCALE;
     ctxRight = canvasRight.getContext("2d");
 
-    canvasLeft = document.getElementById("leap-overlay2");
+    canvasLeft = document.getElementById("leap-overlay-left");
     // fullscreen
     canvasLeft.width = 200 * CURSOR_SCALE;
     canvasLeft.height = 200 * CURSOR_SCALE;
@@ -75,25 +130,69 @@ function canvasApp() {
 
     touchMgr.touchMoveHandler = function (currentTouch, moveX, moveY) {
         if (currentTouch.whichhand == "left") {
-            if (touchMgr.countTouches("left") == 1) {
+            if (touchMgr.countTouches("left") == 1 && currentTouch.group == 0) {
                 map.panBy(moveX, moveY);
-            } else if (touchMgr.countTouches("left") == 2) {
-                canvasLeft.style.top = touchMgr.calculateCenter("left")[1] + "px";
-                canvasLeft.style.left = touchMgr.calculateCenter("left")[0] + "px";
+            }
+        }
+    };
+
+    touchMgr.afterTouchMoveHandler = function (currentTouch, moveX, moveY) {
+        if (currentTouch.whichhand == "left") {
+            if (touchMgr.countTouches("left") == 2 && currentTouch.group == 1) {
+                var d = new Date().getTime();
+                if (d - currentTouch.starttime < 150) return;
+                ctxLeft.clearRect(0, 0, canvas.width, canvas.height);
+                canvasLeft.style.top = touchMgr.leftGroupCtr[1] + "px";
+                canvasLeft.style.left = touchMgr.leftGroupCtr[0] + "px";
+                ctxLeft.save();
+                ctxLeft.scale(CURSOR_SCALE, CURSOR_SCALE);
                 utilities.drawZoom(ctxLeft);
+                var offset = touchMgr.calculateCenter("left")[1] - touchMgr.leftGroupCtr[1];
+                offset = Math.min(40, offset);
+                var zoomRatio = offset / 40;
+                zoomRatio /= 0.5;
+
+                if (zoomTimeout) {
+                    if (zoomRatio > .4) {
+                        map.setZoom(map.getZoom() - Math.ceil(zoomRatio));
+                        zoomTimeout = false;
+                        setTimeout(function () {
+                            zoomTimeout = true;
+                        }, 250);
+                    } else if (zoomRatio < -.4) {
+                        zoomRatio = -zoomRatio;
+                        map.setZoom(map.getZoom() + Math.ceil(zoomRatio));
+                        zoomTimeout = false;
+                        setTimeout(function () {
+                            zoomTimeout = true;
+                        }, 250);
+                    }
+
+
+                }
+                ctxLeft.translate(0, touchMgr.calculateCenter("left")[1] - touchMgr.leftGroupCtr[1]);
+                utilities.drawGeneric(ctxLeft);
+                ctxLeft.restore();
             }
         }
     };
 
     touchMgr.touchEndHandler = function (currentTouch) {
         var d = new Date().getTime();
-        if (currentTouch.whichhand == "right") {
-            if (touchMgr.countTouches("right") == 1) {
-                if (d - currentTouch.starttime < 100) {
-                    shapeManager.getInstance().addCoordbyXY(currentTouch.pageX, currentTouch.pageY);
+
+        if (touchMgr.countTouches(currentTouch.whichhand) == 1) {
+            if (d - currentTouch.starttime < 150) {
+                if (currentTouch.group == 1) {
+                    //handle double tab
+                    handleDoubleTab(currentTouch.whichhand, currentTouch.pageX, currentTouch.pageY);
+                } else if (currentTouch.group == 0) {
+                    //handle single tab
+                    handleSingleTab(currentTouch.whichhand, currentTouch.pageX, currentTouch.pageY);
+
                 }
             }
         }
+
 
     };
 
@@ -101,6 +200,45 @@ function canvasApp() {
     leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
     leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_RIGHT, leftOnFrame);
     leapDeviceMgr.start();
+    $('#menu_box_right').popmenu({'background': '#e67e22', 'focusColor': '#c0392b', 'iconSize': '100px', 'width': '500px'});
+    $("#pop_ctrl_right").hide();
+
+    $('#menu_box_left').popmenu({ 'iconSize': '100px', 'width': '100px'});
+    $("#pop_ctrl_left").hide();
+    $("#menu_box_left_ele li").click(function () {
+        switch ($(this).find("div")[1].innerHTML) {
+            case "Exit":
+                $("#menu_box_left_ele").hide();
+                break;
+        }
+    });
+    $("#menu_box_right_ele li").click(function () {
+        var shapeMgr = shapeManager.getInstance();
+        switch ($(this).find("div")[1].innerHTML) {
+            case "Exit":
+                closeMenu("right");
+                break;
+            case "Satellite":
+                map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
+                $(this).find("div")[1].innerHTML = "Roadmap";
+//                $(this).removeclass("")
+                break;
+            case "Roadmap":
+                map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+                $(this).find("div")[1].innerHTML = "Satellite";
+                break;
+            case "Clear":
+                shapeMgr.clearAllMarkers();
+                break;
+            case "Shape":
+                shapeMgr.completeShape();
+                break;
+            case "Route":
+                shapeMgr.completeRoute();
+                break;
+
+        }
+    });
 
     var progressRight = new CircularProgress({
         radius: 35 * CURSOR_SCALE,
@@ -133,6 +271,55 @@ function canvasApp() {
 
     startMap();
 
+    function handleSingleTab(whichhand, pageX, pageY) {
+        switch (whichhand) {
+            case "right":
+                shapeManager.getInstance().addCoordbyXY(pageX, pageY);
+                break;
+            case "left":
+                break;
+        }
+    }
+
+    function closeMenu(whichhand) {
+        var elementStr = "#menu_box_" + whichhand + "_ele";
+        $(elementStr).hide();
+        $(window["canvas" + whichhand[0].toUpperCase() + whichhand.slice(1)]).css("zIndex", 200001);
+    }
+
+    function showMenu(whichhand, top, left, isLeap) {
+        var elementStr = "#menu_box_" + whichhand + "_ele";
+        var elementBoxStr = "#menu_box_" + whichhand;
+
+        top = Math.min(canvasHeight - $(elementStr).height(), top);
+        left = Math.min(canvasWidth - $(elementStr).width(), left);
+        top = Math.max(0, top);
+        left = Math.max(0, left);
+        $(elementStr).show("fast");
+        $(elementBoxStr).css("top", top + "px");
+        $(elementBoxStr).css("left", left + "px");
+        if (isLeap)
+            $(window["canvas" + whichhand[0].toUpperCase() + whichhand.slice(1)]).css("zIndex", 300000);
+    }
+
+
+    function handleDoubleTab(whichhand, pageX, pageY) {
+        switch (whichhand) {
+            case "right":
+//                shapeManager.getInstance().addCoordbyXY(pageX, pageY);
+//                    touchMgr.rightGroupCtr = [0,0];
+                showMenu("right", touchMgr.rightGroupCtr[1], touchMgr.rightGroupCtr[0]);
+
+                break;
+            case "left":
+//                touchMgr.leftGroupCtr = [0,0];
+
+
+                showMenu("left", touchMgr.leftGroupCtr[1], touchMgr.leftGroupCtr[0]);
+                break;
+        }
+    }
+
 
     function handleRightAnimation(controls) {
 //        console.log("posture: "+controls.posture);
@@ -151,6 +338,8 @@ function canvasApp() {
         switch (controls.posture) {
             case "+thu+ind":
                 closeWidgets(controls);
+                closeMenu("right");
+
                 var depthScale = controls.depthVal;
                 distanceAlphaProj = controls.devianceVal;
 
@@ -180,6 +369,8 @@ function canvasApp() {
                 cursorIdleTimeout = false;
                 break;
             case "+ind":
+                closeMenu("right");
+
                 closeWidgets(controls);
 
                 distanceAlphaProj = controls.devianceVal;
@@ -196,6 +387,8 @@ function canvasApp() {
                 break;
             case "+thu":
                 popupWidgets(controls);
+                closeMenu("right");
+
                 var rotatex = controls.palmNormal[0] * Math.PI * 180;
                 // console.log(rotatex);
                 if (rotatex < -70) {
@@ -208,10 +401,24 @@ function canvasApp() {
                 selectWidget(controls, itemSelected);
 
                 break;
+            case "-rin-pin":
+
+                showMenu("right", screenY, screenX);
+                var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[0];
+                offset += $("#menu_box_right_ele").width() / 2;
+                offset = Math.floor(offset / $("#menu_box_right_ele").height());
+                var items = $("#menu_box_right_ele li");
+                canvasRight.style.top = $(items[offset]).offset().top + $("#menu_box_right_ele").height() / 2 - 100 * CURSOR_SCALE + "px";
+                canvasRight.style.left = $(items[offset]).offset().left + $("#menu_box_right_ele").height() / 2 - 100 * CURSOR_SCALE + "px";
+                rightItemSelected = offset;
+                utilities.drawGeneric(ctx);
+                break;
+
 
             default :
-                closeWidgets(controls);
+                closeMenu("right");
 
+                closeWidgets(controls);
                 utilities.drawGeneric(ctx);
                 isCursorDown = false;
 
@@ -288,6 +495,12 @@ function canvasApp() {
                             }
                             closeWidgets(controls);
                             break;
+                        case "-rin-pin":
+                            var items = $("#menu_box_right_ele li");
+
+                            $(items[rightItemSelected]).trigger("click");
+                            console.log("rinpin")
+                            break;
                     }
 
                 }
@@ -321,7 +534,7 @@ function canvasApp() {
             return;
         }
         if (controls.tag == "right") {
-            if (interstate.fsm.current === "touchRightWait") return;
+            if (interstate.fsm.current === "touchRightWait" || interstate.fsm.current === "touchRight") return;
             ctx = ctxRight;
             canvas = canvasRight;
             screenX = -controls.x + canvasWidth;
@@ -330,13 +543,14 @@ function canvasApp() {
             closeWidgets(controls);
 
         } else if (controls.tag == "left") {
-            if (interstate.fsm.current === "touchLeftWait") return;
+            if (interstate.fsm.current === "touchLeftWait" || interstate.fsm.current === "touchLeft") return;
             ctx = ctxLeft;
             canvas = canvasLeft;
             screenX = 0;
             screenY = canvasHeight - CURSOR_SCALE * 200;
             progressEle = progressLeft;
         }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         canvas.style.top = screenY + "px";
         canvas.style.left = screenX + "px";
@@ -406,14 +620,21 @@ function canvasApp() {
                 var offsetRange = 40;
                 var zoomRatio = ballPos[1] / 40;
                 zoomRatio /= 0.5;
-                if (zoomRatio !== 0 && zoomTimeout) {
-                    map.setZoom(map.getZoom() + Math.ceil(zoomRatio));
-
-
-                    zoomTimeout = false;
-                    setTimeout(function () {
-                        zoomTimeout = true;
-                    }, 250);
+                if (zoomTimeout) {
+                    if (zoomRatio > 0) {
+                        map.setZoom(map.getZoom() - Math.ceil(zoomRatio));
+                        zoomTimeout = false;
+                        setTimeout(function () {
+                            zoomTimeout = true;
+                        }, 250);
+                    } else if (zoomRatio < 0) {
+                        zoomRatio = -zoomRatio;
+                        map.setZoom(map.getZoom() + Math.ceil(zoomRatio));
+                        zoomTimeout = false;
+                        setTimeout(function () {
+                            zoomTimeout = true;
+                        }, 250);
+                    }
 
                 }
 
@@ -423,7 +644,18 @@ function canvasApp() {
                 progressLeft.el.style.left = screenX + (-offset[0] + ballPos[0] + 65) * CURSOR_SCALE + "px";
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
-
+            case "-rin-pin":
+                showMenu("left", screenX, screenY);
+                var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[1];
+                offset += $("#menu_box_left_ele").height() / 2;
+                offset = Math.floor(offset / $("#menu_box_left_ele").width());
+                var items = $("#menu_box_left_ele li");
+                canvasLeft.style.top = $(items[offset]).offset().top + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
+                canvasLeft.style.left = $(items[offset]).offset().left + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
+                leftItemSelected = offset;
+                utilities.drawGeneric(ctx);
+                utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+                break;
             default :
                 progressLeft.el.style.top = screenY + (-offset[1] + 65) * CURSOR_SCALE + "px";
                 progressLeft.el.style.left = screenX + (-offset[0] + 65) * CURSOR_SCALE + "px";
@@ -438,11 +670,11 @@ function canvasApp() {
 
 
     function rightOnFrame(controls) {
-        ctxRight.clearRect(0, 0, canvas.width, canvas.height);
-        leapDeviceMgr.printInfo(controls.posture);
+
         if (controls.posture == "invalid" || !controls.valid) {
             handleInvalidAnimation(controls);
         } else {
+            ctxRight.clearRect(0, 0, canvas.width, canvas.height);
             handleRightAnimation(controls);
             handleRightEvent(controls);
         }
@@ -451,11 +683,11 @@ function canvasApp() {
     }
 
     function leftOnFrame(controls) {
-        ctxLeft.clearRect(0, 0, canvas.width, canvas.height);
 
         if (controls.posture == "invalid" || !controls.valid) {
             handleInvalidAnimation(controls);
         } else {
+            ctxLeft.clearRect(0, 0, canvas.width, canvas.height);
             handleLeftAnimation(controls);
             //handleLeftEvent(controls);
         }
@@ -928,11 +1160,11 @@ var ctrPosX = 0;
 function drawNaviBall(ctx, position, use, oneDirection) {
     ctx.save();
     var posX, posY;
-    var radius = 60;
+    var radius = 80;
     var offsetRange = 40; //pixel ralated
 
 
-    var threshold = .8;
+    var threshold = .6;
     if (use == "wall") {
         posY = -(position[0] - ctrPosX);
         posX = -(position[1] - ctrPosY);

@@ -309,9 +309,11 @@ var leapDeviceMgr = (function () {
         document.body.appendChild(div2);
 
         $("#frameDataRight").hide()
-        $("#frameDataRight").css("z-index", "200000");
+        $("#frameDataRight").css("z-index", "0");
+        $("#frameDataRight").css("z-index", "0");
+
         $("#frameDataLeft").hide()
-        $("#frameDataRight").css("z-index", "200000");
+        $("#frameDataRight").css("z-index", "0");
     }
 
     function angle2Lines2dCos(v1, v2) {
@@ -705,10 +707,14 @@ var leapDeviceMgr = (function () {
         screenHeight = screenHeight_;
 
 
+    };
+
+    api.getControls = function () {
+        return _controllers;
     }
 
     api.numberOfDev = function () {
-        return controllers.length;
+        return _controllers.length;
     };
 
 
@@ -1079,10 +1085,13 @@ var touchMgr = (function () {
     var api = {};
     api.touchMoveHandler = {};
     api.touchEndHandler = {};
+    api.afterTouchMoveHandler = {};
 
     var canvas = document.getElementById("touch-overlay");
     var ctx = canvas.getContext("2d");
 
+    api.rightGroupCtr = [0, 0];
+    api.leftGroupCtr = [0, 0];
 
     // Finds the array index of a touch in the currentTouches array.
     var findCurrentTouchIndex = function (id) {
@@ -1152,6 +1161,48 @@ var touchMgr = (function () {
     };
     api.calculateCenter = calculateCenter;
 
+    var getPreviousTouch = function (whichhand) {
+        switch (whichhand) {
+            case "right":
+                for (var i = currentTouches.length - 1; i >= 0; i--) {
+                    if (currentTouches[i].whichhand == "right") {
+                        return currentTouches[i];
+                    }
+                }
+                break;
+            case "left":
+                for (var i = currentTouches.length - 1; i >= 0; i--) {
+                    if (currentTouches[i].whichhand == "left") {
+                        return currentTouches[i];
+                    }
+                }
+                break;
+        }
+    }
+
+    var updateGroupTouches = function (whichhand, groupNum) {
+        switch (whichhand) {
+            case "right":
+                for (var i = 0; i < currentTouches.length; i++) {
+                    if (currentTouches[i].whichhand == "right" && (currentTouches[i].group !== 0)) {
+                        currentTouches[i].group = groupNum;
+                    }
+                }
+                touchMgr.rightGroupCtr = touchMgr.calculateCenter("right");
+                break;
+            case "left":
+                for (var i = 0; i < currentTouches.length; i++) {
+                    if (currentTouches[i].whichhand == "left" && (currentTouches[i].group !== 0)) {
+                        currentTouches[i].group = groupNum;
+
+                    }
+                }
+                touchMgr.leftGroupCtr = touchMgr.calculateCenter("left");
+                break;
+
+        }
+    };
+
     var countTouches = function (whichhand) {
         var counter = 0;
         switch (whichhand) {
@@ -1180,6 +1231,7 @@ var touchMgr = (function () {
 
     api.countTouches = countTouches;
 
+
     // Creates a new touch in the currentTouches array and draws the starting
     // point on the canvas.
     var touchStarted = function (event) {
@@ -1201,7 +1253,8 @@ var touchMgr = (function () {
                     pageX: touch.pageX,
                     pageY: touch.pageY,
                     whichhand: hand,
-                    starttime: d
+                    starttime: d,
+                    group: 0
                 });
             } else if (interstate.fsm.current == "twoTouches") {
                 var newTouchVec = vec2.fromValues(touch.pageX, touch.pageY);
@@ -1212,21 +1265,37 @@ var touchMgr = (function () {
                 var rightDis = vec2.dist(newTouchVec, rightCtr);
 
                 if (leftDis < rightDis) {
+                    var previousTouch = getPreviousTouch("left");
+                    var groupNum = 0;
+                    if ((d - previousTouch.starttime) < 30) {
+                        previousTouch.group++;
+                        groupNum = previousTouch.group;
+                    }
                     currentTouches.push({
                         id: touch.identifier,
                         pageX: touch.pageX,
                         pageY: touch.pageY,
                         whichhand: "left",
-                        starttime: d
+                        starttime: d,
+                        group: groupNum
                     });
+                    updateGroupTouches(previousTouch.whichhand, previousTouch.group);
                 } else {
+                    var previousTouch = getPreviousTouch("right");
+                    var groupNum = 0;
+                    if ((d - previousTouch.starttime) < 30) {
+                        previousTouch.group++;
+                        groupNum = previousTouch.group;
+                    }
                     currentTouches.push({
                         id: touch.identifier,
                         pageX: touch.pageX,
                         pageY: touch.pageY,
                         whichhand: "right",
-                        starttime: d
+                        starttime: d,
+                        group: groupNum
                     });
+                    updateGroupTouches(previousTouch.whichhand, previousTouch.group);
                 }
 
             } else {
@@ -1240,19 +1309,37 @@ var touchMgr = (function () {
                         pageX: touch.pageX,
                         pageY: touch.pageY,
                         whichhand: toggleHand(currentTouches[0].whichhand),
-                        starttime: d
+                        starttime: d,
+                        group: 0
                     });
                     interstate.fsm.newTouchFar();
                 } else {
+                    var previousTouch = currentTouches[currentTouches.length - 1];
+                    var groupNum = 0;
+                    if ((d - previousTouch.starttime) < 30) {
+                        previousTouch.group++;
+                        groupNum = previousTouch.group;
+                    }
                     currentTouches.push({
                         id: touch.identifier,
                         pageX: touch.pageX,
                         pageY: touch.pageY,
                         whichhand: currentTouches[0].whichhand,
-                        starttime: d
+                        starttime: d,
+                        group: groupNum
                     });
+                    updateGroupTouches(previousTouch.whichhand, previousTouch.group);
                 }
             }
+            var devices = leapDeviceMgr.getControls();
+            for (var i = 0; i < devices.length; i++) {
+                if (devices[i].controls.valid) {
+                    window["interstate"]["fsm"]["leap" + devices[i].controls.tag]();
+                } else {
+                    window["interstate"]["fsm"]["noLeap" + devices[i].controls.tag]();
+                }
+            }
+
         }
 
     };
@@ -1274,7 +1361,7 @@ var touchMgr = (function () {
 
                 //handle event
 
-                touchMgr.touchMoveHandler(currentTouch, currentTouch.pageX -touch.pageX, currentTouch.pageY - touch.pageY);
+                touchMgr.touchMoveHandler(currentTouch, currentTouch.pageX - touch.pageX, currentTouch.pageY - touch.pageY);
 
                 // Update the touch record.
                 currentTouch.pageX = touch.pageX;
@@ -1304,6 +1391,7 @@ var touchMgr = (function () {
 
                 // Store the record.
                 currentTouches.splice(currentTouchIndex, 1, currentTouch);
+                touchMgr.afterTouchMoveHandler(currentTouch);
             }
             else {
                 console.log('Touch was not found!');
@@ -1488,7 +1576,7 @@ var interstate = (function () {
 //                console.log("event: "+event+" from "+from+ " to "+to);
 //            },
             onenterstate: function (event, from, to) {
-                console.log("from "+from+" enter " + to);
+                console.log("from " + from + " enter " + to);
             },
             onentertouchRight: function (event, from, to) {
                 touchMgr.changeTouchHand("right");
@@ -1779,7 +1867,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 this.fingerList[0] = -this.fingerList[0];
             }
 
-            if (this.posture == "+thu+ind" || this.posture == "+ind" || this.posture == "+thu") {
+            if (this.posture == "+thu+ind" || this.posture == "+ind" || this.posture == "+thu" || this.posture == "-rin-pin") {
 
                 if (this.tag == "right")  //to-do
                     this.updateDistance(distanceVec[0]);
@@ -1900,6 +1988,33 @@ var utilities = (function () {
         var ratio = this.getRatio(position, use);
 
         vec2.scale(pos, pos, offsetRange * ratio / vec2.len(pos));
+        return pos;
+
+    };
+
+    api.getAbsoluteOffset = function (position, use, whichhand) {
+        var posX, posY;
+        var ctrPos = 200,
+            radius = 100;
+        var elementStr = "#menu_box_" + whichhand + "_ele";
+        var offsetRange = Math.max($(elementStr).height()/2, $(elementStr).width()/2); //pixel ralated
+
+
+        if (use == "wall") {
+            posY = position[0];
+            posX = (position[1] - ctrPos);
+        } else {
+            posX = position[0];
+            posY = -(position[1] - ctrPos);
+        }
+        var pos = vec2.fromValues(posX, posY);
+
+        var len = vec2.len(pos);
+        len = Math.min(len, radius);
+        var ratio = len/radius;
+
+        vec2.scale(pos, pos, offsetRange * ratio / vec2.len(pos));
+        leapDeviceMgr.printInfo(pos[0]+" "+pos[1]);
         return pos;
 
     };
