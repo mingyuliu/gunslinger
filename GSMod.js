@@ -8,7 +8,7 @@ var SCALE_RATIO = 1.5;
 var FINGER_RENDER_MODE = 0;
 var isVerboseInfoShonw = false;
 
-var TOUCH_DISTANCE_RECONFIG = 300;
+var TOUCH_DISTANCE_RECONFIG = 400;
 
 //scale of cursor
 var CURSOR_SCALE = 2;
@@ -1816,29 +1816,62 @@ function Controls(tag_, screenWid_, screenHeight_) {
             w_none = 1 / 4,
             w_fuzzyRange = 0.15;
         var w_fuzzyRangeActive = 0.10;
+        var boundRight, boundLeft;
+        if(this.tag === "right") {
+            boundRight = this.thumbBent;
+            boundLeft = this.thumbExtended;
 
-        var range = this.thumbBent - this.thumbExtended;
+            var range = boundRight-boundLeft;
 
-        switch (this.cursorState) {
-            case "active":
-                if (distance > (this.thumbExtended + range * w_active + range * w_active * w_fuzzyRangeActive)) {
-                    this.setCursorState("down");
-                }
-                break;
-            case "down":
-                if (distance > (this.thumbExtended + range * (w_active + w_down) )) {  //to-do
-                    this.setCursorState("none");
-                } else if (distance < (this.thumbExtended + range * w_active - range * w_down * w_fuzzyRangeActive)) {
-                    this.setCursorState("active");
-                }
-                break;
-            case "none":
-                if (distance < (this.thumbExtended + range * w_active)) {
-                    this.setCursorState("down");
-                }
-                break;
+            switch (this.cursorState) {
+                case "active":
+                    if (distance > (boundLeft + range * w_active + range * w_active * w_fuzzyRangeActive)) {
+                        this.setCursorState("down");
+                    }
+                    break;
+                case "down":
+                    if (distance > (boundLeft + range * (w_active + w_down) )) {  //to-do
+                        this.setCursorState("none");
+                    } else if (distance < (boundLeft + range * w_active - range * w_down * w_fuzzyRangeActive)) {
+                        this.setCursorState("active");
+                    }
+                    break;
+                case "none":
+                    if (distance < (boundLeft + range * w_active)) {
+                        this.setCursorState("down");
+                    }
+                    break;
 
+            }
+        } else if (this.tag === "left") {
+            boundLeft = this.thumbBent;
+            boundRight = this.thumbExtended;
+
+            var range = boundRight-boundLeft;
+
+            switch (this.cursorState) {
+                case "active":
+                    if (distance < (boundLeft + range * (w_none + w_down) - range * w_active * w_fuzzyRangeActive)) {
+                        this.setCursorState("down");
+                    }
+                    break;
+                case "down":
+                    if (distance > (boundLeft + range * (w_none + w_down) )) {  //to-do
+                        this.setCursorState("active");
+                    } else if (distance < (boundLeft + range * w_none - range * w_down * w_fuzzyRangeActive)) {
+                        this.setCursorState("none");
+                    }
+                    break;
+                case "none":
+                    if (distance > (boundLeft + range * w_none)) {
+                        this.setCursorState("down");
+                    }
+                    break;
+
+            }
         }
+
+
         if (this.cursorState == "none") {
             this.posture = "+ind";
         }
@@ -1912,7 +1945,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
 
             if (this.posture == "+thu+ind" || this.posture == "+ind" || this.posture == "+thu" || this.posture == "-rin-pin") {
 
-                if (this.tag == "right")  //to-do
+//                if (this.tag == "right")  //to-do
                     this.updateDistance(distanceVec[0]);
 
 
@@ -2098,6 +2131,7 @@ var utilities = (function () {
     };
 
     api.drawZoom = function (ctx) {
+
         ctx.save();
         ctx.beginPath();
         ctx.moveTo(127.1, 35.5);
@@ -2233,25 +2267,52 @@ var utilities = (function () {
         ctx.beginPath();
 
         // panzoomfeedback/pan/Path
-        ctx.moveTo(71.0, 169.1);
-        ctx.bezierCurveTo(32.8, 153.1, 14.8, 109.2, 30.9, 71.0);
-        ctx.bezierCurveTo(46.9, 32.8, 90.8, 14.8, 129.0, 30.9);
-        ctx.bezierCurveTo(167.2, 46.9, 185.2, 90.8, 169.1, 129.0);
-        ctx.bezierCurveTo(153.1, 167.2, 109.2, 185.2, 71.0, 169.1);
+        ctx.moveTo(176.2, 89.0);
+        ctx.lineTo(176.2, 94.8);
+        ctx.lineTo(174.8, 94.8);
+        ctx.bezierCurveTo(172.9, 67.5, 156.0, 42.2, 129.0, 30.9);
+        ctx.bezierCurveTo(121.2, 27.6, 113.3, 25.8, 105.3, 25.2);
+        ctx.lineTo(105.3, 23.9);
+        ctx.lineTo(111.2, 23.9);
+        ctx.lineTo(100.0, 16.5);
+        ctx.lineTo(88.8, 23.9);
+        ctx.lineTo(94.7, 23.9);
+        ctx.lineTo(94.7, 25.2);
+        ctx.bezierCurveTo(67.4, 27.2, 42.2, 44.0, 30.9, 71.0);
+        ctx.bezierCurveTo(27.6, 78.8, 25.8, 86.8, 25.2, 94.8);
+        ctx.lineTo(23.8, 94.8);
+        ctx.lineTo(23.8, 89.0);
+        ctx.lineTo(16.4, 100.1);
+        ctx.lineTo(23.8, 111.3);
+        ctx.lineTo(23.8, 105.4);
+        ctx.lineTo(25.2, 105.4);
+        ctx.bezierCurveTo(27.2, 132.7, 44.1, 157.9, 71.0, 169.1);
+        ctx.bezierCurveTo(78.8, 172.4, 86.7, 174.2, 94.7, 174.8);
+        ctx.lineTo(94.7, 176.3);
+        ctx.lineTo(88.8, 176.3);
+        ctx.lineTo(100.0, 183.7);
+        ctx.lineTo(111.2, 176.3);
+        ctx.lineTo(105.3, 176.3);
+        ctx.lineTo(105.3, 174.8);
+        ctx.bezierCurveTo(132.6, 172.8, 157.8, 156.0, 169.1, 129.0);
+        ctx.bezierCurveTo(172.4, 121.3, 174.2, 113.3, 174.8, 105.4);
+        ctx.lineTo(176.2, 105.4);
+        ctx.lineTo(176.2, 111.3);
+        ctx.lineTo(183.6, 100.1);
+        ctx.lineTo(176.2, 89.0);
         ctx.closePath();
 
         // panzoomfeedback/pan/Path
         ctx.moveTo(164.5, 127.1);
-        ctx.bezierCurveTo(179.5, 91.4, 162.7, 50.4, 127.1, 35.5);
-        ctx.bezierCurveTo(91.4, 20.5, 50.4, 37.3, 35.5, 72.9);
-        ctx.bezierCurveTo(20.5, 108.6, 37.3, 149.6, 72.9, 164.5);
-        ctx.bezierCurveTo(108.6, 179.5, 149.6, 162.7, 164.5, 127.1);
+        ctx.bezierCurveTo(149.6, 162.7, 108.6, 179.5, 72.9, 164.5);
+        ctx.bezierCurveTo(37.3, 149.6, 20.5, 108.6, 35.5, 72.9);
+        ctx.bezierCurveTo(50.4, 37.3, 91.4, 20.5, 127.1, 35.5);
+        ctx.bezierCurveTo(162.7, 50.4, 179.5, 91.4, 164.5, 127.1);
         ctx.closePath();
         ctx.fill();
         ctx.strokeStyle = "rgb(255, 255, 255)";
         ctx.stroke();
         ctx.restore();
-
     };
 
     api.drawClutch = function (ctx) {

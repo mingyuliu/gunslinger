@@ -208,7 +208,7 @@ function canvasApp() {
     $("#menu_box_left_ele li").click(function () {
         switch ($(this).find("div")[1].innerHTML) {
             case "Exit":
-                $("#menu_box_left_ele").hide();
+                closeMenu("left");
                 break;
         }
     });
@@ -274,6 +274,7 @@ function canvasApp() {
         $(elementStr).show("fast");
         $(elementBoxStr).css("top", top + "px");
         $(elementBoxStr).css("left", left + "px");
+        //some odd zindex issue due to chrome built-in swap gesture; had to temporarily surface cursor canvas
         if (isLeap)
             $(window["canvas" + whichhand[0].toUpperCase() + whichhand.slice(1)]).css("zIndex", 300000);
     }
@@ -406,6 +407,31 @@ function canvasApp() {
 
         ctx.restore();
 
+    }
+
+    function handleLeftEvent(controls) {
+        switch (controls.cursorEvent) {
+            case "clickup":
+
+                    switch (controls.posture) {
+
+                        case "-rin-pin":
+                            var items = $("#menu_box_left_ele li");
+
+                            $(items[leftItemSelected]).trigger("click");
+                            console.log("rinpin");
+                            break;
+                    }
+
+                console.log("clickup");
+                controls.cursorEvent = "none";
+
+                break;
+            case "clickdown":
+
+                break;
+
+        }
     }
 
     function handleRightEvent(controls) {
@@ -552,6 +578,7 @@ function canvasApp() {
         ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
         switch (controls.posture) {
             case "+ind":
+                closeMenu("left");
                 if (olderLeftPosture !== "+ind") {
                     ctrPosY = controls.palmPosition[1];
                     ctrPosX = controls.palmPosition[0];
@@ -565,6 +592,7 @@ function canvasApp() {
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
             case "+thu+ind":
+                closeMenu("left");
                 if (olderLeftPosture !== "+thu+ind") {
                     ctrPosY = controls.palmPosition[1];
                     ctrPosX = controls.palmPosition[0];
@@ -598,7 +626,7 @@ function canvasApp() {
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
             case "-rin-pin":
-                showMenu("left", screenX, screenY);
+                showMenu("left", canvasWidth/2, canvasHeight/2, true);
                 var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[1];
                 offset += $("#menu_box_left_ele").height() / 2;
                 offset = Math.floor(offset / $("#menu_box_left_ele").width());
@@ -610,7 +638,7 @@ function canvasApp() {
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
             default :
-
+                closeMenu("left");
 
                 utilities.drawGeneric(ctx);
                 ctx.translate(-offset[0], -offset[1]);
@@ -642,7 +670,7 @@ function canvasApp() {
         } else {
             ctxLeft.clearRect(0, 0, canvas.width, canvas.height);
             handleLeftAnimation(controls);
-            //handleLeftEvent(controls);
+            handleLeftEvent(controls);
         }
 
     }
