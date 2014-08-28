@@ -8,6 +8,8 @@ var SCALE_RATIO = 1.5;
 var FINGER_RENDER_MODE = 0;
 var isVerboseInfoShonw = false;
 
+var TOUCH_DISTANCE_RECONFIG = 300;
+
 //scale of cursor
 var CURSOR_SCALE = 2;
 
@@ -1092,6 +1094,8 @@ var touchMgr = (function () {
 
     api.rightGroupCtr = [0, 0];
     api.leftGroupCtr = [0, 0];
+    api.lastRightPos = [Number.MAX_VALUE, Number.MAX_VALUE];
+    api.lastLeftPos = [Number.MAX_VALUE, Number.MAX_VALUE];
 
     // Finds the array index of a touch in the currentTouches array.
     var findCurrentTouchIndex = function (id) {
@@ -1117,6 +1121,21 @@ var touchMgr = (function () {
             return "left";
         } else {
             return "right"
+        }
+    }
+
+    var checkTwoTouches = function () {
+        var leftCenter = calculateCenter("left");
+        var rightCenter = calculateCenter("right");
+
+        if(leftCenter[0] > rightCenter[0]) {
+            swapAllTouches();
+        }
+    }
+
+    var swapAllTouches = function () {
+        for (var i = 0; i < currentTouches.length; i++) {
+            currentTouches[i].whichhand = toggleHand(currentTouches[i].whichhand);
         }
     }
 
@@ -1246,6 +1265,20 @@ var touchMgr = (function () {
             }
 
             if (currentTouches.length == 0) {
+                if (hand === "right") {
+                    var distance = vec2.dist(touchMgr.lastLeftPos, [touch.pageX, touch.pageY]);
+                    if (distance < TOUCH_DISTANCE_RECONFIG) {
+                        hand = "left";
+                        interstate.fsm.leapright();
+                    }
+                } else if (hand === "left") {
+                    var distance = vec2.dist(touchMgr.lastRightPos, [touch.pageX, touch.pageY]);
+                    if (distance < TOUCH_DISTANCE_RECONFIG) {
+                        hand = "right";
+                        interstate.fsm.leapleft();
+                    }
+                }
+
                 interstate.fsm.newTouch();
 
                 currentTouches.push({
@@ -1312,7 +1345,9 @@ var touchMgr = (function () {
                         starttime: d,
                         group: 0
                     });
+                    checkTwoTouches();
                     interstate.fsm.newTouchFar();
+
                 } else {
                     var previousTouch = currentTouches[currentTouches.length - 1];
                     var groupNum = 0;
@@ -1417,7 +1452,7 @@ var touchMgr = (function () {
                 touchMgr.touchEndHandler(currentTouch);
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+                var touchWhichHand = currentTouch.whichhand;
 
                 // Remove the record.
                 currentTouches.splice(currentTouchIndex, 1);
@@ -1425,15 +1460,23 @@ var touchMgr = (function () {
                 var counts = countTouches("all");
                 if (counts == 0) {
                     interstate.fsm.noTouch();
+                    if (touchWhichHand === "right") {
+                        touchMgr.lastRightPos = [touch.pageX, touch.pageY];
+                    } else if (touchWhichHand === "left") {
+                        touchMgr.lastLeftPos = [touch.pageX, touch.pageY];
+                    }
                 } else {
                     var countsLeft = countTouches("left");
                     var countsRight = countTouches("right");
-                    if (countsLeft == 0) {
+                    if (countsLeft == 0 && touchWhichHand === "left") {
                         interstate.fsm.noTouchLeft();
-                    } else if (countsRight == 0) {
+                        touchMgr.lastLeftPos = [touch.pageX, touch.pageY];
+                    } else if (countsRight == 0 && touchWhichHand === "right") {
                         interstate.fsm.noTouchRight();
+                        touchMgr.lastRightPos = [touch.pageX, touch.pageY];
                     }
                 }
+                utilities.drawPreviousTouch(ctxTouch);
             } else {
                 console.log('Touch was not found!');
             }
@@ -1939,6 +1982,23 @@ function GetURLParameter(sParam) {
 var utilities = (function () {
     var api = {};
 
+    api.drawPreviousTouch = function (ctx) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(200, 0, 200, 0.15)";
+        ctx.strokeStyle = "rgba(200, 0, 200, 0.3)";
+        ctx.arc(touchMgr.lastLeftPos[0], touchMgr.lastLeftPos[1], TOUCH_DISTANCE_RECONFIG, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(0, 0, 200, 0.15)";
+        ctx.strokeStyle = "rgba(0, 0, 200, 0.3)";
+        ctx.arc(touchMgr.lastRightPos[0], touchMgr.lastRightPos[1], TOUCH_DISTANCE_RECONFIG, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.restore();
+    };
+
     api.getRatio = function (position, use) {
         var posX, posY;
         var ctrPos = 200,
@@ -1997,7 +2057,7 @@ var utilities = (function () {
         var ctrPos = 200,
             radius = 100;
         var elementStr = "#menu_box_" + whichhand + "_ele";
-        var offsetRange = Math.max($(elementStr).height()/2, $(elementStr).width()/2); //pixel ralated
+        var offsetRange = Math.max($(elementStr).height() / 2, $(elementStr).width() / 2); //pixel ralated
 
 
         if (use == "wall") {
@@ -2011,10 +2071,10 @@ var utilities = (function () {
 
         var len = vec2.len(pos);
         len = Math.min(len, radius);
-        var ratio = len/radius;
+        var ratio = len / radius;
 
         vec2.scale(pos, pos, offsetRange * ratio / vec2.len(pos));
-        leapDeviceMgr.printInfo(pos[0]+" "+pos[1]);
+        leapDeviceMgr.printInfo(pos[0] + " " + pos[1]);
         return pos;
 
     };

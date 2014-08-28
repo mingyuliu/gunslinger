@@ -221,11 +221,14 @@ function canvasApp() {
             case "Satellite":
                 map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
                 $(this).find("div")[1].innerHTML = "Roadmap";
-//                $(this).removeclass("")
+                var element = $("#menu_box_right_ele li i.icon-earth")[0];
+                $(element).removeClass("icon-earth").addClass("icon-map");
                 break;
             case "Roadmap":
                 map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
                 $(this).find("div")[1].innerHTML = "Satellite";
+                var element = $("#menu_box_right_ele li i.icon-map")[0];
+                $(element).addClass("icon-earth").removeClass("icon-map");
                 break;
             case "Clear":
                 shapeMgr.clearAllMarkers();
@@ -240,34 +243,7 @@ function canvasApp() {
         }
     });
 
-    var progressRight = new CircularProgress({
-        radius: 35 * CURSOR_SCALE,
-        strokeStyle: 'green',
-        lineCap: 'round',
-        lineWidth: 4
-    });
 
-    document.body.appendChild(progressRight.el);
-
-    progressRight.el.style.position = "absolute";
-    progressRight.el.style.zIndex = "500000000";
-
-
-    progressRight.update(20);
-    var progressLeft = new CircularProgress({
-        radius: 35 * CURSOR_SCALE,
-        strokeStyle: 'green',
-        lineCap: 'round',
-        lineWidth: 4
-    });
-
-    document.body.appendChild(progressLeft.el);
-
-    progressLeft.el.style.position = "absolute";
-    progressLeft.el.style.zIndex = "500000000";
-
-
-    progressLeft.update(20);
 
     startMap();
 
@@ -403,7 +379,7 @@ function canvasApp() {
                 break;
             case "-rin-pin":
 
-                showMenu("right", screenY, screenX);
+                showMenu("right", screenY, screenX, true);
                 var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[0];
                 offset += $("#menu_box_right_ele").width() / 2;
                 offset = Math.floor(offset / $("#menu_box_right_ele").height());
@@ -427,18 +403,7 @@ function canvasApp() {
         ctx.translate(-offset[0], -offset[1]);
         utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
 
-        progressRight.el.style.top = screenY + (-offset[1] + 65) * CURSOR_SCALE + "px";
-        progressRight.el.style.left = screenX + (-offset[0] + 65) * CURSOR_SCALE + "px";
-        if (controls.confidence >= 80) {
-            progressRight.options["strokeStyle"] = "green";
-        } else if (controls.confidence < 80 && controls.confidence >= 40) {
-            progressRight.options["strokeStyle"] = "yellow";
-        } else if (controls.confidence < 40 && controls.confidence > 0) {
-            progressRight.options["strokeStyle"] = "red";
-        } else {
-            progressRight.options["strokeStyle"] = "grey";
-        }
-        progressRight.update(controls.confidence / 4);
+
         ctx.restore();
 
     }
@@ -528,7 +493,7 @@ function canvasApp() {
     function handleInvalidAnimation(controls) {
         var ctx;
         var screenX, screenY;
-        var progressEle;
+
         var canvas;
         if (interstate.fsm.current === "twoTouches") {
             return;
@@ -539,7 +504,7 @@ function canvasApp() {
             canvas = canvasRight;
             screenX = -controls.x + canvasWidth;
             screenY = -controls.y + canvasHeight;
-            progressEle = progressRight;
+
             closeWidgets(controls);
 
         } else if (controls.tag == "left") {
@@ -548,7 +513,7 @@ function canvasApp() {
             canvas = canvasLeft;
             screenX = 0;
             screenY = canvasHeight - CURSOR_SCALE * 200;
-            progressEle = progressLeft;
+
         }
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
@@ -560,8 +525,7 @@ function canvasApp() {
         var offset = utilities.getOffsetPosition(controls.palmPosition, controls.use);
         ctx.translate(-offset[0], -offset[1]);
         utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
-        progressEle.el.style.top = screenY + (-offset[1] + 65) * CURSOR_SCALE + "px";
-        progressEle.el.style.left = screenX + (-offset[0] + 65) * CURSOR_SCALE + "px";
+
         ctx.restore();
 //        console.log("invalid draing" + controls.fingerList);
 
@@ -577,16 +541,7 @@ function canvasApp() {
         var screenX = 0;
         var screenY = canvasHeight - CURSOR_SCALE * 200;
 
-        if (controls.confidence >= 80) {
-            progressLeft.options["strokeStyle"] = "green";
-        } else if (controls.confidence < 80 && controls.confidence >= 40) {
-            progressLeft.options["strokeStyle"] = "yellow";
-        } else if (controls.confidence < 40 && controls.confidence > 0) {
-            progressLeft.options["strokeStyle"] = "red";
-        } else {
-            progressLeft.options["strokeStyle"] = "grey";
-        }
-        progressLeft.update(controls.confidence / 4);
+
         ctx.save();
         var ratio = utilities.getRatio(controls.palmPosition, controls.use);
         ctx.globalAlpha = 1 - ratio;
@@ -606,8 +561,7 @@ function canvasApp() {
                 map.panBy(ballPos[0], ballPos[1]);
 
                 ctx.translate(-offset[0] + ballPos[0], -offset[1] + ballPos[1]);
-                progressLeft.el.style.top = screenY + (-offset[1] + ballPos[1] + 65) * CURSOR_SCALE + "px";
-                progressLeft.el.style.left = screenX + (-offset[0] + ballPos[0] + 65) * CURSOR_SCALE + "px";
+
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
             case "+thu+ind":
@@ -640,8 +594,7 @@ function canvasApp() {
 
 
                 ctx.translate(-offset[0] + ballPos[0], -offset[1] + ballPos[1]);
-                progressLeft.el.style.top = screenY + (-offset[1] + ballPos[1] + 65) * CURSOR_SCALE + "px";
-                progressLeft.el.style.left = screenX + (-offset[0] + ballPos[0] + 65) * CURSOR_SCALE + "px";
+
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
             case "-rin-pin":
@@ -657,8 +610,7 @@ function canvasApp() {
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
             default :
-                progressLeft.el.style.top = screenY + (-offset[1] + 65) * CURSOR_SCALE + "px";
-                progressLeft.el.style.left = screenX + (-offset[0] + 65) * CURSOR_SCALE + "px";
+
 
                 utilities.drawGeneric(ctx);
                 ctx.translate(-offset[0], -offset[1]);
@@ -679,6 +631,7 @@ function canvasApp() {
             handleRightEvent(controls);
         }
 //            console.log("right " + controls.posture);
+        //debug purpose
 
     }
 
