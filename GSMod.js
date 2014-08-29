@@ -1647,7 +1647,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.y = screenHeight_ / 2;
     this.valid = false;
     this.posture = "none";
-    this.use = GetURLParameter("use");
+    this.use = GetURLParameter("use") || "desktop";
     if (this.tag == "right") {
 
         this.thumbExtended = Number(localStorage.rightThumbExtended) * .92 || -75;
@@ -2014,6 +2014,456 @@ function GetURLParameter(sParam) {
 
 var utilities = (function () {
     var api = {};
+
+    api.drawFlickMenu = function (ctx) {
+        // flickmenufeedback/Path
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(129.7, 48.9);
+        ctx.bezierCurveTo(120.9, 43.6, 110.6, 40.6, 99.5, 40.6);
+        ctx.bezierCurveTo(88.4, 40.6, 78.1, 43.6, 69.2, 48.9);
+        ctx.lineWidth = 2.0;
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.stroke();
+
+        // flickmenufeedback/Path
+        ctx.beginPath();
+        ctx.moveTo(150.2, 129.9);
+        ctx.bezierCurveTo(155.5, 121.0, 158.6, 110.7, 158.6, 99.6);
+        ctx.bezierCurveTo(158.6, 88.6, 155.5, 78.2, 150.2, 69.4);
+        ctx.stroke();
+
+        // flickmenufeedback/Path
+        ctx.beginPath();
+        ctx.moveTo(69.2, 150.4);
+        ctx.bezierCurveTo(78.1, 155.7, 88.4, 158.7, 99.5, 158.7);
+        ctx.bezierCurveTo(110.6, 158.7, 120.9, 155.7, 129.7, 150.4);
+        ctx.stroke();
+
+        // flickmenufeedback/Path
+        ctx.beginPath();
+        ctx.moveTo(48.8, 69.4);
+        ctx.bezierCurveTo(43.5, 78.2, 40.4, 88.6, 40.4, 99.6);
+        ctx.bezierCurveTo(40.4, 110.7, 43.5, 121.0, 48.8, 129.9);
+        ctx.stroke();
+
+        // flickmenufeedback/Group
+
+        // flickmenufeedback/Group/Compound Path
+        ctx.save();
+        ctx.beginPath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(129.5, 49.3);
+        ctx.bezierCurveTo(128.6, 48.8, 127.8, 48.3, 126.9, 47.9);
+        ctx.lineTo(127.4, 47.0);
+        ctx.bezierCurveTo(128.3, 47.5, 129.1, 48.0, 130.0, 48.5);
+        ctx.lineTo(129.5, 49.3);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(69.9, 49.1);
+        ctx.lineTo(69.4, 48.2);
+        ctx.bezierCurveTo(70.3, 47.7, 71.2, 47.2, 72.1, 46.7);
+        ctx.lineTo(72.6, 47.6);
+        ctx.bezierCurveTo(71.7, 48.1, 70.8, 48.6, 69.9, 49.1);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(124.2, 46.5);
+        ctx.bezierCurveTo(123.3, 46.1, 122.4, 45.7, 121.5, 45.4);
+        ctx.lineTo(121.9, 44.4);
+        ctx.bezierCurveTo(122.8, 44.8, 123.7, 45.2, 124.7, 45.6);
+        ctx.lineTo(124.2, 46.5);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(75.2, 46.3);
+        ctx.lineTo(74.8, 45.4);
+        ctx.bezierCurveTo(75.7, 45.0, 76.7, 44.6, 77.6, 44.2);
+        ctx.lineTo(78.0, 45.2);
+        ctx.bezierCurveTo(77.1, 45.5, 76.1, 45.9, 75.2, 46.3);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(118.7, 44.3);
+        ctx.bezierCurveTo(117.8, 44.0, 116.8, 43.7, 115.9, 43.4);
+        ctx.lineTo(116.2, 42.4);
+        ctx.bezierCurveTo(117.1, 42.7, 118.1, 43.0, 119.1, 43.4);
+        ctx.lineTo(118.7, 44.3);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(80.8, 44.1);
+        ctx.lineTo(80.4, 43.2);
+        ctx.bezierCurveTo(81.4, 42.9, 82.4, 42.6, 83.3, 42.3);
+        ctx.lineTo(83.6, 43.3);
+        ctx.bezierCurveTo(82.6, 43.5, 81.7, 43.8, 80.8, 44.1);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(113.0, 42.6);
+        ctx.bezierCurveTo(112.1, 42.4, 111.1, 42.2, 110.1, 42.0);
+        ctx.lineTo(110.3, 41.1);
+        ctx.bezierCurveTo(111.3, 41.2, 112.3, 41.4, 113.3, 41.7);
+        ctx.lineTo(113.0, 42.6);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(86.5, 42.5);
+        ctx.lineTo(86.3, 41.5);
+        ctx.bezierCurveTo(87.2, 41.3, 88.2, 41.1, 89.2, 41.0);
+        ctx.lineTo(89.4, 41.9);
+        ctx.bezierCurveTo(88.4, 42.1, 87.4, 42.3, 86.5, 42.5);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(107.2, 41.6);
+        ctx.bezierCurveTo(106.2, 41.4, 105.2, 41.3, 104.2, 41.3);
+        ctx.lineTo(104.3, 40.3);
+        ctx.bezierCurveTo(105.3, 40.3, 106.3, 40.4, 107.3, 40.6);
+        ctx.lineTo(107.2, 41.6);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(92.3, 41.5);
+        ctx.lineTo(92.2, 40.5);
+        ctx.bezierCurveTo(93.2, 40.4, 94.2, 40.3, 95.2, 40.2);
+        ctx.lineTo(95.3, 41.2);
+        ctx.bezierCurveTo(94.3, 41.3, 93.3, 41.4, 92.3, 41.5);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(101.3, 41.1);
+        ctx.bezierCurveTo(100.3, 41.1, 99.3, 41.1, 98.3, 41.1);
+        ctx.lineTo(98.3, 40.1);
+        ctx.bezierCurveTo(99.3, 40.1, 100.3, 40.1, 101.3, 40.1);
+        ctx.lineTo(101.3, 41.1);
+        ctx.closePath();
+        ctx.fill();
+
+        // flickmenufeedback/Group
+        ctx.restore();
+
+        // flickmenufeedback/Group/Compound Path
+        ctx.save();
+        ctx.beginPath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(150.7, 130.2);
+        ctx.lineTo(149.8, 129.6);
+        ctx.bezierCurveTo(150.3, 128.8, 150.8, 127.9, 151.3, 127.1);
+        ctx.lineTo(152.1, 127.5);
+        ctx.bezierCurveTo(151.7, 128.4, 151.2, 129.3, 150.7, 130.2);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(153.5, 124.8);
+        ctx.lineTo(152.6, 124.4);
+        ctx.bezierCurveTo(153.0, 123.5, 153.4, 122.6, 153.8, 121.7);
+        ctx.lineTo(154.7, 122.0);
+        ctx.bezierCurveTo(154.3, 123.0, 153.9, 123.9, 153.5, 124.8);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(155.8, 119.2);
+        ctx.lineTo(154.8, 118.9);
+        ctx.bezierCurveTo(155.1, 117.9, 155.4, 117.0, 155.7, 116.1);
+        ctx.lineTo(156.7, 116.3);
+        ctx.bezierCurveTo(156.4, 117.3, 156.1, 118.3, 155.8, 119.2);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(157.5, 113.4);
+        ctx.lineTo(156.5, 113.2);
+        ctx.bezierCurveTo(156.7, 112.2, 156.9, 111.2, 157.1, 110.3);
+        ctx.lineTo(158.1, 110.4);
+        ctx.bezierCurveTo(157.9, 111.4, 157.7, 112.4, 157.5, 113.4);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(158.5, 107.5);
+        ctx.lineTo(157.6, 107.3);
+        ctx.bezierCurveTo(157.7, 106.3, 157.8, 105.4, 157.9, 104.4);
+        ctx.lineTo(158.9, 104.5);
+        ctx.bezierCurveTo(158.8, 105.4, 158.7, 106.5, 158.5, 107.5);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(159.0, 101.4);
+        ctx.lineTo(158.0, 101.4);
+        ctx.bezierCurveTo(158.0, 100.8, 158.1, 100.2, 158.1, 99.6);
+        ctx.bezierCurveTo(158.1, 99.2, 158.1, 98.8, 158.0, 98.4);
+        ctx.lineTo(159.0, 98.4);
+        ctx.bezierCurveTo(159.1, 98.8, 159.1, 99.2, 159.1, 99.6);
+        ctx.bezierCurveTo(159.1, 100.2, 159.0, 100.8, 159.0, 101.4);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(157.9, 95.5);
+        ctx.bezierCurveTo(157.8, 94.5, 157.7, 93.5, 157.6, 92.5);
+        ctx.lineTo(158.6, 92.4);
+        ctx.bezierCurveTo(158.7, 93.4, 158.8, 94.4, 158.9, 95.4);
+        ctx.lineTo(157.9, 95.5);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(157.2, 89.6);
+        ctx.bezierCurveTo(157.0, 88.6, 156.8, 87.6, 156.6, 86.6);
+        ctx.lineTo(157.6, 86.4);
+        ctx.bezierCurveTo(157.8, 87.4, 158.0, 88.4, 158.2, 89.4);
+        ctx.lineTo(157.2, 89.6);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(155.9, 83.8);
+        ctx.bezierCurveTo(155.6, 82.8, 155.3, 81.8, 155.0, 80.9);
+        ctx.lineTo(155.9, 80.6);
+        ctx.bezierCurveTo(156.3, 81.5, 156.6, 82.5, 156.8, 83.5);
+        ctx.lineTo(155.9, 83.8);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(154.0, 78.1);
+        ctx.bezierCurveTo(153.6, 77.2, 153.2, 76.3, 152.8, 75.4);
+        ctx.lineTo(153.7, 75.0);
+        ctx.bezierCurveTo(154.1, 75.9, 154.5, 76.8, 154.9, 77.7);
+        ctx.lineTo(154.0, 78.1);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(151.5, 72.7);
+        ctx.bezierCurveTo(151.1, 71.8, 150.6, 71.0, 150.1, 70.1);
+        ctx.lineTo(150.9, 69.6);
+        ctx.bezierCurveTo(151.4, 70.5, 151.9, 71.4, 152.4, 72.2);
+        ctx.lineTo(151.5, 72.7);
+        ctx.closePath();
+        ctx.fill();
+
+        // flickmenufeedback/Group
+        ctx.restore();
+
+        // flickmenufeedback/Group/Compound Path
+        ctx.save();
+        ctx.beginPath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(99.5, 159.2);
+        ctx.bezierCurveTo(98.9, 159.2, 98.3, 159.2, 97.7, 159.2);
+        ctx.lineTo(97.7, 158.2);
+        ctx.bezierCurveTo(98.7, 158.2, 99.7, 158.2, 100.7, 158.2);
+        ctx.lineTo(100.7, 159.2);
+        ctx.bezierCurveTo(100.3, 159.2, 99.9, 159.2, 99.5, 159.2);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(103.7, 159.1);
+        ctx.lineTo(103.7, 158.1);
+        ctx.bezierCurveTo(104.7, 158.0, 105.7, 157.9, 106.6, 157.8);
+        ctx.lineTo(106.8, 158.8);
+        ctx.bezierCurveTo(105.8, 158.9, 104.8, 159.0, 103.7, 159.1);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(94.7, 159.0);
+        ctx.bezierCurveTo(93.7, 158.9, 92.7, 158.8, 91.7, 158.7);
+        ctx.lineTo(91.8, 157.7);
+        ctx.bezierCurveTo(92.8, 157.8, 93.8, 157.9, 94.8, 158.0);
+        ctx.lineTo(94.7, 159.0);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(109.8, 158.3);
+        ctx.lineTo(109.6, 157.3);
+        ctx.bezierCurveTo(110.6, 157.2, 111.5, 157.0, 112.5, 156.8);
+        ctx.lineTo(112.7, 157.7);
+        ctx.bezierCurveTo(111.8, 158.0, 110.8, 158.2, 109.8, 158.3);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(88.7, 158.2);
+        ctx.bezierCurveTo(87.7, 158.1, 86.7, 157.8, 85.7, 157.6);
+        ctx.lineTo(86.0, 156.6);
+        ctx.bezierCurveTo(86.9, 156.9, 87.9, 157.1, 88.9, 157.2);
+        ctx.lineTo(88.7, 158.2);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(115.6, 157.0);
+        ctx.lineTo(115.4, 156.0);
+        ctx.bezierCurveTo(116.3, 155.8, 117.3, 155.5, 118.2, 155.1);
+        ctx.lineTo(118.5, 156.1);
+        ctx.bezierCurveTo(117.6, 156.4, 116.6, 156.7, 115.6, 157.0);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(82.8, 156.8);
+        ctx.bezierCurveTo(81.8, 156.6, 80.9, 156.2, 79.9, 155.9);
+        ctx.lineTo(80.2, 155.0);
+        ctx.bezierCurveTo(81.2, 155.3, 82.1, 155.6, 83.1, 155.9);
+        ctx.lineTo(82.8, 156.8);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(121.4, 155.1);
+        ctx.lineTo(121.0, 154.1);
+        ctx.bezierCurveTo(121.9, 153.8, 122.9, 153.4, 123.7, 153.0);
+        ctx.lineTo(124.2, 153.9);
+        ctx.bezierCurveTo(123.3, 154.3, 122.3, 154.7, 121.4, 155.1);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(77.1, 154.8);
+        ctx.bezierCurveTo(76.2, 154.5, 75.2, 154.1, 74.3, 153.6);
+        ctx.lineTo(74.7, 152.7);
+        ctx.bezierCurveTo(75.6, 153.2, 76.6, 153.6, 77.5, 153.9);
+        ctx.lineTo(77.1, 154.8);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(126.9, 152.5);
+        ctx.lineTo(126.4, 151.7);
+        ctx.bezierCurveTo(127.3, 151.2, 128.2, 150.7, 129.0, 150.2);
+        ctx.lineTo(129.5, 151.1);
+        ctx.bezierCurveTo(128.7, 151.6, 127.8, 152.1, 126.9, 152.5);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(71.6, 152.3);
+        ctx.bezierCurveTo(70.7, 151.8, 69.8, 151.3, 69.0, 150.8);
+        ctx.lineTo(69.5, 149.9);
+        ctx.bezierCurveTo(70.3, 150.5, 71.2, 150.9, 72.1, 151.4);
+        ctx.lineTo(71.6, 152.3);
+        ctx.closePath();
+        ctx.fill();
+
+        // flickmenufeedback/Group
+        ctx.restore();
+
+        // flickmenufeedback/Group/Compound Path
+        ctx.save();
+        ctx.beginPath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(48.0, 129.7);
+        ctx.bezierCurveTo(47.5, 128.8, 47.0, 127.9, 46.6, 127.0);
+        ctx.lineTo(47.5, 126.6);
+        ctx.bezierCurveTo(47.9, 127.5, 48.4, 128.3, 48.9, 129.2);
+        ctx.lineTo(48.0, 129.7);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(45.3, 124.3);
+        ctx.bezierCurveTo(44.8, 123.4, 44.4, 122.5, 44.1, 121.5);
+        ctx.lineTo(45.0, 121.2);
+        ctx.bezierCurveTo(45.4, 122.1, 45.8, 123.0, 46.2, 123.9);
+        ctx.lineTo(45.3, 124.3);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(43.0, 118.7);
+        ctx.bezierCurveTo(42.7, 117.7, 42.4, 116.8, 42.1, 115.8);
+        ctx.lineTo(43.1, 115.5);
+        ctx.bezierCurveTo(43.4, 116.5, 43.7, 117.4, 44.0, 118.4);
+        ctx.lineTo(43.0, 118.7);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(41.4, 112.9);
+        ctx.bezierCurveTo(41.2, 111.9, 41.0, 110.9, 40.8, 109.9);
+        ctx.lineTo(41.8, 109.7);
+        ctx.bezierCurveTo(42.0, 110.7, 42.2, 111.7, 42.4, 112.6);
+        ctx.lineTo(41.4, 112.9);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(40.4, 106.9);
+        ctx.bezierCurveTo(40.2, 105.9, 40.1, 104.9, 40.1, 103.9);
+        ctx.lineTo(41.1, 103.8);
+        ctx.bezierCurveTo(41.1, 104.8, 41.2, 105.8, 41.4, 106.8);
+        ctx.lineTo(40.4, 106.9);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(39.9, 100.9);
+        ctx.bezierCurveTo(39.9, 100.5, 39.9, 100.1, 39.9, 99.6);
+        ctx.bezierCurveTo(39.9, 99.0, 39.9, 98.4, 39.9, 97.8);
+        ctx.lineTo(40.9, 97.9);
+        ctx.bezierCurveTo(40.9, 98.5, 40.9, 99.1, 40.9, 99.6);
+        ctx.bezierCurveTo(40.9, 100.0, 40.9, 100.4, 40.9, 100.9);
+        ctx.lineTo(39.9, 100.9);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(41.1, 94.9);
+        ctx.lineTo(40.1, 94.8);
+        ctx.bezierCurveTo(40.2, 93.8, 40.3, 92.8, 40.4, 91.8);
+        ctx.lineTo(41.4, 91.9);
+        ctx.bezierCurveTo(41.3, 92.9, 41.2, 93.9, 41.1, 94.9);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(41.9, 89.0);
+        ctx.lineTo(40.9, 88.8);
+        ctx.bezierCurveTo(41.1, 87.8, 41.3, 86.8, 41.5, 85.9);
+        ctx.lineTo(42.5, 86.1);
+        ctx.bezierCurveTo(42.3, 87.1, 42.1, 88.0, 41.9, 89.0);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(43.3, 83.2);
+        ctx.lineTo(42.3, 83.0);
+        ctx.bezierCurveTo(42.6, 82.0, 42.9, 81.0, 43.2, 80.1);
+        ctx.lineTo(44.2, 80.4);
+        ctx.bezierCurveTo(43.8, 81.3, 43.5, 82.3, 43.3, 83.2);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(45.2, 77.6);
+        ctx.lineTo(44.3, 77.2);
+        ctx.bezierCurveTo(44.7, 76.3, 45.1, 75.4, 45.5, 74.5);
+        ctx.lineTo(46.4, 74.9);
+        ctx.bezierCurveTo(46.0, 75.8, 45.6, 76.7, 45.2, 77.6);
+        ctx.closePath();
+
+        // flickmenufeedback/Group/Compound Path/Path
+        ctx.moveTo(47.7, 72.2);
+        ctx.lineTo(46.8, 71.8);
+        ctx.bezierCurveTo(47.3, 70.9, 47.8, 70.0, 48.3, 69.1);
+        ctx.lineTo(49.2, 69.6);
+        ctx.bezierCurveTo(48.7, 70.5, 48.2, 71.4, 47.7, 72.2);
+        ctx.closePath();
+        ctx.fill();
+
+        // flickmenufeedback/undo
+        ctx.restore();
+        ctx.font = "Bold 9.9px 'Arial'";
+        ctx.fillText("undo", 87.4, 32.2);
+        // This artwork uses an unsupported dash style
+        ctx.lineWidth = 0.5;
+        ctx.lineJoin = "miter";
+        ctx.miterLimit = 0.0;
+        ctx.strokeText("undo", 87.4, 32.2);
+
+        // flickmenufeedback/redo
+        ctx.fillText("redo", 88.8, 173.7);
+        // This artwork uses an unsupported dash style
+        ctx.lineJoin = "miter";
+        ctx.miterLimit = 0.0;
+        ctx.strokeText("redo", 88.8, 173.7);
+
+        // flickmenufeedback/cancel
+        ctx.fillText("cancel", 164.3, 102.1);
+        // This artwork uses an unsupported dash style
+        ctx.strokeText("cancel", 164.3, 102.1);
+
+        // flickmenufeedback/select
+        ctx.fillText("select", 6.5, 102.1);
+        // This artwork uses an unsupported dash style
+        ctx.strokeText("select", 6.5, 102.1);
+        ctx.restore();
+
+    }
 
     api.drawPreviousTouch = function (ctx) {
         ctx.save();

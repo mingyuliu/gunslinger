@@ -154,18 +154,18 @@ function canvasApp() {
 
                 if (zoomTimeout) {
                     if (zoomRatio > .4) {
-                        map.setZoom(map.getZoom() - Math.ceil(zoomRatio));
+                        map.setZoom(map.getZoom() - 1);
                         zoomTimeout = false;
                         setTimeout(function () {
                             zoomTimeout = true;
-                        }, 250);
+                        }, 600 / Math.ceil(zoomRatio));
                     } else if (zoomRatio < -.4) {
                         zoomRatio = -zoomRatio;
-                        map.setZoom(map.getZoom() + Math.ceil(zoomRatio));
+                        map.setZoom(map.getZoom() + 1);
                         zoomTimeout = false;
                         setTimeout(function () {
                             zoomTimeout = true;
-                        }, 250);
+                        }, 600 / Math.ceil(zoomRatio));
                     }
 
 
@@ -242,7 +242,6 @@ function canvasApp() {
 
         }
     });
-
 
 
     startMap();
@@ -413,15 +412,15 @@ function canvasApp() {
         switch (controls.cursorEvent) {
             case "clickup":
 
-                    switch (controls.posture) {
+                switch (controls.posture) {
 
-                        case "-rin-pin":
-                            var items = $("#menu_box_left_ele li");
+                    case "-rin-pin":
+                        var items = $("#menu_box_left_ele li");
 
-                            $(items[leftItemSelected]).trigger("click");
-                            console.log("rinpin");
-                            break;
-                    }
+                        $(items[leftItemSelected]).trigger("click");
+                        console.log("rinpin");
+                        break;
+                }
 
                 console.log("clickup");
                 controls.cursorEvent = "none";
@@ -604,18 +603,18 @@ function canvasApp() {
                 zoomRatio /= 0.5;
                 if (zoomTimeout) {
                     if (zoomRatio > 0) {
-                        map.setZoom(map.getZoom() - Math.ceil(zoomRatio));
+                        map.setZoom(map.getZoom() - 1);
                         zoomTimeout = false;
                         setTimeout(function () {
                             zoomTimeout = true;
-                        }, 250);
+                        }, 600 / Math.ceil(zoomRatio));
                     } else if (zoomRatio < 0) {
                         zoomRatio = -zoomRatio;
-                        map.setZoom(map.getZoom() + Math.ceil(zoomRatio));
+                        map.setZoom(map.getZoom() + 1);
                         zoomTimeout = false;
                         setTimeout(function () {
                             zoomTimeout = true;
-                        }, 250);
+                        }, 600 / Math.ceil(zoomRatio));
                     }
 
                 }
@@ -626,7 +625,7 @@ function canvasApp() {
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
             case "-rin-pin":
-                showMenu("left", canvasWidth/2, canvasHeight/2, true);
+                showMenu("left", canvasWidth / 2, canvasHeight / 2, true);
                 var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[1];
                 offset += $("#menu_box_left_ele").height() / 2;
                 offset = Math.floor(offset / $("#menu_box_left_ele").width());
@@ -635,6 +634,18 @@ function canvasApp() {
                 canvasLeft.style.left = $(items[offset]).offset().left + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
                 leftItemSelected = offset;
                 utilities.drawGeneric(ctx);
+                utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+                break;
+            case "-thu":
+                closeMenu("left");
+                if (olderLeftPosture !== "-thu") {
+                    ctrPosY = controls.palmPosition[1];
+                    ctrPosX = controls.palmPosition[0];
+                }
+                utilities.drawFlickMenu(ctx);
+                var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, true);
+
+
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
             default :
@@ -703,7 +714,8 @@ function initialize() {
         panControl: false,
         zoomControl: true,
         streetViewControl: false,
-        center: new google.maps.LatLng(39.958099, -75.167805)
+        center: new google.maps.LatLng(39.958099, -75.167805),
+        minZoom: 2
     };
     map = new google.maps.Map(document.getElementById('map-canvas'),
             mapOptions);
@@ -748,18 +760,21 @@ var shapeManager = (function () {
         // Singleton
 
         // Private methods and variables
-        var shapeArray = new Array();
+
         var routeArray = new Array();
         var markersArray = new Array();
 
+        var shapeArray = new Array();
         return {
-
             // Public methods and variables
+            getShapeArray: function () {
+                return shapeArray;
+            },
+
             completeShape: function () {
 
                 if (isInMakerProgress) {
 
-                    shapeArray.push(currentShape);
 
                     var shapeDrawing = new google.maps.Polygon({
                         paths: currentShape.coords,
@@ -770,6 +785,7 @@ var shapeManager = (function () {
                         fillOpacity: 0.35,
                         editable: true
                     });
+                    shapeArray.push(shapeDrawing);
                     shapeDrawing.setMap(map);
                     isInMakerProgress = false;
 
@@ -916,6 +932,8 @@ var shapeManager = (function () {
             getCursor: function () {
                 return cursor;
             }
+
+
 
 
 
@@ -1155,7 +1173,13 @@ function drawNaviBall(ctx, position, use, oneDirection) {
     }
     var pos = vec2.fromValues(posX, posY);
 
+
     var len = vec2.len(pos);
+    if(len === 0) {
+        utilities.drawGeneric(ctx);
+        ctx.restore();
+    return [0,0];
+    }
     len = Math.min(len, radius);
     var ratio = len / radius;
 
@@ -1164,6 +1188,8 @@ function drawNaviBall(ctx, position, use, oneDirection) {
 
     } else {
         ratio = 0;
+    } if(isNaN(pos[0])) {
+        console.log("not a number")
     }
 
 
@@ -1172,6 +1198,7 @@ function drawNaviBall(ctx, position, use, oneDirection) {
     ctx.translate(pos[0], pos[1]);
     utilities.drawGeneric(ctx);
     ctx.restore();
+
     return pos;
 }
 
