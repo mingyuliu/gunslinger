@@ -40,22 +40,22 @@
 
 
 </style>
-<link href="GSMod.css" rel="stylesheet" type="text/css">
-<link href="progressbar.css" rel="stylesheet" type="text/css">
+<link href="../css/GSMod.css" rel="stylesheet" type="text/css">
+<link href="../css/progressbar.css" rel="stylesheet" type="text/css">
 <title>Pilot</title>
 
-<script src="Modernizr/modernizr-2.0.6.js"></script>
-<script src="jquery-2.1.0.min.js"></script>
-<script src="com/rectangleworld/display/SimpleDiskParticle.js"></script>
-<script src="com/rectangleworld/display/SimpleSquareParticle.js"></script>
-<script src="leap-0.6.0.min.js"></script>
-<script src="1euro.js"></script>
-<script src="move.min.js"></script>
-<script src="gestures.js"></script>
 
-<script src="gl-matrix.js"></script>
-<script src="soundjs-0.5.2.min.js"></script>
-<script src="FileSaver.js"></script>
+<script src="../js/jquery-2.1.0.min.js"></script>
+<script src="../js/com/rectangleworld/display/SimpleDiskParticle.js"></script>
+<script src="../js/com/rectangleworld/display/SimpleSquareParticle.js"></script>
+<script src="../js/leap-0.6.0.min.js"></script>
+<script src="../js/1euro.js"></script>
+<script src="../js/move.min.js"></script>
+<script src="../js/gestures.js"></script>
+
+<script src="../js/gl-matrix.js"></script>
+<script src="../js/soundjs-0.5.2.min.js"></script>
+<script src="../js/FileSaver.js"></script>
 
 <body>
 
@@ -64,9 +64,9 @@
     <h1>block #1 Set #1</h1> <h4>start your task by clicking the the target</h4>
 
 </div>
-<script src="v3/circular-progress.js"></script>
-<script src="v3/state-machine.js"></script>
-<script src="GSMod.js"></script>
+<script src="../gsMap/circular-progress.js"></script>
+<script src="../gsMap/state-machine.js"></script>
+<script src="../js/GSMod.js"></script>
 <script>
 
 
@@ -100,9 +100,7 @@ function toggleTechnique() {
 }
 
 
-function canvasSupport() {
-    return Modernizr.canvas;
-}
+
 var ACCELERATION_FACTOR = 3;
 var canvas;
 var ctx;
@@ -130,9 +128,7 @@ var isDownMode = true;
 
 var records = [];
 function canvasApp() {
-    if (!canvasSupport()) {
-        return;
-    }
+
 
     var theCanvas = document.getElementById("canvasOne");
     var context = theCanvas.getContext("2d");
@@ -169,7 +165,7 @@ function canvasApp() {
 //            ctx.translate(canvas.width, canvas.height);
 
         numShapes = 1;
-        readTextFile("blocks.txt");
+        readTextFile("../data/blocks.txt");
 
 
         leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
@@ -200,7 +196,7 @@ function canvasApp() {
             return;
         }
 
-        var audioPath = "assets/";
+        var audioPath = "../assets/";
         var manifest = [
             {id: "clickdown", src: "clickdown.wav"},
             {id: "clickup", src: "clickup.wav"},
@@ -473,10 +469,10 @@ function canvasApp() {
                         currentTarget++;
                         makeShape();
                         drawScreen();
-                        createjs.Sound.play("assets/clickup.wav");
+                        createjs.Sound.play("../assets/clickup.wav");
                         isInputValid = false;
                     } else {
-                        createjs.Sound.play("assets/error.wav");
+                        createjs.Sound.play("../assets/error.wav");
 
                     }
                     clickTimeout = false;
@@ -504,7 +500,7 @@ function canvasApp() {
                             currentTarget, WIDTH_ORDER[currentWidth], sections[currentBlock][currentSet][currentTarget].distance,
                             sections[currentBlock][currentSet][currentTarget].x, sections[currentBlock][currentSet][currentTarget].y,
                             screenX.toFixed(0), screenY.toFixed(0), isInputValid, controls.cursorEvent);
-                    createjs.Sound.play("assets/clickdown.wav");
+                    createjs.Sound.play("../assets/clickdown.wav");
 
                     if (records == undefined) {
                         records = [];

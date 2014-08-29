@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <title></title>
 </head>
-<link href="../GSMod.css" rel="stylesheet" type="text/css">
-<link href="../progressbar.css" rel="stylesheet" type="text/css">
-<script src="../jquery-2.1.0.min.js"></script>
-<script src="../leap-0.6.0.min.js"></script>
-<script src="../1euro.js"></script>
+<link href="../css/GSMod.css" rel="stylesheet" type="text/css">
+<link href="../css/progressbar.css" rel="stylesheet" type="text/css">
+<script src="../js/jquery-2.1.0.min.js"></script>
+<script src="../js/leap-0.6.0.min.js"></script>
+<script src="../js/1euro.js"></script>
 
 
 <body>
-<script src="../move.min.js"></script>
+<script src="../js/move.min.js"></script>
 <script src="state-machine.js"></script>
 <canvas id="leap-overlay"></canvas>
 <canvas id="leap-overlay2" class="overlay"></canvas>
@@ -21,9 +21,9 @@
 </body>
 
 
-<script src="../gestures.js"></script>
-<script src="../GSMod.js"></script>
-<script src="../gl-matrix.js"></script>
+<script src="../js/gestures.js"></script>
+<script src="../js/GSMod.js"></script>
+<script src="../js/gl-matrix.js"></script>
 <script src="circular-progress.js"></script>
 <script>
 var canvasWidth = 0, canvasHeight = 0;
@@ -34,6 +34,14 @@ var ctxLeft;
 var ctxTouch;
 var CURSOR_SIZE = 30;
 var cursorIdleTimeout = false;
+
+touchMgr.touchMoveHandler = function (currentTouch, moveX, moveY) {
+
+};
+
+touchMgr.afterTouchMoveHandler = function (currentTouch, moveX, moveY) {
+
+};
 
 function canvasApp() {
 
