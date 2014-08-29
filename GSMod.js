@@ -778,9 +778,9 @@ var leapDeviceMgr = (function () {
 
 //                interstate.update();
                 //debug info: fps
-                var frameOutput = document.getElementById("frameDataLeft");
-                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + interstate.fsm.current + "</div>";
-                $("#frameDataLeft").show();
+//                var frameOutput = document.getElementById("frameDataLeft");
+//                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + interstate.fsm.current + "</div>";
+//                $("#frameDataLeft").show();
             });
 
         }
@@ -1549,9 +1549,6 @@ var touchMgr = (function () {
     return api;
 })();
 
-var testOutput = function () {
-    console.log("test");
-}
 
 var interstate = (function () {
     var api = {};
@@ -1875,8 +1872,6 @@ function Controls(tag_, screenWid_, screenHeight_) {
         if (this.cursorState == "none") {
             this.posture = "+ind";
         }
-
-
     };
 
     this.updateThumbAngle = function (distance, whichhand) {

@@ -55,11 +55,11 @@
     <ul id="menu_box_left_ele">
         <li class="demo_li">
             <div><i class="fa fa-eye fa-2x"></i></div>
-            <div>Something</div>
+            <div>Redo</div>
             </a></li>
         <li class="demo_li">
             <div><i class="fa fa-trash fa-2x"></i></div>
-            <div>Something</div>
+            <div>Undo</div>
         </li>
         <li class="demo_li">
             <div><i class="fa fa-pencil fa-2x"></i></div>
@@ -133,6 +133,10 @@ function canvasApp() {
             if (touchMgr.countTouches("left") == 1 && currentTouch.group == 0) {
                 map.panBy(moveX, moveY);
             }
+        } else if (currentTouch.whichhand == "right") {
+//            if (touchMgr.countTouches("right") == 1 && currentTouch.group == 0) {
+//                shapeManager.getInstance().addPolylineXY(currentTouch.pageX, currentTouch.pageY);
+//            }
         }
     };
 
@@ -209,6 +213,12 @@ function canvasApp() {
         switch ($(this).find("div")[1].innerHTML) {
             case "Exit":
                 closeMenu("left");
+                break;
+            case "Redo":
+                shapeManager.getInstance().redo();
+                break;
+            case "Undo":
+                shapeManager.getInstance().undo();
                 break;
         }
     });
@@ -444,31 +454,8 @@ function canvasApp() {
                             var cursorY = controls.y - 100 * CURSOR_SCALE;
                             var screenX = canvas.width - cursorX;
                             var screenY = canvas.height - cursorY;
-                            var point = new google.maps.Point(screenX, screenY);
-                            var proj = map.getProjection();
-                            var center = map.getCenter();
-                            var centerPiWorld = proj.fromLatLngToPoint(center);
-                            // centerPiWorld.x = centerPiWorld.x / 256 * canvas.width;
-                            // centerPiWorld.y = centerPiWorld.y / 256 * canvas.height;
 
-                            var centerPiLocalX = centerPiWorld.x * (Math.pow(2, map.getZoom()));
-                            var centerPiLocalY = centerPiWorld.y * (Math.pow(2, map.getZoom()));
-
-                            var panDelta = [
-                                (cursorX - canvas.width / 2), (cursorY - canvas.height / 2)
-                            ];
-
-
-                            centerPiLocalX -= panDelta[0];
-                            centerPiLocalY -= panDelta[1];
-                            centerPiLocalX = centerPiLocalX / (Math.pow(2, map.getZoom()));
-                            centerPiLocalY = centerPiLocalY / (Math.pow(2, map.getZoom()));
-
-                            var newPoint = new google.maps.Point(centerPiLocalX, centerPiLocalY);
-                            var newCoord = proj.fromPointToLatLng(newPoint);
-
-
-                            shapeMgr.addCoord(newCoord);
+                            shapeMgr.addCoordbyXY(screenX, screenY);
                             break;
                         case "+thu":
                             switch (itemSelected) {
@@ -643,7 +630,7 @@ function canvasApp() {
                     ctrPosX = controls.palmPosition[0];
                 }
                 utilities.drawFlickMenu(ctx);
-                var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, true);
+                var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, true, 80);
 
 
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
@@ -671,7 +658,7 @@ function canvasApp() {
         }
 //            console.log("right " + controls.posture);
         //debug purpose
-
+        leapDeviceMgr.printInfo(shapeManager.getInstance().getUndo().type);
     }
 
     function leftOnFrame(controls) {
@@ -702,6 +689,7 @@ function startMap() {
 //Google Map Ini
 var map;
 var directionsService = new google.maps.DirectionsService();
+var directionsDisplay;
 
 function initialize() {
     var rendererOptions = {
@@ -715,7 +703,7 @@ function initialize() {
         zoomControl: true,
         streetViewControl: false,
         center: new google.maps.LatLng(39.958099, -75.167805),
-        minZoom: 2
+        minZoom: 3
     };
     map = new google.maps.Map(document.getElementById('map-canvas'),
             mapOptions);
@@ -753,22 +741,98 @@ var shapeManager = (function () {
     // Instance stores a reference to the Singleton
     var instance;
     var isInMakerProgress = false;
-    var currentShape;
+    var currentShape = [];
 
 
     function init() {
         // Singleton
 
         // Private methods and variables
+        var polyOptions = {
+            strokeColor: '#000000',
+            strokeOpacity: 1.0,
+            strokeWeight: 3
+        };
+        var poly = new google.maps.Polyline(polyOptions);
+        poly.setMap(map);
 
         var routeArray = new Array();
         var markersArray = new Array();
-
         var shapeArray = new Array();
+        var redoAction = {
+            type: "none"
+        };
+        var undoAction = {
+            type: "none"
+        };
         return {
             // Public methods and variables
             getShapeArray: function () {
                 return shapeArray;
+            },
+
+            getPolylineArray: function () {
+                return poly;
+            },
+
+            getUndo: function () {
+                return undoAction;
+            },
+
+            getRedo: function () {
+                return redoAction;
+            },
+
+            undo: function () {
+                switch (undoAction.type) {
+                    case "completeShape":
+                    case "completeRoute":
+                        undoAction.object.setMap(null);
+                        redoAction = {
+                            type:undoAction.type,
+                            object:undoAction.object
+                        };
+                        break;
+                    case "addMarker":
+                        undoAction.object.setMap(null);
+                        redoAction = {
+                            type:undoAction.type,
+                            object:undoAction.object
+                        };
+                        markersArray.splice(markersArray.length - 1, 1);
+                        break;
+                }
+                if (currentShape.length == 0) {
+                    isInMakerProgress = false;
+                }
+                undoAction.type = "none";
+            },
+
+            redo: function () {
+                switch (redoAction.type) {
+                    case "completeShape":
+                    case "completeRoute":
+
+                        redoAction.object.setMap(map);
+                        undoAction = {
+                            type:redoAction.type,
+                            object:redoAction.object
+                        };
+
+                        break;
+                    case "addMarker":
+                        redoAction.object.setMap(map);
+                        undoAction = {
+                            type:redoAction.type,
+                            object:redoAction.object
+                        };
+                        markersArray.push(marker);
+                        break;
+                }
+                if (currentShape.length > 0) {
+                    isInMakerProgress = true;
+                }
+                redoAction.type = "none";
             },
 
             completeShape: function () {
@@ -785,6 +849,9 @@ var shapeManager = (function () {
                         fillOpacity: 0.35,
                         editable: true
                     });
+                    undoAction.object = shapeDrawing;
+                    undoAction.type = "completeShape";
+                    redoAction.type = "none";
                     shapeArray.push(shapeDrawing);
                     shapeDrawing.setMap(map);
                     isInMakerProgress = false;
@@ -827,7 +894,11 @@ var shapeManager = (function () {
                     };
                     directionsService.route(request, function (result, status) {
                         if (status == google.maps.DirectionsStatus.OK) {
+                            directionsDisplay.setMap(map);
                             directionsDisplay.setDirections(result);
+                            undoAction.object = directionsDisplay;
+                            undoAction.type = "completeRoute";
+                            redoAction.type = "none";
                             routeArray.push(currentShape);
                             isInMakerProgress = false;
 
@@ -836,9 +907,7 @@ var shapeManager = (function () {
                             }
                             markersArray = [];
                         } else {
-
 //                                showMsg("Route not found");
-
                         }
                     });
 
@@ -846,6 +915,38 @@ var shapeManager = (function () {
                 }
 
 
+            },
+
+            addPolylineXY: function (cursorX, cursorY) {
+                var screenX = canvas.width - cursorX;
+                var screenY = canvas.height - cursorY;
+                var point = new google.maps.Point(screenX, screenY);
+                var proj = map.getProjection();
+                var center = map.getCenter();
+                var centerPiWorld = proj.fromLatLngToPoint(center);
+                // centerPiWorld.x = centerPiWorld.x / 256 * canvas.width;
+                // centerPiWorld.y = centerPiWorld.y / 256 * canvas.height;
+
+                var centerPiLocalX = centerPiWorld.x * (Math.pow(2, map.getZoom()));
+                var centerPiLocalY = centerPiWorld.y * (Math.pow(2, map.getZoom()));
+
+                var panDelta = [
+                    (screenX - canvas.width / 2), (screenY - canvas.height / 2)
+                ];
+
+
+                centerPiLocalX -= panDelta[0];
+                centerPiLocalY -= panDelta[1];
+                centerPiLocalX = centerPiLocalX / (Math.pow(2, map.getZoom()));
+                centerPiLocalY = centerPiLocalY / (Math.pow(2, map.getZoom()));
+
+                var newPoint = new google.maps.Point(centerPiLocalX, centerPiLocalY);
+                var newCoord = proj.fromPointToLatLng(newPoint);
+                var path = poly.getPath();
+
+                // Because path is an MVCArray, we can simply append a new coordinate
+                // and it will automatically appear.
+                path.push(newCoord);
             },
 
             addCoordbyXY: function (cursorX, cursorY) {
@@ -890,32 +991,12 @@ var shapeManager = (function () {
                     title: "Shape maker"
                 });
 
-
+                undoAction.object = marker;
+                undoAction.type = "addMarker";
+                redoAction.type = "none";
                 markersArray.push(marker);
             },
 
-            addCoord: function (coord) {
-
-                if (isInMakerProgress) {
-                    currentShape.addCoord(coord);
-                } else {
-                    currentShape = new Shape();
-                    currentShape.addCoord(coord);
-                    isInMakerProgress = true;
-                }
-                var marker = new google.maps.Marker({
-                    position: coord,
-                    map: map,
-                    draggable: true,
-                    animation: google.maps.Animation.DROP,
-                    title: "Shape maker"
-                });
-
-
-                markersArray.push(marker);
-
-
-            },
 
             clearAllMarkers: function () {
                 for (var i = 0; i < markersArray.length; i++) {
@@ -1156,11 +1237,11 @@ function transferPointToLatLng() {
 var ctrPosY = 200;
 var ctrPosX = 0;
 
-function drawNaviBall(ctx, position, use, oneDirection) {
+function drawNaviBall(ctx, position, use, oneDirection, range) {
     ctx.save();
     var posX, posY;
     var radius = 80;
-    var offsetRange = 40; //pixel ralated
+    var offsetRange = range || 40; //pixel ralated
 
 
     var threshold = .6;
@@ -1175,10 +1256,10 @@ function drawNaviBall(ctx, position, use, oneDirection) {
 
 
     var len = vec2.len(pos);
-    if(len === 0) {
+    if (len === 0) {
         utilities.drawGeneric(ctx);
         ctx.restore();
-    return [0,0];
+        return [0, 0];
     }
     len = Math.min(len, radius);
     var ratio = len / radius;
@@ -1188,8 +1269,6 @@ function drawNaviBall(ctx, position, use, oneDirection) {
 
     } else {
         ratio = 0;
-    } if(isNaN(pos[0])) {
-        console.log("not a number")
     }
 
 
