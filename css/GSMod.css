@@ -32,6 +32,10 @@ html, body {
     pointer-events: none;
 }
 
+.grid-overlay {
+
+}
+
 .touch-overlay {
     position: fixed;
     top: 0;

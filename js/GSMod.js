@@ -751,7 +751,7 @@ var leapDeviceMgr = (function () {
         //for test gui
         // createProgress();
         createDebugTextElement();
-        touchMgr.setupTouches();
+//        touchMgr.setupTouches();
         for (var i = 0; i < _controllers.length; i++) {
             _controllers[i].loop(function (frame) {
                 //for test gui
@@ -1089,8 +1089,8 @@ var touchMgr = (function () {
     api.touchEndHandler = {};
     api.afterTouchMoveHandler = {};
 
-    var canvas = document.getElementById("touch-overlay");
-    var ctx = canvas.getContext("2d");
+    var canvas;
+    var ctx;
 
     api.rightGroupCtr = [0, 0];
     api.leftGroupCtr = [0, 0];
@@ -1128,7 +1128,7 @@ var touchMgr = (function () {
         var leftCenter = calculateCenter("left");
         var rightCenter = calculateCenter("right");
 
-        if(leftCenter[0] > rightCenter[0]) {
+        if (leftCenter[0] > rightCenter[0]) {
             swapAllTouches();
         }
     }
@@ -1511,8 +1511,8 @@ var touchMgr = (function () {
 
 
     api.setupTouches = function () {
-        var canvas = document.getElementById("touch-overlay");
-
+        canvas = document.getElementById("touch-overlay");
+        ctx = canvas.getContext("2d")
 
         // Set up an event listener for new touches.
         canvas.addEventListener('touchstart', function (e) {
@@ -1814,11 +1814,11 @@ function Controls(tag_, screenWid_, screenHeight_) {
             w_fuzzyRange = 0.15;
         var w_fuzzyRangeActive = 0.10;
         var boundRight, boundLeft;
-        if(this.tag === "right") {
+        if (this.tag === "right") {
             boundRight = this.thumbBent;
             boundLeft = this.thumbExtended;
 
-            var range = boundRight-boundLeft;
+            var range = boundRight - boundLeft;
 
             switch (this.cursorState) {
                 case "active":
@@ -1844,7 +1844,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
             boundLeft = this.thumbBent;
             boundRight = this.thumbExtended;
 
-            var range = boundRight-boundLeft;
+            var range = boundRight - boundLeft;
 
             switch (this.cursorState) {
                 case "active":
@@ -1941,7 +1941,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
             if (this.posture == "+thu+ind" || this.posture == "+ind" || this.posture == "+thu" || this.posture == "-rin-pin") {
 
 //                if (this.tag == "right")  //to-do
-                    this.updateDistance(distanceVec[0]);
+                this.updateDistance(distanceVec[0]);
 
 
                 if (this.posture == "+thu+ind") {

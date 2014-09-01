@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="../css/GSMod.css"/>
+    <link rel="stylesheet" type="text/css" href="posture.css"/>
+    <link rel="stylesheet" href="../css/animate.min.css">
+
+</head>
+<body>
+<div class="wrap">
+    <div class="half">
+        <canvas id="demo-overlay-left" class="grid-overlay"></canvas>
+        <div class="caption">Left Posture</div>
+    </div>
+    <div class="half">
+        <canvas id="demo-overlay-right" class="grid-overlay"></canvas>
+        <div class="caption">Right Posture</div>
+    </div>
+
+</div>
+<div class="wrap">
+    <div class="half">
+        <canvas id="leap-overlay-left" class="grid-overlay"></canvas>
+        <div class="caption">Left Hand</div>
+    </div>
+    <div class="half">
+        <canvas id="leap-overlay-right" class="grid-overlay"></canvas>
+        <div class="caption">Right Hand</div>
+    </div>
+</div>
+<div id="progress">
+    <div class="progress-bar blue stripes"><span style="width: 60%"></span></div>
+    <div class="caption">Please Pose as Indicated</div>
+</div>
+
+<script src="../js/gsCombo.js"></script>
+<script>
+    //global variables
+    var canvasWidth = 0, canvasHeight = 0;
+    var ACCELERATION_FACTOR = 3;
+    var canvas;
+    var ctxRight;
+    var ctxLeft;
+    var ctxDemoLeft;
+    var ctxDemoLeft;
+    var CURSOR_SIZE = 30;
+    CURSOR_SCALE = 1.5;
+
+    function launch() {
+        var gridScale = CURSOR_SCALE * 2.5;
+
+        canvasWidth = document.body.clientWidth;
+        canvasHeight = document.body.clientHeight;
+
+        var canvasRight = document.getElementById("leap-overlay-right");
+        // fullscreen
+        canvasRight.width = 200 * CURSOR_SCALE;
+        canvasRight.height = 200 * CURSOR_SCALE;
+        ctxRight = canvasRight.getContext("2d");
+
+        var canvasLeft = document.getElementById("leap-overlay-left");
+        // fullscreen
+        canvasLeft.width = 200 * CURSOR_SCALE;
+        canvasLeft.height = 200 * CURSOR_SCALE;
+        ctxLeft = canvasLeft.getContext("2d");
+
+        var canvasDemoRight = document.getElementById("demo-overlay-right");
+        // fullscreen
+        canvasDemoRight.width = 200 * CURSOR_SCALE;
+        canvasDemoRight.height = 200 * CURSOR_SCALE;
+        ctxDemoRight = canvasDemoRight.getContext("2d");
+
+        var canvasDemoLeft = document.getElementById("demo-overlay-left");
+        // fullscreen
+        canvasDemoLeft.width = 200 * CURSOR_SCALE;
+        canvasDemoLeft.height = 200 * CURSOR_SCALE;
+        ctxDemoLeft = canvasDemoLeft.getContext("2d");
+
+        var canvasRight = document.getElementById("leap-overlay-right");
+        // fullscreen
+        canvasRight.width = 200 * CURSOR_SCALE;
+        canvasRight.height = 200 * CURSOR_SCALE;
+        ctxRight = canvasRight.getContext("2d");
+
+        var canvasLeft = document.getElementById("leap-overlay-left");
+        // fullscreen
+        canvasLeft.width = 200 * CURSOR_SCALE;
+        canvasLeft.height = 200 * CURSOR_SCALE;
+        ctxLeft = canvasLeft.getContext("2d");
+
+        ctxDemoLeft.scale(gridScale, gridScale);
+        ctxDemoLeft.translate(-60, -60);
+        utilities.drawRingnFingers(ctxDemoLeft, [100, 1, 1, 1, 1], "left");
+
+        ctxDemoRight.scale(gridScale, gridScale);
+        ctxDemoRight.translate(-60, -60);
+        utilities.drawRingnFingers(ctxDemoRight, [260, 1, 1, 1, 1], "left");
+
+        ctxLeft.scale(gridScale, gridScale);
+        ctxLeft.translate(-60, -60);
+
+        ctxRight.scale(gridScale, gridScale);
+        ctxRight.translate(-60, -60);
+
+        leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
+        leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
+        leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_RIGHT, leftOnFrame);
+        leapDeviceMgr.start();
+    }
+
+    function rightOnFrame(controls) {
+
+        ctxRight.clearRect(0, 0, canvasWidth, canvasHeight);
+        drawHand(ctxRight, controls);
+    }
+
+    function leftOnFrame(controls) {
+
+        ctxLeft.clearRect(0, 0, canvasWidth, canvasHeight);
+        drawHand(ctxLeft, controls);
+
+    }
+
+    function drawHand(ctx, controls) {
+        if (controls.posture == "invalid" || !controls.valid) {
+            ctx.save();
+            ctx.globalAlpha = 0.2;
+            utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+            ctx.restore();
+        } else {
+            utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+        }
+    }
+
+
+    function fadeIn() {
+        $('#demo-overlay-left').removeClass('animated fadeOutUp');
+        ctxDemoLeft.clearRect(0, 0, 200 * CURSOR_SCALE, 200 * CURSOR_SCALE);
+        utilities.drawRingnFingers(ctxDemoLeft, [260, 1, 1, 1, 1], "left");
+//        $('#test').addClass('animated tada');
+
+    }
+    function fadeOut() {
+        $('#demo-overlay-left').addClass('animated fadeOutUp');
+        $('#demo-overlay-left').one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', fadeIn);
+    }
+    $(window).ready(launch());
+</script>
+</body>
+</html>
