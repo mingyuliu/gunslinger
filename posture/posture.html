@@ -12,11 +12,11 @@
 <div class="wrap">
     <div class="half">
         <canvas id="demo-overlay-left" class="grid-overlay"></canvas>
-        <div class="caption">Left Posture</div>
+        <div id="left-demo-text" class="caption">Left Posture</div>
     </div>
     <div class="half">
         <canvas id="demo-overlay-right" class="grid-overlay"></canvas>
-        <div class="caption">Right Posture</div>
+        <div id="right-demo-text" class="caption">Right Posture</div>
     </div>
 
 </div>
@@ -31,11 +31,12 @@
     </div>
 </div>
 <div id="progress">
-    <div class="progress-bar blue stripes"><span style="width: 60%"></span></div>
-    <div class="caption">Please Pose as Indicated</div>
+    <div class="progress-bar blue stripes"><span style="width: 0%"></span></div>
+    <div id="timer" class="caption">Please Pose as Indicated</div>
 </div>
 
 <script src="../js/gsCombo.js"></script>
+<script src="posturesList.js"></script>
 <script>
     //global variables
     var canvasWidth = 0, canvasHeight = 0;
@@ -47,6 +48,12 @@
     var ctxDemoLeft;
     var CURSOR_SIZE = 30;
     CURSOR_SCALE = 1.5;
+    var timer = false;
+    var TIMEOUT = 800;
+
+    var postureIndex = -1;
+    var postureHand = "right";
+    var timerStartTime;
 
     function launch() {
         var gridScale = CURSOR_SCALE * 2.5;
@@ -54,17 +61,6 @@
         canvasWidth = document.body.clientWidth;
         canvasHeight = document.body.clientHeight;
 
-        var canvasRight = document.getElementById("leap-overlay-right");
-        // fullscreen
-        canvasRight.width = 200 * CURSOR_SCALE;
-        canvasRight.height = 200 * CURSOR_SCALE;
-        ctxRight = canvasRight.getContext("2d");
-
-        var canvasLeft = document.getElementById("leap-overlay-left");
-        // fullscreen
-        canvasLeft.width = 200 * CURSOR_SCALE;
-        canvasLeft.height = 200 * CURSOR_SCALE;
-        ctxLeft = canvasLeft.getContext("2d");
 
         var canvasDemoRight = document.getElementById("demo-overlay-right");
         // fullscreen
@@ -92,11 +88,11 @@
 
         ctxDemoLeft.scale(gridScale, gridScale);
         ctxDemoLeft.translate(-60, -60);
-        utilities.drawRingnFingers(ctxDemoLeft, [100, 1, 1, 1, 1], "left");
+        utilities.drawRingnFingers(ctxDemoLeft, [100, true, true, true, true], "left");
 
         ctxDemoRight.scale(gridScale, gridScale);
         ctxDemoRight.translate(-60, -60);
-        utilities.drawRingnFingers(ctxDemoRight, [260, 1, 1, 1, 1], "left");
+        utilities.drawRingnFingers(ctxDemoRight, [100, true, true, true, true], "right");
 
         ctxLeft.scale(gridScale, gridScale);
         ctxLeft.translate(-60, -60);
@@ -108,16 +104,97 @@
         leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
         leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_RIGHT, leftOnFrame);
         leapDeviceMgr.start();
+        startStudy();
+    }
+
+    function capitaliseFst(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    function startStudy() {
+        startNewBlock("right", true);
+    }
+
+    function startNewBlock(whichhand, feedbackShowing) {
+        postureHand = whichhand;
+        postureIndex = 0;
+        if (feedbackShowing) {
+            $("#progress").show();
+        } else {
+            $("#progress").hide();
+        }
+        window["ctxDemo" + capitaliseFst(whichhand)].clearRect(0, 0, canvasWidth, canvasHeight);
+        utilities.drawRingnFingers(window["ctxDemo" + capitaliseFst(whichhand)],
+                postureList[postureIndex].fingerList, whichhand);
+        $("#"+whichhand+"-demo-text").text(postureList[postureIndex].name);
+
+    }
+
+    function checkFramePosture(controls) {
+        //check if study has started
+        if (postureIndex > -1) {
+            //check if study has ended
+            if (postureIndex >= postureList.length) {
+                postureIndex = -1;
+                return;
+            }
+            //check if it's the frame of correct hand
+            if (controls.tag === postureHand) {
+                //begin matching
+                var matched = true;
+                var currentType = postureList[postureIndex].type;
+                //special case for pointing posture
+                if(postureList[postureIndex].type.indexOf("_") > -1) {
+                    var cursorState = postureList[postureIndex].type.split("_")[1];
+                    matched = (cursorState === controls.cursorState);
+                    currentType = postureList[postureIndex].type.split("_")[0];
+                }
+                if (controls.posture === currentType && matched) {
+                    if (!timer) {
+                        timer = window.setTimeout(function () {
+                            timer = false;
+                            postureIndex++;
+                            if (postureIndex < postureList.length) {
+                                fadeOut();
+                                $("#progress").find("span").css("width", "0%");
+                            } else {
+                                fadeOutEnd();
+                            }
+                        }, TIMEOUT);
+                        timerStartTime = new Date().getTime();
+                    }
+
+                } else {
+                    window.clearTimeout(timer);
+                    timer = false;
+                }
+                console.log(controls.posture);
+            }
+            if (timer) {
+                var d = new Date().getTime();
+                var percent = (d - timerStartTime) / TIMEOUT * 100;
+                if (percent > 60) {
+                    $(".progress-bar").removeClass("blue").addClass("orange");
+                } else {
+                    $(".progress-bar").addClass("blue").removeClass("orange");
+
+                }
+                $("#progress").find("span").css("width", (d - timerStartTime) / TIMEOUT * 100 + "%");
+            }
+        }
+
     }
 
     function rightOnFrame(controls) {
-
+        checkFramePosture(controls);
         ctxRight.clearRect(0, 0, canvasWidth, canvasHeight);
         drawHand(ctxRight, controls);
+        //update progress bar
+
     }
 
     function leftOnFrame(controls) {
-
+        checkFramePosture(controls);
         ctxLeft.clearRect(0, 0, canvasWidth, canvasHeight);
         drawHand(ctxLeft, controls);
 
@@ -136,15 +213,27 @@
 
 
     function fadeIn() {
-        $('#demo-overlay-left').removeClass('animated fadeOutUp');
-        ctxDemoLeft.clearRect(0, 0, 200 * CURSOR_SCALE, 200 * CURSOR_SCALE);
-        utilities.drawRingnFingers(ctxDemoLeft, [260, 1, 1, 1, 1], "left");
-//        $('#test').addClass('animated tada');
 
+        $('#demo-overlay-' + postureHand).removeClass('animated zoomOut'+capitaliseFst(postureHand));
+        $("#"+postureHand+"-demo-text").removeClass('animated fadeOut');
+        window["ctxDemo" + capitaliseFst(postureHand)].clearRect(0, 0, 200 * CURSOR_SCALE, 200 * CURSOR_SCALE);
+        utilities.drawRingnFingers(window["ctxDemo" + capitaliseFst(postureHand)], postureList[postureIndex].fingerList, postureHand);
+        $("#"+postureHand+"-demo-text").text(postureList[postureIndex].name);
     }
     function fadeOut() {
-        $('#demo-overlay-left').addClass('animated fadeOutUp');
-        $('#demo-overlay-left').one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', fadeIn);
+        $('#demo-overlay-' + postureHand).addClass('animated zoomOut'+capitaliseFst(postureHand));
+        $("#"+postureHand+"-demo-text").addClass('animated fadeOut');
+        $('#demo-overlay-' + postureHand).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', fadeIn);
+    }
+    function fadeOutEnd() {
+        $("#"+postureHand+"-demo-text").addClass('animated fadeOut');
+        $('#demo-overlay-' + postureHand).addClass('animated zoomOut'+capitaliseFst(postureHand));
+        $('#demo-overlay-' + postureHand).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend',
+                function () {
+                    $('#demo-overlay-' + postureHand).removeClass('animated zoomOut'+capitaliseFst(postureHand));
+                    window["ctxDemo" + capitaliseFst(postureHand)].clearRect(0, 0, 200 * CURSOR_SCALE, 200 * CURSOR_SCALE);
+                });
+
     }
     $(window).ready(launch());
 </script>

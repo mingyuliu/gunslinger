@@ -751,7 +751,7 @@ var leapDeviceMgr = (function () {
         //for test gui
         // createProgress();
         createDebugTextElement();
-//        touchMgr.setupTouches();
+        touchMgr.setupTouches();
         for (var i = 0; i < _controllers.length; i++) {
             _controllers[i].loop(function (frame) {
                 //for test gui
@@ -1085,9 +1085,11 @@ var touchMgr = (function () {
     var currentTouches = [];
 
     var api = {};
+    api.afterTouchStartHandler = {};
     api.touchMoveHandler = {};
     api.touchEndHandler = {};
     api.afterTouchMoveHandler = {};
+
 
     var canvas;
     var ctx;
@@ -1264,6 +1266,7 @@ var touchMgr = (function () {
                 hand = "left";
             }
 
+
             if (currentTouches.length == 0) {
                 if (hand === "right") {
                     var distance = vec2.dist(touchMgr.lastLeftPos, [touch.pageX, touch.pageY]);
@@ -1366,6 +1369,7 @@ var touchMgr = (function () {
                     updateGroupTouches(previousTouch.whichhand, previousTouch.group);
                 }
             }
+            touchMgr.afterTouchStartHandler(currentTouches[currentTouches.length - 1]);
             var devices = leapDeviceMgr.getControls();
             for (var i = 0; i < devices.length; i++) {
                 if (devices[i].controls.valid) {

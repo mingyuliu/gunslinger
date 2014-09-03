@@ -134,11 +134,23 @@ function canvasApp() {
                 map.panBy(moveX, moveY);
             }
         } else if (currentTouch.whichhand == "right") {
-//            if (touchMgr.countTouches("right") == 1 && currentTouch.group == 0) {
-//                shapeManager.getInstance().addPolylineXY(currentTouch.pageX, currentTouch.pageY);
-//            }
+            if (touchMgr.countTouches("right") == 1 && currentTouch.group == 0) {
+                var d = new Date().getTime();
+                if (d - currentTouch.starttime > 150) {
+                    shapeManager.getInstance().addPolylineXY(currentTouch.pageX, currentTouch.pageY);
+                }
+            }
         }
     };
+
+    touchMgr.afterTouchStartHandler = function (currentTouch) {
+//        if (currentTouch.whichhand == "right") {
+//            if (touchMgr.countTouches("right") === 1) {
+//                shapeManager.getInstance().startPolylineXY(currentTouch.pageX, currentTouch.pageY);
+//            }
+//        }
+    };
+
 
     touchMgr.afterTouchMoveHandler = function (currentTouch, moveX, moveY) {
         if (currentTouch.whichhand == "left") {
@@ -195,6 +207,10 @@ function canvasApp() {
 
                 }
             }
+            if (currentTouch.whichhand == "right") {
+                shapeManager.getInstance().endPolylineXY(currentTouch.pageX, currentTouch.pageY);
+            }
+
         }
 
 
@@ -709,6 +725,7 @@ function initialize() {
             mapOptions);
     directionsDisplay.setMap(map);
 }
+
 google.maps.event.addDomListener(window, 'load', initialize);
 
 
@@ -753,12 +770,12 @@ var shapeManager = (function () {
             strokeOpacity: 1.0,
             strokeWeight: 3
         };
-        var poly = new google.maps.Polyline(polyOptions);
-        poly.setMap(map);
+        var poly = null;
 
-        var routeArray = new Array();
-        var markersArray = new Array();
-        var shapeArray = new Array();
+        var routeArray = [];
+        var markersArray = [];
+        var shapeArray = [];
+        var polyArray = [];
         var redoAction = {
             type: "none"
         };
@@ -789,17 +806,25 @@ var shapeManager = (function () {
                     case "completeRoute":
                         undoAction.object.setMap(null);
                         redoAction = {
-                            type:undoAction.type,
-                            object:undoAction.object
+                            type: undoAction.type,
+                            object: undoAction.object
                         };
                         break;
                     case "addMarker":
                         undoAction.object.setMap(null);
                         redoAction = {
-                            type:undoAction.type,
-                            object:undoAction.object
+                            type: undoAction.type,
+                            object: undoAction.object
                         };
                         markersArray.splice(markersArray.length - 1, 1);
+                        break;
+                    case "completePolyline":
+                        undoAction.object.setMap(null);
+                        redoAction = {
+                            type: undoAction.type,
+                            object: undoAction.object
+                        };
+                        polyArray.splice(polyArray.length - 1, 1);
                         break;
                 }
                 if (currentShape.length == 0) {
@@ -815,18 +840,26 @@ var shapeManager = (function () {
 
                         redoAction.object.setMap(map);
                         undoAction = {
-                            type:redoAction.type,
-                            object:redoAction.object
+                            type: redoAction.type,
+                            object: redoAction.object
                         };
 
                         break;
                     case "addMarker":
                         redoAction.object.setMap(map);
                         undoAction = {
-                            type:redoAction.type,
-                            object:redoAction.object
+                            type: redoAction.type,
+                            object: redoAction.object
                         };
-                        markersArray.push(marker);
+                        markersArray.push(redoAction.object);
+                        break;
+                    case "completePolyline":
+                        redoAction.object.setMap(map);
+                        undoAction = {
+                            type: redoAction.type,
+                            object: redoAction.object
+                        };
+                        polyArray.push(redoAction.object);
                         break;
                 }
                 if (currentShape.length > 0) {
@@ -917,7 +950,27 @@ var shapeManager = (function () {
 
             },
 
+            startPolylineXY: function (cursorX, cursorY) {
+                poly = new google.maps.Polyline(polyOptions);
+                poly.setMap(map);
+
+            },
+
+            endPolylineXY: function (cursorX, cursorY) {
+                if (poly !== null) {
+                    instance.addPolylineXY(cursorX, cursorY);
+                    polyArray.push(poly);
+                    undoAction.object = poly;
+                    undoAction.type = "completePolyline";
+                    redoAction.type = "none";
+                }
+                poly = null;
+            },
+
             addPolylineXY: function (cursorX, cursorY) {
+                if (poly === null) {
+                    instance.startPolylineXY(cursorX, cursorY);
+                }
                 var screenX = canvas.width - cursorX;
                 var screenY = canvas.height - cursorY;
                 var point = new google.maps.Point(screenX, screenY);
