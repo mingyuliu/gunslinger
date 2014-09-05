@@ -14,7 +14,7 @@ function angleBtLines(v1, v2) {
     return Math.acos(cos) * 180.0 / Math.PI;
 };
 
-var calibrator = (function() {
+var calibrator = (function () {
     var data = [];
     var types = [];
 
@@ -24,24 +24,16 @@ var calibrator = (function() {
     var stepsEl = document.getElementById("steps");
     var typeEl = document.getElementById("currenttype");
 
-    initDataset = function() {
-        switch (whichhand) {
-            case "right":
-                for (var i = 0; i < rightHandGesture.length; i++) {
-                    types.push(rightHandGesture[i].type);
-                }
+    initDataset = function () {
 
-                break;
-            case "left":
-                for (var i = 0; i < leftHandGesture.length; i++) {
-                    types.push(leftHandGesture[i].type);
-                }
-                break;
+        for (var i = 0; i < rightHandGesture.length; i++) {
+            types.push(rightHandGesture[i].type);
         }
+
         currentIndex = 0;
         stepsEl.innerHTML = (currentIndex + 1) + "/" + (types.length);
         typeEl.innerHTML = whichhand + " " + types[currentIndex];
-        $(document).keyup(function(event) {
+        $(document).keyup(function (event) {
             switch (event.which) {
                 case 84: //"t" toggle cursor view
                     if (currentIndex < types.length) {
@@ -55,7 +47,7 @@ var calibrator = (function() {
                         thumbDist = Leap.vec3.distance(fingers[0].tipPosition, hand.palmPosition);
                         console.log(thumbDist);
                         data.push(new Gesture(types[currentIndex], extended, thumbDist));
-                        if(types[currentIndex] == "+ind") {
+                        if (types[currentIndex] == "+ind") {
                             var angle = angleBtLines([0, 0, -1], [hand.direction[0], 0, hand.direction[2]]);
 
                             if (hand.direction[0] < 0) {
@@ -134,7 +126,7 @@ var calibrator = (function() {
         });
     };
 
-    api.startCalibrate = function(whichhand_) {
+    api.startCalibrate = function (whichhand_) {
         whichhand = whichhand_;
         initDataset();
     };
@@ -237,7 +229,8 @@ function drawFingers(frame) {
 
     for (var i = 0; i < fingerTipsPos.length; i++) {
         for (var j = 0; j < 3; j++) {
-            extendedAlpha = (fingers[i].extended ? 1 : 0.2);;
+            extendedAlpha = (fingers[i].extended ? 1 : 0.2);
+            ;
             ctx.shadowBlur = 5;
             ctx.shadowColor = '#000000';
             ctx.strokeStyle = "rgba(255, 0, 51," + extendedAlpha + ")";

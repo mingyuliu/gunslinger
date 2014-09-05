@@ -217,8 +217,8 @@ function canvasApp() {
     };
 
     leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
-    leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
-    leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_RIGHT, leftOnFrame);
+    leapDeviceMgr.addDevice("localhost", "right", GESTURE_SUB, rightOnFrame);
+    leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_SUB, leftOnFrame);
     leapDeviceMgr.start();
     $('#menu_box_right').popmenu({'background': '#e67e22', 'focusColor': '#c0392b', 'iconSize': '100px', 'width': '500px'});
     $("#pop_ctrl_right").hide();
@@ -387,22 +387,7 @@ function canvasApp() {
                     }, 600);
                 }
                 break;
-            case "+thu":
-                popupWidgets(controls);
-                closeMenu("right");
 
-                var rotatex = controls.palmNormal[0] * Math.PI * 180;
-                // console.log(rotatex);
-                if (rotatex < -70) {
-                    itemSelected = 2;
-                } else if (rotatex < 70) {
-                    itemSelected = 1;
-                } else {
-                    itemSelected = 0;
-                }
-                selectWidget(controls, itemSelected);
-
-                break;
             case "-rin-pin":
 
                 showMenu("right", screenY, screenX, true);
@@ -473,21 +458,7 @@ function canvasApp() {
 
                             shapeMgr.addCoordbyXY(screenX, screenY);
                             break;
-                        case "+thu":
-                            switch (itemSelected) {
-                                case 0:
-                                    shapeMgr.completeShape();
-                                    break;
-                                case 1:
-                                    shapeMgr.completeRoute();
-                                    break;
-                                case 2:
-                                    shapeMgr.clearAllMarkers();
-                                    break;
 
-                            }
-                            closeWidgets(controls);
-                            break;
                         case "-rin-pin":
                             var items = $("#menu_box_right_ele li");
 
@@ -593,9 +564,9 @@ function canvasApp() {
 
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
-            case "+thu+ind":
+            case "+ind+mid":
                 closeMenu("left");
-                if (olderLeftPosture !== "+thu+ind") {
+                if (olderLeftPosture !== "+ind+mid") {
                     ctrPosY = controls.palmPosition[1];
                     ctrPosX = controls.palmPosition[0];
                 }
@@ -646,8 +617,13 @@ function canvasApp() {
                     ctrPosX = controls.palmPosition[0];
                 }
                 utilities.drawFlickMenu(ctx);
-                var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, true, 80);
-
+                var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, true, 100);
+                leapDeviceMgr.printInfo(ballPos[1].toFixed(1));
+                    if(ballPos[1] < -60) {
+                        shapeManager.getInstance().undo();
+                    } else if (ballPos[1] > 60) {
+                        shapeManager.getInstance().redo();
+                    }
 
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;

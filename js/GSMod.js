@@ -732,7 +732,7 @@ var leapDeviceMgr = (function () {
         controller.valid = true;
         controller.tag = tag;
         controller.gestureList = gestureList;
-        controller.analyzer = new quanAnalyzer(tag);
+        controller.analyzer = new quanAnalyzer(tag, gestureList);
         controller.onFrameLoop = onFrameLoop || function () {
             // body...
         };
@@ -751,7 +751,7 @@ var leapDeviceMgr = (function () {
         //for test gui
         // createProgress();
         createDebugTextElement();
-        touchMgr.setupTouches();
+//        touchMgr.setupTouches();
         for (var i = 0; i < _controllers.length; i++) {
             _controllers[i].loop(function (frame) {
                 //for test gui
@@ -767,7 +767,7 @@ var leapDeviceMgr = (function () {
                     updateProgressBar(this.analyzer.getList(), this.tag, this.analyzer.getMinIndex());
                 }
 
-                this.controls.update(this.gestureList[this.analyzer.getMinIndex()], frame);
+                this.controls.update(this.gestureList[this.analyzer.getMinIndex()], this.analyzer.getMinVal(), frame);
                 this.onFrameLoop(this.controls);
 
                 if (this.controls.valid) {
@@ -788,7 +788,7 @@ var leapDeviceMgr = (function () {
 
     api.printInfo = function (msg) {
         var frameOutput = document.getElementById("frameDataLeft");
-        frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + interstate.fsm.current + "<br/>" + msg + "</div>";
+        frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + msg + "</div>";
         $("#frameDataLeft").show();
     }
 
@@ -821,17 +821,18 @@ var leapDeviceMgr = (function () {
 })();
 
 
-function quanAnalyzer(tag) {
+function quanAnalyzer(tag, gestureList) {
     this._list = [];
-    this._gestures;
-    switch (tag) {
-        case "right":
-            this._gestures = JSON.parse(localStorage.rightGestures);
-            break;
-        case "left":
-            this._gestures = JSON.parse(localStorage.rightGestures);
-            break;
+    this._gestures = [];
+
+    var gestures = JSON.parse(localStorage.rightGestures);
+    for (var i = 0; i < gestureList.length; i++) {
+        var result = gestures.filter(function(v) {
+            return v.type === gestureList[i]; // filter out appropriate one
+        });
+        this._gestures.push(result[0]);
     }
+
     for (var i = 0; i < this._gestures.length; i++) {
 
         var item = {
@@ -1055,24 +1056,23 @@ function quanAnalyzer(tag) {
                 // console.log("type " + this._list[i].type + " val: " + this._list[i].val);
                 // console.log(this._list);
             }
-            // var questEle = document.getElementById("quesmarks");
-            // if (minVal > 0.2) {
-            //     // questEle.style.visibility = 'visible';
-            //     questEle.style.top = canvas.height / 2 + 'px';
-
-            //     questEle.style.left = canvas.width / 2 + 'px';
-            //     $('#quesmarks').show();
-            //     $('#quesmarks').animo({
-            //         animation: 'tada',
-            //         keep: false
-            //     });
-
-
-            // } else {
-            //     // $('#quesmarks').hide();
-            //     // $('#quesmarks').animo("cleanse");
-            // }
             return minIndex;
+        }
+    };
+
+    this.getMinVal = function () {
+        {
+            var minVal = Number.MAX_VALUE;
+            var minIndex = 0;
+            for (var i = 0; i < this._list.length; i++) {
+                if (minVal > this._list[i].val) {
+                    minVal = this._list[i].val;
+                    minIndex = i;
+                }
+                // console.log("type " + this._list[i].type + " val: " + this._list[i].val);
+                // console.log(this._list);
+            }
+            return minVal;
         }
     };
 
@@ -1649,6 +1649,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.valid = false;
     this.posture = "none";
     this.use = GetURLParameter("use") || "desktop";
+    this.minVal = 0;
     if (this.tag == "right") {
 
         this.thumbExtended = Number(localStorage.rightThumbExtended) * .92 || -75;
@@ -1668,8 +1669,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.isDragging = false;
     this.timestamp = 0;
     this.lastFrameTimestamp = 0;
-    this.depthVal = 1;
-    this.devianceVal = 1;
+
     this.fingerList = [40, 1, 1, 1, 1];
     this.confidence = 0;
     this.palmPosition = vec3.fromValues(0, 200, 0);
@@ -1682,36 +1682,20 @@ function Controls(tag_, screenWid_, screenHeight_) {
     }
     this.historyPoints = [];
 
-
-    this.updateRelativeVals = function (palmPos) {
-        var depth = palmPos[1];
-        var deviance = vec2.len([palmPos[0], palmPos[2]]);
-
-        this.depthVal = 1;
-        this.devianceVal = 1;
-        if (depth > DP_END) {
-            var minDp = Math.min(DP_END + DP_DANGER_RANGE, depth);
-            this.depthVal = 1 - (minDp - DP_END) / (DP_DANGER_RANGE * 2);
-        } else if (depth < DP_START) {
-            var maxDP = Math.max(DP_START - DP_DANGER_RANGE, depth);
-            maxDP -= (DP_START - DP_DANGER_RANGE);
-            this.depthVal = 2 - maxDP / (DP_DANGER_RANGE);
+    this.getRecordData = function () {
+        var data = {
+            handUsed: this.tag,
+            x: this.x,
+            y: this.y,
+            valid: this.valid,
+            posture: this.posture,
+            minVal: this.minVal,
+            cursorEvent: this.cursorEvent,
+            tipPosition: this.tipPosition,
+            palmPosition: this.palmPosition,
+            confidence: this.confidence
         }
-
-        var dv_close = depth * DV_RATIO;
-        var dv_far = depth * (DV_RATIO + DV_BOUND);
-
-        if (deviance > dv_close) {
-            var minDV = Math.min(deviance, dv_far);
-            this.devianceVal = 1 - (minDV - dv_close) / (depth * DV_BOUND);
-        }
-
-//        if (this.depthVal <= 0.5 || this.depthVal >= 1.8) {
-//            this.posture = "invalid";
-//        } else if (this.devianceVal <= 0.6) {
-//            this.posture = "invalid";
-//        }
-
+        return data;
     }
 
     this.setCursorState = function (state) {
@@ -1899,7 +1883,8 @@ function Controls(tag_, screenWid_, screenHeight_) {
         this.fingerList[0] = angle;
     };
 
-    this.update = function (posture, frame) {
+    this.update = function (posture, minVal, frame) {
+        this.minVal = minVal;
         this.posture = posture;
         this.timestamp = frame.timestamp * 0.001;
         if (frame.hands[0] != undefined) {
@@ -1916,7 +1901,6 @@ function Controls(tag_, screenWid_, screenHeight_) {
                 this.posture = "invalid";
             }
 
-//            this.updateRelativeVals(hand.palmPosition);
             var fingers = hand.fingers;
             this.tipPosition = frame.hands[0].fingers[1].tipPosition;
 
@@ -2013,6 +1997,18 @@ function GetURLParameter(sParam) {
 
 var utilities = (function () {
     var api = {};
+
+    api.showMsg = function (msg, callback) {
+        var callbackFn = callback || function () {
+        };
+        vex.defaultOptions.className = 'vex-theme-os';
+        $vexContent = vex.dialog.alert({
+            message: msg,
+            callback: function (value) {
+                callbackFn();
+            }
+        });
+    };
 
     api.drawFlickMenu = function (ctx) {
         // flickmenufeedback/Path
@@ -3190,6 +3186,56 @@ var utilities = (function () {
     return api;
 })();
 
+var recorder = (function () {
+    var api = {};
+
+    api.records = [];
+    var isRecording = false;
+    var note = "";
+    var counter = 0;
+
+    api.isRecording = function () {
+        return isRecording;
+    };
+
+
+    api.stopRecorder = function () {
+        isRecording = false;
+        leapDeviceMgr.printInfo("Stopped");
+    };
+
+
+    api.downloadRecords = function () {
+        var date = new Date();
+        var logData = [];
+        logData.push([date.toLocaleString(), note, recorder.records]);
+
+        var blob = new Blob([JSON.stringify(logData)], {type: 'text/plain'});
+
+        counter++;
+        saveAs(blob, note + " " + counter + ".txt");
+        recorder.stopRecorder();
+    };
+
+
+    api.startRecorder = function (note_) {
+        isRecording = true;
+        note = note_;
+        leapDeviceMgr.printInfo("Recording");
+    };
+
+
+    api.updateRecord = function (status, additionalStatus) {
+        if (isRecording) {
+            var record = [new Date().getTime(), status, additionalStatus];
+            recorder.records.push(record);
+        }
+    };
+
+    return api;
+
+
+})();
 
 var GESTURE_ALL_RIGHT = [];
 for (var i = 0; i < rightHandGesture.length; i++) {
@@ -3200,6 +3246,7 @@ for (var i = 0; i < rightHandGesture.length; i++) {
     GESTURE_ALL_LEFT.push(rightHandGesture[i].type);
 }
 
+GESTURE_SUB = ["fist", "+ind",  "+ind+mid", "+thu+ind", "-rin-pin", "-thu", "full"];
 
 //TEST
 

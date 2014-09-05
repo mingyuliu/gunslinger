@@ -41,7 +41,7 @@
 
 </style>
 <link href="../css/GSMod.css" rel="stylesheet" type="text/css">
-<link href="../css/progressbar.css" rel="stylesheet" type="text/css">
+
 <title>Pilot</title>
 
 
@@ -64,7 +64,7 @@
     <h1>block #1 Set #1</h1> <h4>start your task by clicking the the target</h4>
 
 </div>
-<script src="../gsMap/circular-progress.js"></script>
+
 <script src="../js/state-machine.js"></script>
 <script src="../js/GSMod.js"></script>
 <script>
@@ -139,7 +139,7 @@ function canvasApp() {
 
 
     var recorder = false;
-    var progressRight;
+
 
     function init() {
         //get block number
@@ -157,8 +157,8 @@ function canvasApp() {
         canvas = document.getElementById("leap-overlay");
 
         // fullscreen
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
+        canvas.width = 200 * CURSOR_SCALE;
+        canvas.height = 200 * CURSOR_SCALE;
 
 
         ctx = canvas.getContext("2d");
@@ -169,25 +169,14 @@ function canvasApp() {
 
 
         leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
-        leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
-        leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_RIGHT);
+        leapDeviceMgr.addDevice("localhost", "right", GESTURE_SUB, rightOnFrame);
         leapDeviceMgr.start();
 //        leapDeviceMgr.disableDeviceByTag("right");
 //        leapDeviceMgr.showVerboseInfo();
 //        $(".knob").ccountdown(2015,8,25,'18:00'); //only need to pass target date and time
 
         initSoundJS();
-        progressRight = new CircularProgress({
-            radius: 35 * CURSOR_SCALE,
-            strokeStyle: 'green',
-            lineCap: 'round',
-            lineWidth: 4
-        });
 
-        document.body.appendChild(progressRight.el);
-
-        progressRight.el.style.position = "absolute";
-        progressRight.el.style.zIndex = "500000000";
     }
 
     function initSoundJS() {
@@ -266,7 +255,7 @@ function canvasApp() {
         //fileWriter.write(blob);
 
         records = [];
-        saveAs(blob, particNote + " " + date.toLocaleFormat() + ".txt");
+        saveAs(blob, particNote + " " + date.toLocaleString() + ".txt");
         stopRecorder();
     }
 
@@ -365,7 +354,8 @@ function canvasApp() {
         ctx.save();
         var ratio = utilities.getRatio(controls.palmPosition, controls.use);
         ctx.globalAlpha = 1 - ratio;
-        ctx.translate(screenX, screenY);
+        canvas.style.top = screenY + "px";
+        canvas.style.left = screenX + "px";
         ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
 
 
@@ -422,18 +412,7 @@ function canvasApp() {
         ctx.translate(-offset[0], -offset[1]);
         utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
 
-        progressRight.el.style.top = screenY + (-offset[1] + 65) * CURSOR_SCALE + "px";
-        progressRight.el.style.left = screenX + (-offset[0] + 65) * CURSOR_SCALE + "px";
-        if (controls.confidence >= 80) {
-            progressRight.options["strokeStyle"] = "green";
-        } else if (controls.confidence < 80 && controls.confidence >= 40) {
-            progressRight.options["strokeStyle"] = "yellow";
-        } else if (controls.confidence < 40 && controls.confidence > 0) {
-            progressRight.options["strokeStyle"] = "red";
-        } else {
-            progressRight.options["strokeStyle"] = "grey";
-        }
-        progressRight.update(controls.confidence / 4);
+
         ctx.restore();
 
     }
@@ -523,7 +502,8 @@ function canvasApp() {
         screenY = -controls.y + canvasHeight;
 
         ctx.save();
-        ctx.translate(screenX, screenY);
+        canvas.style.top = screenY + "px";
+        canvas.style.left = screenX + "px";
         ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
         ctx.globalAlpha = 0.2;
         utilities.drawGeneric(ctx);
@@ -541,11 +521,7 @@ function canvasApp() {
             handleAnimation(controls);
             handleEvent(controls);
         }
-        //reference rectangle
-        var tempShape = new SimpleSquareParticle(120, 120);
-        tempShape.color = "rgba(255, 255, 255, 1.0)";
-        tempShape.radius = 10 * SCALE_TO_PIXEL;
-        tempShape.drawToContext(ctx);
+
     }
 
     function Target(x_, y_, distance_) {

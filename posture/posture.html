@@ -6,15 +6,17 @@
     <link rel="stylesheet" type="text/css" href="../css/GSMod.css"/>
     <link rel="stylesheet" type="text/css" href="posture.css"/>
     <link rel="stylesheet" href="../css/animate.min.css">
-
+    <link rel="stylesheet" href="../css/vex.css"/>
+    <link rel="stylesheet" href="../css/vex-theme-os.css"/>
+    <link rel="stylesheet" href="../css/vex-theme-flat-attack.css">
 </head>
 <body>
 <div class="wrap">
-    <div class="half">
+    <div id="demo-left" class="half">
         <canvas id="demo-overlay-left" class="grid-overlay"></canvas>
         <div id="left-demo-text" class="caption">Left Posture</div>
     </div>
-    <div class="half">
+    <div id="demo-right" class="half">
         <canvas id="demo-overlay-right" class="grid-overlay"></canvas>
         <div id="right-demo-text" class="caption">Right Posture</div>
     </div>
@@ -23,11 +25,11 @@
 <div class="wrap">
     <div class="half">
         <canvas id="leap-overlay-left" class="grid-overlay"></canvas>
-        <div class="caption">Left Hand</div>
+        <div class="hand-caption">Left Hand</div>
     </div>
     <div class="half">
         <canvas id="leap-overlay-right" class="grid-overlay"></canvas>
-        <div class="caption">Right Hand</div>
+        <div class="hand-caption">Right Hand</div>
     </div>
 </div>
 <div id="progress">
@@ -37,205 +39,348 @@
 
 <script src="../js/gsCombo.js"></script>
 <script src="posturesList.js"></script>
+<script src="../js/vex.combined.min.js"></script>
+
 <script>
-    //global variables
-    var canvasWidth = 0, canvasHeight = 0;
-    var ACCELERATION_FACTOR = 3;
-    var canvas;
-    var ctxRight;
-    var ctxLeft;
-    var ctxDemoLeft;
-    var ctxDemoLeft;
-    var CURSOR_SIZE = 30;
-    CURSOR_SCALE = 1.5;
-    var timer = false;
-    var TIMEOUT = 800;
+//global variables
+var canvasWidth = 0, canvasHeight = 0;
+var ACCELERATION_FACTOR = 3;
+var canvas;
+var ctxRight;
+var ctxLeft;
+var ctxDemoLeft;
+var ctxDemoLeft;
+var CURSOR_SIZE = 30;
+CURSOR_SCALE = 1.5;
+var timer = false;
+var TIMEOUT = 800;
+var TIMEOUT_NON_FEEDBACK = 3000;
 
-    var postureIndex = -1;
-    var postureHand = "right";
-    var timerStartTime;
+var postureIndex = -1;
+var postureHand = "right";
+var timerStartTime;
 
-    function launch() {
-        var gridScale = CURSOR_SCALE * 2.5;
-
-        canvasWidth = document.body.clientWidth;
-        canvasHeight = document.body.clientHeight;
+var currentBlock = 0;
+var records = [];
 
 
-        var canvasDemoRight = document.getElementById("demo-overlay-right");
-        // fullscreen
-        canvasDemoRight.width = 200 * CURSOR_SCALE;
-        canvasDemoRight.height = 200 * CURSOR_SCALE;
-        ctxDemoRight = canvasDemoRight.getContext("2d");
+var blocks = [];
+blocks.push({
+    whichhand: "right",
+    feedback: true
+});
+//    blocks.push({
+//        whichhand: "left",
+//        feedback: false
+//    });
+//blocks.push({
+//    whichhand: "left",
+//    feedback: true
+//});
+//    blocks.push({
+//        whichhand: "left",
+//        feedback: false
+//    });
+var checkFramePosture = function () {
+};
 
-        var canvasDemoLeft = document.getElementById("demo-overlay-left");
-        // fullscreen
-        canvasDemoLeft.width = 200 * CURSOR_SCALE;
-        canvasDemoLeft.height = 200 * CURSOR_SCALE;
-        ctxDemoLeft = canvasDemoLeft.getContext("2d");
+function launch() {
+    var gridScale = CURSOR_SCALE * 2.5;
 
-        var canvasRight = document.getElementById("leap-overlay-right");
-        // fullscreen
-        canvasRight.width = 200 * CURSOR_SCALE;
-        canvasRight.height = 200 * CURSOR_SCALE;
-        ctxRight = canvasRight.getContext("2d");
+    canvasWidth = document.body.clientWidth;
+    canvasHeight = document.body.clientHeight;
 
-        var canvasLeft = document.getElementById("leap-overlay-left");
-        // fullscreen
-        canvasLeft.width = 200 * CURSOR_SCALE;
-        canvasLeft.height = 200 * CURSOR_SCALE;
-        ctxLeft = canvasLeft.getContext("2d");
 
-        ctxDemoLeft.scale(gridScale, gridScale);
-        ctxDemoLeft.translate(-60, -60);
-        utilities.drawRingnFingers(ctxDemoLeft, [100, true, true, true, true], "left");
+    var canvasDemoRight = document.getElementById("demo-overlay-right");
+    // fullscreen
+    canvasDemoRight.width = 200 * CURSOR_SCALE;
+    canvasDemoRight.height = 200 * CURSOR_SCALE;
+    ctxDemoRight = canvasDemoRight.getContext("2d");
 
-        ctxDemoRight.scale(gridScale, gridScale);
-        ctxDemoRight.translate(-60, -60);
-        utilities.drawRingnFingers(ctxDemoRight, [100, true, true, true, true], "right");
+    var canvasDemoLeft = document.getElementById("demo-overlay-left");
+    // fullscreen
+    canvasDemoLeft.width = 200 * CURSOR_SCALE;
+    canvasDemoLeft.height = 200 * CURSOR_SCALE;
+    ctxDemoLeft = canvasDemoLeft.getContext("2d");
 
-        ctxLeft.scale(gridScale, gridScale);
-        ctxLeft.translate(-60, -60);
+    var canvasRight = document.getElementById("leap-overlay-right");
+    // fullscreen
+    canvasRight.width = 200 * CURSOR_SCALE;
+    canvasRight.height = 200 * CURSOR_SCALE;
+    ctxRight = canvasRight.getContext("2d");
 
-        ctxRight.scale(gridScale, gridScale);
-        ctxRight.translate(-60, -60);
+    var canvasLeft = document.getElementById("leap-overlay-left");
+    // fullscreen
+    canvasLeft.width = 200 * CURSOR_SCALE;
+    canvasLeft.height = 200 * CURSOR_SCALE;
+    ctxLeft = canvasLeft.getContext("2d");
 
-        leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
-        leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
-        leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_RIGHT, leftOnFrame);
-        leapDeviceMgr.start();
-        startStudy();
+    ctxDemoLeft.scale(gridScale, gridScale);
+    ctxDemoLeft.translate(-60, -60);
+    utilities.drawRingnFingers(ctxDemoLeft, [100, true, true, true, true], "left");
+
+    ctxDemoRight.scale(gridScale, gridScale);
+    ctxDemoRight.translate(-60, -60);
+    utilities.drawRingnFingers(ctxDemoRight, [100, true, true, true, true], "right");
+
+    ctxLeft.scale(gridScale, gridScale);
+    ctxLeft.translate(-60, -60);
+
+    ctxRight.scale(gridScale, gridScale);
+    ctxRight.translate(-60, -60);
+
+    leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
+    leapDeviceMgr.addDevice("localhost", "right", GESTURE_ALL_RIGHT, rightOnFrame);
+    leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_ALL_RIGHT, leftOnFrame);
+    leapDeviceMgr.start();
+}
+
+function capitaliseFst(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function startStudy() {
+
+
+    startNewBlock();
+}
+
+
+
+function startNewBlock() {
+    recorder.updateRecord(getCurrentStatus(), "new block, new posture showing");
+    var whichhand = blocks[currentBlock].whichhand;
+    var feedbackShowing = blocks[currentBlock].feedback;
+    postureHand = whichhand;
+    postureIndex = 0;
+    if (feedbackShowing) {
+        checkFramePosture = checkFramePostureWithFeedback;
+        $("#leap-overlay-right").show();
+        $("#leap-overlay-left").show();
+        $(".hand-caption").show();
+    } else {
+        checkFramePosture = checkFramePostureWithoutFeedback;
+        $("#leap-overlay-right").hide();
+        $("#leap-overlay-left").hide();
+        $(".hand-caption").hide();
     }
-
-    function capitaliseFst(string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
+    if (whichhand === "right") {
+        $('#demo-left').css({ 'opacity': 0.2 });
+        $('#demo-right').css({ 'opacity': 1.0 });
+    } else {
+        $('#demo-left').css({ 'opacity': 1.0 });
+        $('#demo-right').css({ 'opacity': .2 });
     }
+    window["ctxDemo" + capitaliseFst(whichhand)].clearRect(0, 0, canvasWidth, canvasHeight);
+    utilities.drawRingnFingers(window["ctxDemo" + capitaliseFst(whichhand)],
+            postureList[postureIndex].fingerList, whichhand);
+    $("#" + whichhand + "-demo-text").text(postureList[postureIndex].name);
 
-    function startStudy() {
-        startNewBlock("right", true);
-    }
+}
 
-    function startNewBlock(whichhand, feedbackShowing) {
-        postureHand = whichhand;
-        postureIndex = 0;
-        if (feedbackShowing) {
-            $("#progress").show();
-        } else {
-            $("#progress").hide();
+function checkFramePostureWithFeedback(controls) {
+    //check if study has started
+    if (postureIndex > -1) {
+
+        //check if study has ended
+        if (postureIndex >= postureList.length) {
+            postureIndex = -1;
+            return;
         }
-        window["ctxDemo" + capitaliseFst(whichhand)].clearRect(0, 0, canvasWidth, canvasHeight);
-        utilities.drawRingnFingers(window["ctxDemo" + capitaliseFst(whichhand)],
-                postureList[postureIndex].fingerList, whichhand);
-        $("#"+whichhand+"-demo-text").text(postureList[postureIndex].name);
-
-    }
-
-    function checkFramePosture(controls) {
-        //check if study has started
-        if (postureIndex > -1) {
-            //check if study has ended
-            if (postureIndex >= postureList.length) {
-                postureIndex = -1;
-                return;
+        //check if it's the frame of correct hand
+        if (controls.tag === postureHand) {
+            //begin matching
+            var matched = true;
+            var currentType = postureList[postureIndex].type;
+            //special case for pointing posture
+            if (postureList[postureIndex].type.indexOf("_") > -1) {
+                var cursorState = postureList[postureIndex].type.split("_")[1];
+                matched = (cursorState === controls.cursorState);
+                currentType = postureList[postureIndex].type.split("_")[0];
             }
-            //check if it's the frame of correct hand
-            if (controls.tag === postureHand) {
-                //begin matching
-                var matched = true;
-                var currentType = postureList[postureIndex].type;
-                //special case for pointing posture
-                if(postureList[postureIndex].type.indexOf("_") > -1) {
-                    var cursorState = postureList[postureIndex].type.split("_")[1];
-                    matched = (cursorState === controls.cursorState);
-                    currentType = postureList[postureIndex].type.split("_")[0];
-                }
-                if (controls.posture === currentType && matched) {
-                    if (!timer) {
-                        timer = window.setTimeout(function () {
-                            timer = false;
-                            postureIndex++;
-                            if (postureIndex < postureList.length) {
-                                fadeOut();
-                                $("#progress").find("span").css("width", "0%");
-                            } else {
-                                fadeOutEnd();
-                            }
-                        }, TIMEOUT);
-                        timerStartTime = new Date().getTime();
-                    }
+            if (controls.posture === currentType && matched) {
+                if (!timer) {
+                    timer = window.setTimeout(function () {
 
-                } else {
-                    window.clearTimeout(timer);
-                    timer = false;
+                        getToNextPosture();
+                    }, TIMEOUT);
+                    timerStartTime = new Date().getTime();
                 }
-                console.log(controls.posture);
-            }
-            if (timer) {
-                var d = new Date().getTime();
-                var percent = (d - timerStartTime) / TIMEOUT * 100;
-                if (percent > 60) {
-                    $(".progress-bar").removeClass("blue").addClass("orange");
-                } else {
-                    $(".progress-bar").addClass("blue").removeClass("orange");
 
-                }
-                $("#progress").find("span").css("width", (d - timerStartTime) / TIMEOUT * 100 + "%");
+            } else {
+                window.clearTimeout(timer);
+                timer = false;
             }
         }
+        if (timer) {
+            var d = new Date().getTime();
+            var percent = (d - timerStartTime) / TIMEOUT * 100;
+            if (percent > 60) {
+                $(".progress-bar").removeClass("blue").addClass("orange");
+            } else {
+                $(".progress-bar").addClass("blue").removeClass("orange");
 
-    }
-
-    function rightOnFrame(controls) {
-        checkFramePosture(controls);
-        ctxRight.clearRect(0, 0, canvasWidth, canvasHeight);
-        drawHand(ctxRight, controls);
-        //update progress bar
-
-    }
-
-    function leftOnFrame(controls) {
-        checkFramePosture(controls);
-        ctxLeft.clearRect(0, 0, canvasWidth, canvasHeight);
-        drawHand(ctxLeft, controls);
-
-    }
-
-    function drawHand(ctx, controls) {
-        if (controls.posture == "invalid" || !controls.valid) {
-            ctx.save();
-            ctx.globalAlpha = 0.2;
-            utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
-            ctx.restore();
-        } else {
-            utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+            }
+            $("#progress").find("span").css("width", (d - timerStartTime) / TIMEOUT * 100 + "%");
         }
     }
 
+}
 
-    function fadeIn() {
+function checkFramePostureWithoutFeedback(controls) {
+    //check if study has started
+    if (postureIndex > -1) {
 
-        $('#demo-overlay-' + postureHand).removeClass('animated zoomOut'+capitaliseFst(postureHand));
-        $("#"+postureHand+"-demo-text").removeClass('animated fadeOut');
-        window["ctxDemo" + capitaliseFst(postureHand)].clearRect(0, 0, 200 * CURSOR_SCALE, 200 * CURSOR_SCALE);
+        //check if study has ended
+        if (postureIndex >= postureList.length) {
+            postureIndex = -1;
+            return;
+        }
+
+        var animationDelay = 1000;
+        if (postureIndex === 0) {
+            animationDelay = 0;
+        }
+        if (!timer) {
+
+            timer = window.setTimeout(function () {
+
+                getToNextPosture();
+            }, TIMEOUT_NON_FEEDBACK + animationDelay);
+            timerStartTime = new Date().getTime() + animationDelay;
+        }
+
+
+        if (timer) {
+            var d = new Date().getTime();
+            var percent = (d - timerStartTime) / (TIMEOUT_NON_FEEDBACK) * 100;
+            if (percent > 60) {
+                $(".progress-bar").removeClass("blue").addClass("orange");
+            } else {
+                $(".progress-bar").addClass("blue").removeClass("orange");
+
+            }
+            $("#progress").find("span").css("width", (d - timerStartTime) / TIMEOUT_NON_FEEDBACK * 100 + "%");
+        }
+    }
+
+}
+
+function getCurrentStatus() {
+    if(currentBlock < blocks.length && (postureList[postureIndex])) {
+        var status = {
+            gestureType: postureList[postureIndex].type,
+            whichhand: postureHand,
+            feedback: blocks[currentBlock].feedback
+        };
+        return status;
+    }
+}
+
+function rightOnFrame(controls) {
+    recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
+    checkFramePosture(controls);
+    ctxRight.clearRect(0, 0, canvasWidth, canvasHeight);
+    drawHand(ctxRight, controls);
+    //update progress bar
+
+}
+
+function leftOnFrame(controls) {
+    recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
+    checkFramePosture(controls);
+    ctxLeft.clearRect(0, 0, canvasWidth, canvasHeight);
+    drawHand(ctxLeft, controls);
+
+}
+
+function drawHand(ctx, controls) {
+    if (controls.posture == "invalid" || !controls.valid) {
+        ctx.save();
+        ctx.globalAlpha = 0.2;
+        utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+        ctx.restore();
+    } else {
+        utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+    }
+}
+
+
+function fadeIn() {
+
+    $('#demo-overlay-' + postureHand).removeClass('animated zoomOut' + capitaliseFst(postureHand));
+    $("#" + postureHand + "-demo-text").removeClass('animated fadeOut');
+    window["ctxDemo" + capitaliseFst(postureHand)].clearRect(0, 0, 200 * CURSOR_SCALE, 200 * CURSOR_SCALE);
+    if (postureIndex > -1 && postureIndex < postureList.length) {
+        recorder.updateRecord(getCurrentStatus(), "new posture showing");
         utilities.drawRingnFingers(window["ctxDemo" + capitaliseFst(postureHand)], postureList[postureIndex].fingerList, postureHand);
-        $("#"+postureHand+"-demo-text").text(postureList[postureIndex].name);
+        $("#" + postureHand + "-demo-text").text(postureList[postureIndex].name);
     }
-    function fadeOut() {
-        $('#demo-overlay-' + postureHand).addClass('animated zoomOut'+capitaliseFst(postureHand));
-        $("#"+postureHand+"-demo-text").addClass('animated fadeOut');
-        $('#demo-overlay-' + postureHand).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', fadeIn);
+}
+function fadeOut() {
+    $('#demo-overlay-' + postureHand).addClass('animated zoomOut' + capitaliseFst(postureHand));
+    $("#" + postureHand + "-demo-text").addClass('animated fadeOut');
+    $('#demo-overlay-' + postureHand).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', fadeIn);
+}
+function fadeOutEnd() {
+    $("#" + postureHand + "-demo-text").addClass('animated fadeOut');
+    $("#" + postureHand + "-demo-text").addClass('animated fadeOut');
+    $('#demo-overlay-' + postureHand).addClass('animated zoomOut' + capitaliseFst(postureHand));
+    $('#demo-overlay-' + postureHand).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend',
+            function () {
+                $('#demo-overlay-' + postureHand).removeClass('animated zoomOut' + capitaliseFst(postureHand));
+                window["ctxDemo" + capitaliseFst(postureHand)].clearRect(0, 0, 200 * CURSOR_SCALE, 200 * CURSOR_SCALE);
+            });
+}
+
+function getToNextPosture() {
+    recorder.updateRecord(getCurrentStatus(), "Get to next posture");
+    timer = false;
+    postureIndex++;
+    if (postureIndex >= postureList.length) {
+        if (++currentBlock >= blocks.length) {
+            fadeOutEnd();
+
+            utilities.showMsg("End of Posture Study.");
+        } else {
+
+            fadeOut();
+            utilities.showMsg("Block finished.", startNewBlock);
+        }
+    } else {
+        fadeOut();
     }
-    function fadeOutEnd() {
-        $("#"+postureHand+"-demo-text").addClass('animated fadeOut');
-        $('#demo-overlay-' + postureHand).addClass('animated zoomOut'+capitaliseFst(postureHand));
-        $('#demo-overlay-' + postureHand).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend',
-                function () {
-                    $('#demo-overlay-' + postureHand).removeClass('animated zoomOut'+capitaliseFst(postureHand));
-                    window["ctxDemo" + capitaliseFst(postureHand)].clearRect(0, 0, 200 * CURSOR_SCALE, 200 * CURSOR_SCALE);
-                });
+
+}
+
+function skipCurrentPosture() {
+    window.clearTimeout(timer);
+    getToNextPosture();
+}
+
+$(document).keyup(function (event) {
+    console.log(event.which)
+    switch (event.which) {
+        case 83:  //'s' for skip
+            skipCurrentPosture();
+            break;
+        case 82: //'r' to turn on recorder
+            recorder.startRecorder("posture study");
+            break;
+        case 80: //'p' for pausing
+            recorder.stopRecorder();
+            break;
+        case 68://'d' for downloading data
+           recorder.downloadRecords();
+            break;
+        case 66: //'b' to begin
+            startStudy();
+            break;
+
 
     }
-    $(window).ready(launch());
+});
+$(window).ready(launch());
 </script>
 </body>
 </html>

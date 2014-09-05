@@ -3,12 +3,11 @@ var rightHandGesture = new Array();
 rightHandGesture.push({
     type: "fist"
 });
-
 rightHandGesture.push({
     type: "+ind"
 });
 rightHandGesture.push({
-    type: "+thu"
+    type: "-thu"
 });
 rightHandGesture.push({
     type: "+ind+mid"
@@ -20,11 +19,18 @@ rightHandGesture.push({
     type: "-rin-pin"
 });
 rightHandGesture.push({
-    type: "-thu"
-});
-rightHandGesture.push({
     type: "full"
 });
+rightHandGesture.push({
+    type: "-mid-rin"
+});
+rightHandGesture.push({
+    type: "+thu+pin"
+});
+rightHandGesture.push({
+    type: "+ind+pin"
+});
+
 
 
 var rightHandMotion = [];
