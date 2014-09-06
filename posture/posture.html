@@ -69,18 +69,18 @@ blocks.push({
     whichhand: "right",
     feedback: true
 });
-//    blocks.push({
-//        whichhand: "left",
-//        feedback: false
-//    });
-//blocks.push({
-//    whichhand: "left",
-//    feedback: true
-//});
-//    blocks.push({
-//        whichhand: "left",
-//        feedback: false
-//    });
+blocks.push({
+    whichhand: "left",
+    feedback: true
+});
+blocks.push({
+    whichhand: "left",
+    feedback: true
+});
+blocks.push({
+    whichhand: "left",
+    feedback: false
+});
 var checkFramePosture = function () {
 };
 
@@ -140,11 +140,8 @@ function capitaliseFst(string) {
 }
 
 function startStudy() {
-
-
     startNewBlock();
 }
-
 
 
 function startNewBlock() {
@@ -267,7 +264,7 @@ function checkFramePostureWithoutFeedback(controls) {
 }
 
 function getCurrentStatus() {
-    if(currentBlock < blocks.length && (postureList[postureIndex])) {
+    if (currentBlock < blocks.length && (postureList[postureIndex])) {
         var status = {
             gestureType: postureList[postureIndex].type,
             whichhand: postureHand,
@@ -371,16 +368,21 @@ $(document).keyup(function (event) {
             recorder.stopRecorder();
             break;
         case 68://'d' for downloading data
-           recorder.downloadRecords();
+            recorder.downloadRecords();
             break;
         case 66: //'b' to begin
             startStudy();
             break;
-
+        case 73: //'i'
+            leapDeviceMgr.printRightInfo(JSON.stringify(getCurrentStatus()));
+            break;
 
     }
 });
 $(window).ready(launch());
+
+
+
 </script>
 </body>
 </html>

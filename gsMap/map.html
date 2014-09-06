@@ -10,9 +10,13 @@
 <script src="../js/leap-0.6.0.min.js"></script>
 <script src="../js/1euro.js"></script>
 <script src="../js/jquery.popmenu.js"></script>
+<script src="../js/FileSaver.js"></script>
 <link rel="stylesheet" href="lib/font-awesome/css/font-awesome.min.css"/>
 <link rel="stylesheet" href="iconmoon.css"/>
-
+<link rel="stylesheet" href="../css/vex.css"/>
+<link rel="stylesheet" href="../css/vex-theme-os.css"/>
+<link rel="stylesheet" href="../css/vex-theme-flat-attack.css">
+<script src="../js/vex.combined.min.js"></script>
 <body>
 <script src="../js/move.min.js"></script>
 <script src="../js/state-machine.js"></script>
@@ -54,21 +58,18 @@
     <div class="pop_ctrl" id="pop_ctrl_left"><i class="fa fa-bars"></i></div>
     <ul id="menu_box_left_ele">
         <li class="demo_li">
-            <div><i class="fa fa-eye fa-2x"></i></div>
+            <div><i class="fa icon-redo fa-2x"></i></div>
             <div>Redo</div>
             </a></li>
         <li class="demo_li">
-            <div><i class="fa fa-trash fa-2x"></i></div>
+            <div><i class="fa icon-undo fa-2x"></i></div>
             <div>Undo</div>
         </li>
         <li class="demo_li">
-            <div><i class="fa fa-pencil fa-2x"></i></div>
-            <div>Something</div>
+            <div><i class="fa fa-download fa-2x"></i></div>
+            <div>Save</div>
         </li>
-        <li class="demo_li">
-            <div><i class="fa fa-car fa-2x"></i></div>
-            <div>Something</div>
-        </li>
+
         <li class="demo_li">
             <div><i class="fa fa-times fa-2x"></i></div>
             <div>Exit</div>
@@ -132,14 +133,15 @@ function canvasApp() {
         if (currentTouch.whichhand == "left") {
             if (touchMgr.countTouches("left") == 1 && currentTouch.group == 0) {
                 map.panBy(moveX, moveY);
+                recorder.updateRecord(getCurrentStatus(), "command: panning");
             }
         } else if (currentTouch.whichhand == "right") {
-            if (touchMgr.countTouches("right") == 1 && currentTouch.group == 0) {
-                var d = new Date().getTime();
-                if (d - currentTouch.starttime > 150) {
-                    shapeManager.getInstance().addPolylineXY(currentTouch.pageX, currentTouch.pageY);
-                }
-            }
+//            if (touchMgr.countTouches("right") == 1 && currentTouch.group == 0) {
+//                var d = new Date().getTime();
+//                if (d - currentTouch.starttime > 150) {
+//                    shapeManager.getInstance().addPolylineXY(currentTouch.pageX, currentTouch.pageY);
+//                }
+//            }
         }
     };
 
@@ -175,6 +177,7 @@ function canvasApp() {
                         setTimeout(function () {
                             zoomTimeout = true;
                         }, 600 / Math.ceil(zoomRatio));
+                        recorder.updateRecord(getCurrentStatus(), "command: zooming");
                     } else if (zoomRatio < -.4) {
                         zoomRatio = -zoomRatio;
                         map.setZoom(map.getZoom() + 1);
@@ -182,6 +185,7 @@ function canvasApp() {
                         setTimeout(function () {
                             zoomTimeout = true;
                         }, 600 / Math.ceil(zoomRatio));
+                        recorder.updateRecord(getCurrentStatus(), "command: zooming")
                     }
 
 
@@ -207,9 +211,9 @@ function canvasApp() {
 
                 }
             }
-            if (currentTouch.whichhand == "right") {
-                shapeManager.getInstance().endPolylineXY(currentTouch.pageX, currentTouch.pageY);
-            }
+//            if (currentTouch.whichhand == "right") {
+//                shapeManager.getInstance().endPolylineXY(currentTouch.pageX, currentTouch.pageY);
+//            }
 
         }
 
@@ -219,6 +223,7 @@ function canvasApp() {
     leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
     leapDeviceMgr.addDevice("localhost", "right", GESTURE_SUB, rightOnFrame);
     leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_SUB, leftOnFrame);
+    touchMgr.setupTouches();
     leapDeviceMgr.start();
     $('#menu_box_right').popmenu({'background': '#e67e22', 'focusColor': '#c0392b', 'iconSize': '100px', 'width': '500px'});
     $("#pop_ctrl_right").hide();
@@ -229,12 +234,17 @@ function canvasApp() {
         switch ($(this).find("div")[1].innerHTML) {
             case "Exit":
                 closeMenu("left");
+
                 break;
             case "Redo":
                 shapeManager.getInstance().redo();
                 break;
             case "Undo":
                 shapeManager.getInstance().undo();
+                break;
+            case "Save":
+                utilities.showShortMsg("Itinerary has been saved");
+                recorder.updateRecord(getCurrentStatus(), "command: save itinerary");
                 break;
         }
     });
@@ -249,12 +259,14 @@ function canvasApp() {
                 $(this).find("div")[1].innerHTML = "Roadmap";
                 var element = $("#menu_box_right_ele li i.icon-earth")[0];
                 $(element).removeClass("icon-earth").addClass("icon-map");
+                recorder.updateRecord(getCurrentStatus(), "command: change to satellite");
                 break;
             case "Roadmap":
                 map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
                 $(this).find("div")[1].innerHTML = "Satellite";
                 var element = $("#menu_box_right_ele li i.icon-map")[0];
                 $(element).addClass("icon-earth").removeClass("icon-map");
+                recorder.updateRecord(getCurrentStatus(), "command: change to roadmap");
                 break;
             case "Clear":
                 shapeMgr.clearAllMarkers();
@@ -283,6 +295,7 @@ function canvasApp() {
     }
 
     function closeMenu(whichhand) {
+        recorder.updateRecord(getCurrentStatus(), "command: menu closed-" + whichhand);
         var elementStr = "#menu_box_" + whichhand + "_ele";
         $(elementStr).hide();
         $(window["canvas" + whichhand[0].toUpperCase() + whichhand.slice(1)]).css("zIndex", 200001);
@@ -302,6 +315,7 @@ function canvasApp() {
         //some odd zindex issue due to chrome built-in swap gesture; had to temporarily surface cursor canvas
         if (isLeap)
             $(window["canvas" + whichhand[0].toUpperCase() + whichhand.slice(1)]).css("zIndex", 300000);
+        recorder.updateRecord(getCurrentStatus(), "command: menu opened-" + whichhand);
     }
 
 
@@ -339,7 +353,6 @@ function canvasApp() {
 
         switch (controls.posture) {
             case "+thu+ind":
-                closeWidgets(controls);
                 closeMenu("right");
 
                 var depthScale = controls.depthVal;
@@ -373,7 +386,6 @@ function canvasApp() {
             case "+ind":
                 closeMenu("right");
 
-                closeWidgets(controls);
 
                 distanceAlphaProj = controls.devianceVal;
 
@@ -405,7 +417,6 @@ function canvasApp() {
             default :
                 closeMenu("right");
 
-                closeWidgets(controls);
                 utilities.drawGeneric(ctx);
                 isCursorDown = false;
 
@@ -504,8 +515,6 @@ function canvasApp() {
             screenX = -controls.x + canvasWidth;
             screenY = -controls.y + canvasHeight;
 
-            closeWidgets(controls);
-
         } else if (controls.tag == "left") {
             if (interstate.fsm.current === "touchLeftWait" || interstate.fsm.current === "touchLeft") return;
             ctx = ctxLeft;
@@ -559,7 +568,7 @@ function canvasApp() {
                 utilities.drawPan(ctx);
                 var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, false);
                 map.panBy(ballPos[0], ballPos[1]);
-
+                recorder.updateRecord(getCurrentStatus(), "command: panning");
                 ctx.translate(-offset[0] + ballPos[0], -offset[1] + ballPos[1]);
 
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
@@ -582,6 +591,7 @@ function canvasApp() {
                         setTimeout(function () {
                             zoomTimeout = true;
                         }, 600 / Math.ceil(zoomRatio));
+                        recorder.updateRecord(getCurrentStatus(), "command: zooming");
                     } else if (zoomRatio < 0) {
                         zoomRatio = -zoomRatio;
                         map.setZoom(map.getZoom() + 1);
@@ -589,6 +599,7 @@ function canvasApp() {
                         setTimeout(function () {
                             zoomTimeout = true;
                         }, 600 / Math.ceil(zoomRatio));
+                        recorder.updateRecord(getCurrentStatus(), "command: zooming")
                     }
 
                 }
@@ -618,12 +629,11 @@ function canvasApp() {
                 }
                 utilities.drawFlickMenu(ctx);
                 var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, true, 100);
-                leapDeviceMgr.printInfo(ballPos[1].toFixed(1));
-                    if(ballPos[1] < -60) {
-                        shapeManager.getInstance().undo();
-                    } else if (ballPos[1] > 60) {
-                        shapeManager.getInstance().redo();
-                    }
+                if (ballPos[1] < -60) {
+                    shapeManager.getInstance().undo();
+                } else if (ballPos[1] > 60) {
+                    shapeManager.getInstance().redo();
+                }
 
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
@@ -640,7 +650,7 @@ function canvasApp() {
 
 
     function rightOnFrame(controls) {
-
+        recorder.updateRecord(getCurrentStatus(), controls.getRecordData(), touchMgr.currentTouches);
         if (controls.posture == "invalid" || !controls.valid) {
             handleInvalidAnimation(controls);
         } else {
@@ -650,11 +660,10 @@ function canvasApp() {
         }
 //            console.log("right " + controls.posture);
         //debug purpose
-        leapDeviceMgr.printInfo(shapeManager.getInstance().getUndo().type);
     }
 
     function leftOnFrame(controls) {
-
+        recorder.updateRecord(getCurrentStatus(), controls.getRecordData(), touchMgr.currentTouches);
         if (controls.posture == "invalid" || !controls.valid) {
             handleInvalidAnimation(controls);
         } else {
@@ -692,7 +701,7 @@ function initialize() {
     var mapOptions = {
         zoom: 5,
         panControl: false,
-        zoomControl: true,
+        zoomControl: false,
         streetViewControl: false,
         center: new google.maps.LatLng(39.958099, -75.167805),
         minZoom: 3
@@ -712,22 +721,6 @@ function Shape() {
     }
 }
 
-
-function smoothZoom(max, cnt) {
-    if (cnt >= max) {
-        return;
-    }
-    else {
-        z = google.maps.event.addListener(map, 'zoom_changed', function (event) {
-            google.maps.event.removeListener(z);
-            smoothZoom(max, cnt + .1);
-        });
-        setTimeout(function () {
-            map.setZoom(cnt)
-        }, 80); // 80ms is what I found to work well on my system -- it might not work well on all systems
-    }
-    console.log(map.getCenter());
-}
 
 var shapeManager = (function () {
 
@@ -806,6 +799,7 @@ var shapeManager = (function () {
                 if (currentShape.length == 0) {
                     isInMakerProgress = false;
                 }
+                recorder.updateRecord(getCurrentStatus(), "command: undo-" + undoAction.type);
                 undoAction.type = "none";
             },
 
@@ -841,6 +835,7 @@ var shapeManager = (function () {
                 if (currentShape.length > 0) {
                     isInMakerProgress = true;
                 }
+                recorder.updateRecord(getCurrentStatus(), "command: redo-" + redoAction.type);
                 redoAction.type = "none";
             },
 
@@ -869,6 +864,7 @@ var shapeManager = (function () {
                         markersArray[i].setMap(null);
                     }
                     markersArray = [];
+                    recorder.updateRecord(getCurrentStatus(), "command: complete shape");
                 }
 
 
@@ -919,7 +915,7 @@ var shapeManager = (function () {
 //                                showMsg("Route not found");
                         }
                     });
-
+                    recorder.updateRecord(getCurrentStatus(), "command: complete route");
 
                 }
 
@@ -1024,6 +1020,7 @@ var shapeManager = (function () {
                 undoAction.type = "addMarker";
                 redoAction.type = "none";
                 markersArray.push(marker);
+                recorder.updateRecord(getCurrentStatus(), "command: add marker");
             },
 
 
@@ -1033,6 +1030,7 @@ var shapeManager = (function () {
                 }
                 markersArray = [];
                 isInMakerProgress = false;
+                recorder.updateRecord(getCurrentStatus(), "command: clear markers");
             },
 
             getCursorState: function () {
@@ -1066,153 +1064,6 @@ var shapeManager = (function () {
 
 })();
 
-isWidgetShown = false;
-function popupWidgets(controls) {
-    if (!isWidgetShown) {
-        var cursorX = controls.x - 100 * CURSOR_SCALE;
-        var cursorY = controls.y - 100 * CURSOR_SCALE;
-        var item1 = document.getElementById("item1");
-        var item2 = document.getElementById("item2");
-        var item3 = document.getElementById("item3");
-
-        var offset = -60;
-
-
-        item1.style.top = offset + canvas.height - cursorY + 'px';
-        item2.style.top = offset + canvas.height - cursorY + 'px';
-        item3.style.top = offset + canvas.height - cursorY + 'px';
-        item1.style.left = offset + canvas.width - cursorX + 'px';
-        item2.style.left = offset + canvas.width - cursorX + 'px';
-        item3.style.left = offset + canvas.width - cursorX + 'px';
-
-
-        setTimeout(function () {
-
-            item1.style.visibility = 'visible';
-            item2.style.visibility = 'visible';
-            item3.style.visibility = 'visible';
-
-            isWidgetShown = true;
-        }, 1);
-
-
-    }
-
-}
-
-function selectWidget(controls, selectedId) {
-    var cursorX = controls.x - 100 * CURSOR_SCALE;
-    var cursorY = controls.y - 100 * CURSOR_SCALE;
-    var scale = [.8, .8, .8];
-    scale[selectedId] = 1.2;
-
-    var marginX = 200;
-    var marginY = 150;
-    var yoffset = 50;
-    var xoffset = -350;
-
-
-    var item1 = document.getElementById("item1");
-    var item2 = document.getElementById("item2");
-    var item3 = document.getElementById("item3");
-
-    if (cursorY + marginY > canvas.height) {
-        marginY -= 300;
-        yoffset = -yoffset;
-    }
-    if (cursorX + marginX > canvas.width) {
-        item1.style.left = -xoffset + canvas.width - cursorX + 'px';
-        item2.style.left = -xoffset + canvas.width - cursorX + 'px';
-        item3.style.left = -xoffset + canvas.width - cursorX + 'px';
-    } else if (cursorX - marginX < 0) {
-
-        item1.style.left = xoffset + canvas.width - cursorX + 'px';
-        item2.style.left = xoffset + canvas.width - cursorX + 'px';
-        item3.style.left = xoffset + canvas.width - cursorX + 'px';
-
-    }
-
-    setTimeout(function () {
-
-        move('#item1')
-                .x(-marginX)
-                .y(-marginY)
-                .rotate(-45)
-                .then()
-                .scale(scale[0])
-                .end();
-        move('#item2')
-                .x(0)
-                .y(-marginY - yoffset)
-                .scale(scale[1])
-                .end();
-        move('#item3')
-                .x(marginX)
-                .y(-marginY)
-                .rotate(45)
-                .scale(scale[2])
-                .end();
-    }, 1);
-}
-
-function closeWidgets(controls) {
-    if (isWidgetShown) {
-        var cursorX = controls.x - 100 * CURSOR_SCALE;
-        var cursorY = controls.y - 100 * CURSOR_SCALE;
-        var item1 = document.getElementById("item1");
-        var item2 = document.getElementById("item2");
-        var item3 = document.getElementById("item3");
-
-
-        move('#item1')
-                .x(200 / 10)
-                .y(150 / 10)
-                .scale(0.3)
-                .end();
-        move('#item2')
-                .x(0 / 10)
-                .y(200 / 10)
-                .scale(0.3)
-                .end();
-        move('#item3')
-                .x(-200 / 10)
-                .y(150 / 10)
-                .scale(0.3)
-                .end();
-
-
-        item1.style.visibility = 'hidden';
-        item2.style.visibility = 'hidden';
-        item3.style.visibility = 'hidden';
-        isWidgetShown = false;
-
-
-    }
-    ;
-}
-
-var mapStateRight = (function () {
-    var api = {};
-
-
-    api.fsm = StateMachine.create({
-        initial: 'idle',
-        error: function (eventName, from, to, args, errorCode, errorMessage) {
-            return 'event ' + eventName + ' was naughty :- ' + errorMessage;
-        },
-        events: [
-            { name: 'addMarker', from: 'idle', to: 'drawing' },
-            { name: 'complete', from: 'addMarker', to: 'idle' }
-
-        ],
-        callbacks: {
-
-        }
-    });
-
-
-    return api;
-})();
 
 var naviBallPosX = 0;
 var naviBallPosY = 0;
@@ -1346,6 +1197,50 @@ function touchHandler(event) {
     first.target.dispatchEvent(simulatedEvent);
     event.preventDefault();
 }
+
+$(document).keyup(function (event) {
+    console.log(event.which)
+    switch (event.which) {
+
+        case 82: //'r' to turn on recorder
+            recorder.startRecorder("map study");
+            break;
+        case 80: //'p' for pausing
+            recorder.stopRecorder();
+            break;
+        case 68://'d' for downloading data
+            recorder.downloadRecords();
+            break;
+        case 66: //'b' to begin
+            //startStudy();
+            break;
+        case 73: //'i'
+            leapDeviceMgr.printRightInfo(modalities[currentModality] + " " + studyTasks[currentTask]);
+            break;
+        case 70: //'f': finished current task
+            currentTask++;
+            currentTask = Math.min(studyTasks.length - 1, currentTask);
+            recorder.updateRecord(getCurrentStatus(), "task finished");
+            break;
+    }
+});
+
+var modalities = ["not specified", "gs", "touch", "mixed"];
+var currentModality = Number(utilities.getURLParameter("mode") || 0);
+var studyTasks = ["open-ended", "t1", "t2", "t3"];
+var currentTask = 0;
+if (currentModality > 0) {
+    currentTask = 1;
+}
+function getCurrentStatus() {
+    var status = {
+        modality: modalities[currentModality],
+        task: studyTasks[currentTask],
+        gsState: interstate.fsm.current
+    };
+    return status;
+}
+
 
 </script>
 </html>
