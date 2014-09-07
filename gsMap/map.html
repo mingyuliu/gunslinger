@@ -105,8 +105,10 @@ function canvasApp() {
     var distanceAlphaProj = 1;
 
 
-    var isCursorDown = false;
-    var clickTimeout = true;
+    var isRightCursorDown = false;
+    var isLeftCursorDown = false;
+    var rightClickTimeout = true;
+    var leftClickTimeout = true;
     canvasWidth = document.body.clientWidth;
     canvasHeight = document.body.clientHeight;
 
@@ -231,6 +233,7 @@ function canvasApp() {
     $('#menu_box_left').popmenu({ 'iconSize': '100px', 'width': '100px'});
     $("#pop_ctrl_left").hide();
     $("#menu_box_left_ele li").click(function () {
+
         switch ($(this).find("div")[1].innerHTML) {
             case "Exit":
                 closeMenu("left");
@@ -294,28 +297,35 @@ function canvasApp() {
         }
     }
 
+
     function closeMenu(whichhand) {
-        recorder.updateRecord(getCurrentStatus(), "command: menu closed-" + whichhand);
         var elementStr = "#menu_box_" + whichhand + "_ele";
-        $(elementStr).hide();
-        $(window["canvas" + whichhand[0].toUpperCase() + whichhand.slice(1)]).css("zIndex", 200001);
+        if ($(elementStr).css('display') !== 'none') {
+            $(elementStr).hide();
+            $(window["canvas" + whichhand[0].toUpperCase() + whichhand.slice(1)]).css("zIndex", 200001);
+            recorder.updateRecord(getCurrentStatus(), "command: menu closed-" + whichhand);
+        }
+
     }
 
     function showMenu(whichhand, top, left, isLeap) {
         var elementStr = "#menu_box_" + whichhand + "_ele";
         var elementBoxStr = "#menu_box_" + whichhand;
+        if ($(elementStr).css('display') == 'none') {
+            top = Math.min(canvasHeight - $(elementStr).height(), top);
+            left = Math.min(canvasWidth - $(elementStr).width(), left);
+            top = Math.max(0, top);
+            left = Math.max(0, left);
+            $(elementStr).show("fast");
+            $(elementBoxStr).css("top", top + "px");
+            $(elementBoxStr).css("left", left + "px");
+            //some odd zindex issue due to chrome built-in swap gesture; had to temporarily surface cursor canvas
+            if (isLeap)
+                $(window["canvas" + whichhand[0].toUpperCase() + whichhand.slice(1)]).css("zIndex", 300000);
+            recorder.updateRecord(getCurrentStatus(), "command: menu opened-" + whichhand);
+        }
 
-        top = Math.min(canvasHeight - $(elementStr).height(), top);
-        left = Math.min(canvasWidth - $(elementStr).width(), left);
-        top = Math.max(0, top);
-        left = Math.max(0, left);
-        $(elementStr).show("fast");
-        $(elementBoxStr).css("top", top + "px");
-        $(elementBoxStr).css("left", left + "px");
-        //some odd zindex issue due to chrome built-in swap gesture; had to temporarily surface cursor canvas
-        if (isLeap)
-            $(window["canvas" + whichhand[0].toUpperCase() + whichhand.slice(1)]).css("zIndex", 300000);
-        recorder.updateRecord(getCurrentStatus(), "command: menu opened-" + whichhand);
+
     }
 
 
@@ -364,7 +374,7 @@ function canvasApp() {
                         utilities.drawPoint(ctx);
                         break;
                     case "down":
-                        if (isCursorDown) {
+                        if (isRightCursorDown) {
                             utilities.drawPoint(ctx);
                             utilities.drawDown(ctx);
 
@@ -395,7 +405,7 @@ function canvasApp() {
 
                 if (!cursorIdleTimeout) {
                     cursorIdleTimeout = setTimeout(function () {
-                        isCursorDown = false;
+                        isRightCursorDown = false;
                     }, 600);
                 }
                 break;
@@ -418,7 +428,7 @@ function canvasApp() {
                 closeMenu("right");
 
                 utilities.drawGeneric(ctx);
-                isCursorDown = false;
+                isRightCursorDown = false;
 
         }
         var offset = utilities.getOffsetPosition(controls.palmPosition, controls.use);
@@ -431,25 +441,36 @@ function canvasApp() {
     }
 
     function handleLeftEvent(controls) {
+        console.log("event " + controls.cursorEvent);
         switch (controls.cursorEvent) {
             case "clickup":
+                if (leftClickTimeout && isLeftCursorDown) {
+                    switch (controls.posture) {
 
-                switch (controls.posture) {
+                        case "-rin-pin":
+                            var items = $("#menu_box_left_ele li");
 
-                    case "-rin-pin":
-                        var items = $("#menu_box_left_ele li");
-
-                        $(items[leftItemSelected]).trigger("click");
-                        console.log("rinpin");
-                        break;
+                            $(items[leftItemSelected]).trigger("click");
+                            console.log("rinpin");
+                            break;
+                    }
+                    leftClickTimeout = false;
+                    setTimeout(function () {
+                        leftClickTimeout = true;
+                    }, 50);
+                    isLeftCursorDown = false;
                 }
 
-                console.log("clickup");
+
                 controls.cursorEvent = "none";
 
                 break;
             case "clickdown":
+                if (leftClickTimeout) {
 
+                    controls.cursorEvent = "none";
+                    isLeftCursorDown = true;
+                }
                 break;
 
         }
@@ -459,7 +480,7 @@ function canvasApp() {
         var shapeMgr = shapeManager.getInstance();
         switch (controls.cursorEvent) {
             case "clickup":
-                if (clickTimeout && isCursorDown) {
+                if (rightClickTimeout && isRightCursorDown) {
                     switch (controls.posture) {
                         case "+thu+ind":
                             var cursorX = controls.x - 100 * CURSOR_SCALE;
@@ -477,22 +498,21 @@ function canvasApp() {
                             console.log("rinpin")
                             break;
                     }
-
+                    rightClickTimeout = false;
+                    setTimeout(function () {
+                        rightClickTimeout = true;
+                    }, 50);
+                    isRightCursorDown = false;
                 }
-                clickTimeout = false;
-                setTimeout(function () {
-                    clickTimeout = true;
-                }, 50);
-                isCursorDown = false;
+
 
                 controls.cursorEvent = "none";
 
                 break;
             case "clickdown":
-                if (clickTimeout) {
+                if (rightClickTimeout) {
 
-                    controls.cursorEvent = "none";
-                    isCursorDown = true;
+                    isRightCursorDown = true;
                 }
                 controls.cursorEvent = "none";
                 break;
@@ -521,7 +541,6 @@ function canvasApp() {
             canvas = canvasLeft;
             screenX = 0;
             screenY = canvasHeight - CURSOR_SCALE * 200;
-
         }
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
@@ -1243,4 +1262,4 @@ function getCurrentStatus() {
 
 
 </script>
-</html>
+</htm

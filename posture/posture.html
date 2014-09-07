@@ -70,8 +70,8 @@ blocks.push({
     feedback: true
 });
 blocks.push({
-    whichhand: "left",
-    feedback: true
+    whichhand: "right",
+    feedback: false
 });
 blocks.push({
     whichhand: "left",
@@ -83,6 +83,8 @@ blocks.push({
 });
 var checkFramePosture = function () {
 };
+
+var inStudy = false;
 
 function launch() {
     var gridScale = CURSOR_SCALE * 2.5;
@@ -140,11 +142,14 @@ function capitaliseFst(string) {
 }
 
 function startStudy() {
+    utilities.shuffle(postureList);
     startNewBlock();
 }
 
 
 function startNewBlock() {
+    inStudy = true;
+    utilities.shuffle(postureList);
     recorder.updateRecord(getCurrentStatus(), "new block, new posture showing");
     var whichhand = blocks[currentBlock].whichhand;
     var feedbackShowing = blocks[currentBlock].feedback;
@@ -268,7 +273,9 @@ function getCurrentStatus() {
         var status = {
             gestureType: postureList[postureIndex].type,
             whichhand: postureHand,
-            feedback: blocks[currentBlock].feedback
+            feedback: blocks[currentBlock].feedback,
+            inStudy: inStudy,
+            studyProgress: postureIndex
         };
         return status;
     }
@@ -309,6 +316,7 @@ function fadeIn() {
     $("#" + postureHand + "-demo-text").removeClass('animated fadeOut');
     window["ctxDemo" + capitaliseFst(postureHand)].clearRect(0, 0, 200 * CURSOR_SCALE, 200 * CURSOR_SCALE);
     if (postureIndex > -1 && postureIndex < postureList.length) {
+        inStudy = true;
         recorder.updateRecord(getCurrentStatus(), "new posture showing");
         utilities.drawRingnFingers(window["ctxDemo" + capitaliseFst(postureHand)], postureList[postureIndex].fingerList, postureHand);
         $("#" + postureHand + "-demo-text").text(postureList[postureIndex].name);
@@ -331,6 +339,7 @@ function fadeOutEnd() {
 }
 
 function getToNextPosture() {
+    inStudy = false;
     recorder.updateRecord(getCurrentStatus(), "Get to next posture");
     timer = false;
     postureIndex++;

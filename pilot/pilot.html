@@ -265,6 +265,7 @@ function canvasApp() {
         if (currentTarget > 6) {
             currentSet++;
             currentTarget = 0;
+            currentWidth++;
         }
         if (currentSet > 2) {
             if (particNote != "practice")
@@ -272,7 +273,7 @@ function canvasApp() {
             currentBlock++;
             currentSet = 0;
             currentTarget = 0;
-            currentWidth++;
+
         }
         if (currentWidth > 8) {
             currentWidth = 0;
