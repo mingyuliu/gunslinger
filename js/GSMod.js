@@ -1,5 +1,5 @@
 //Config
-var THR_HAND_CONFIDENCE = 0.1;
+var THR_HAND_CONFIDENCE = 0.20;
 var ORDINAL_DISTANCE_WEIGHT = 0.65;
 var THUMB_TIP_WEIGHT = 0.0;
 var NB_FINGER_WEIGHT = 0.35;
@@ -663,7 +663,7 @@ var leapDeviceMgr = (function () {
                     var fin1 = Leap.vec3.fromValues(fingers[len].tipPosition[0], 0, fingers[len].tipPosition[2]);
                     var fin2 = Leap.vec3.fromValues(fingers[len - 1].tipPosition[0], 0, fingers[len - 1].tipPosition[2]);
                     var differ = Leap.vec3.distance(fin1, fin2);
-                    if (Leap.vec3.distance(fin1, fin2) < 30) {    //heuristics
+                    if (Leap.vec3.distance(fin1, fin2) < 20) {    //heuristics
                         if (fingers[len].type != 0) {
                             fingers[len].extended = false;
                         }
@@ -1489,7 +1489,7 @@ var touchMgr = (function () {
                         touchMgr.lastRightPos = [touch.pageX, touch.pageY];
                     }
                 }
-                utilities.drawPreviousTouch(ctxTouch);
+//                utilities.drawPreviousTouch(ctxTouch);
             } else {
                 console.log('Touch was not found!');
             }
@@ -1678,7 +1678,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.timestamp = 0;
     this.lastFrameTimestamp = 0;
 
-    this.fingerList = [40, 1, 1, 1, 1];
+    this.fingerList = [40, true, true, true, true];
     this.confidence = 0;
     this.palmPosition = vec3.fromValues(0, 200, 0);
     this.palmNormal = vec3.create();
@@ -1698,12 +1698,25 @@ function Controls(tag_, screenWid_, screenHeight_) {
             valid: this.valid,
             posture: this.posture,
             minVal: this.minVal,
-            cursorEvent: this.cursorEvent,
+            cursorState: this.cursorState,
             tipPosition: this.tipPosition,
             palmPosition: this.palmPosition,
-            confidence: this.confidence
-        }
+            confidence: this.confidence,
+            fingerList: this.getFingerExtensionData()
+        };
         return data;
+    };
+
+    this.getFingerExtensionData=function() {
+        if(this.fingerList) {
+            var data = [];
+            data.push(this.fingerList[0] >= 0 ? true : false);
+            for (var i = 1; i < this.fingerList.length; i++) {
+                data.push(this.fingerList[i]);
+            }
+            return data;
+        }
+
     }
 
     this.setCursorState = function (state) {
@@ -1830,7 +1843,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
                     }
                     break;
                 case "none":
-                    if (distance < (boundLeft + range * w_active)) {
+                    if (distance < (boundLeft + range * (w_active + w_down))) {
                         this.setCursorState("down");
                     }
                     break;
@@ -1863,7 +1876,6 @@ function Controls(tag_, screenWid_, screenHeight_) {
 
             }
         }
-
 
         if (this.cursorState == "none") {
             this.posture = "+ind";
@@ -1905,7 +1917,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
             this.palmNormal = hand.palmNormal;
             this.stablePalmPosition = hand.stabilizedPalmPosition;
             var ratio = utilities.getRatio(this.palmPosition, this.use);
-            if (ratio >= 0.8) {
+            if (ratio >= 0.9) {
                 this.posture = "invalid";
             }
 
@@ -1986,7 +1998,6 @@ function Controls(tag_, screenWid_, screenHeight_) {
         } else {
             this.posture = "none";
             this.valid = false;
-            this.confidence = 0;
         }
         this.lastFrameTimestamp = frame.timestamp * 0.001;
     }
@@ -2526,10 +2537,10 @@ var utilities = (function () {
     api.getRatio = function (position, use) {
         var posX, posY;
         var ctrPos = 200,
-            radius = 120;
+            radius = 140;
 
 
-        var threshold = .8;
+        var threshold = .7;
         if (use == "wall") {
             posY = position[0];
             posX = (position[1] - ctrPos);
@@ -2554,7 +2565,7 @@ var utilities = (function () {
     api.getOffsetPosition = function (position, use) {
         var posX, posY;
         var ctrPos = 200,
-            radius = 120;
+            radius = 140;
         var offsetRange = 16; //pixel ralated
 
 
@@ -2585,7 +2596,7 @@ var utilities = (function () {
 
 
         if (use == "wall") {
-            posY = position[0];
+            posY = -position[0];
             posX = (position[1] - ctrPos);
         } else {
             posX = position[0];

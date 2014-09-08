@@ -54,7 +54,7 @@ var CURSOR_SIZE = 30;
 CURSOR_SCALE = 1.5;
 var timer = false;
 var TIMEOUT = 800;
-var TIMEOUT_NON_FEEDBACK = 3000;
+var TIMEOUT_NON_FEEDBACK = 4000;
 
 var postureIndex = -1;
 var postureHand = "right";
@@ -62,6 +62,7 @@ var timerStartTime;
 
 var currentBlock = 0;
 var records = [];
+var isMathed = false;
 
 
 var blocks = [];
@@ -71,11 +72,43 @@ blocks.push({
 });
 blocks.push({
     whichhand: "right",
+    feedback: true
+});
+blocks.push({
+    whichhand: "right",
+    feedback: true
+});
+blocks.push({
+    whichhand: "right",
+    feedback: false
+});
+blocks.push({
+    whichhand: "right",
+    feedback: false
+});
+blocks.push({
+    whichhand: "right",
     feedback: false
 });
 blocks.push({
     whichhand: "left",
     feedback: true
+});
+blocks.push({
+    whichhand: "left",
+    feedback: true
+});
+blocks.push({
+    whichhand: "left",
+    feedback: true
+});
+blocks.push({
+    whichhand: "left",
+    feedback: false
+});
+blocks.push({
+    whichhand: "left",
+    feedback: false
 });
 blocks.push({
     whichhand: "left",
@@ -157,8 +190,9 @@ function startNewBlock() {
     postureIndex = 0;
     if (feedbackShowing) {
         checkFramePosture = checkFramePostureWithFeedback;
-        $("#leap-overlay-right").show();
-        $("#leap-overlay-left").show();
+        $("#leap-overlay-right").hide();
+        $("#leap-overlay-left").hide();
+        $("#leap-overlay-"+whichhand).show();
         $(".hand-caption").show();
     } else {
         checkFramePosture = checkFramePostureWithoutFeedback;
@@ -208,10 +242,11 @@ function checkFramePostureWithFeedback(controls) {
                     }, TIMEOUT);
                     timerStartTime = new Date().getTime();
                 }
-
+                isMathed = true;
             } else {
                 window.clearTimeout(timer);
                 timer = false;
+                isMathed = false;
             }
         }
         if (timer) {
@@ -242,6 +277,22 @@ function checkFramePostureWithoutFeedback(controls) {
         var animationDelay = 1000;
         if (postureIndex === 0) {
             animationDelay = 0;
+        }
+        if (controls.tag === postureHand) {
+            //begin matching
+            var matched = true;
+            var currentType = postureList[postureIndex].type;
+            //special case for pointing posture
+            if (postureList[postureIndex].type.indexOf("_") > -1) {
+                var cursorState = postureList[postureIndex].type.split("_")[1];
+                matched = (cursorState === controls.cursorState);
+                currentType = postureList[postureIndex].type.split("_")[0];
+            }
+            if (controls.posture === currentType && matched) {
+                isMathed = true;
+            } else {
+                isMathed = false;
+            }
         }
         if (!timer) {
 
@@ -275,27 +326,28 @@ function getCurrentStatus() {
             whichhand: postureHand,
             feedback: blocks[currentBlock].feedback,
             inStudy: inStudy,
-            studyProgress: postureIndex
+            studyProgress: postureIndex,
+            isMathed: isMathed
         };
         return status;
     }
 }
 
 function rightOnFrame(controls) {
-    recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
     checkFramePosture(controls);
     ctxRight.clearRect(0, 0, canvasWidth, canvasHeight);
     drawHand(ctxRight, controls);
+    recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
     //update progress bar
-
 }
 
 function leftOnFrame(controls) {
-    recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
     checkFramePosture(controls);
     ctxLeft.clearRect(0, 0, canvasWidth, canvasHeight);
     drawHand(ctxLeft, controls);
-
+    recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
+    var printInfo = isMathed ? ',': '.';
+    leapDeviceMgr.printRightInfo(printInfo);
 }
 
 function drawHand(ctx, controls) {
@@ -328,7 +380,6 @@ function fadeOut() {
     $('#demo-overlay-' + postureHand).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', fadeIn);
 }
 function fadeOutEnd() {
-    $("#" + postureHand + "-demo-text").addClass('animated fadeOut');
     $("#" + postureHand + "-demo-text").addClass('animated fadeOut');
     $('#demo-overlay-' + postureHand).addClass('animated zoomOut' + capitaliseFst(postureHand));
     $('#demo-overlay-' + postureHand).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend',

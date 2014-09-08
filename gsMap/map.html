@@ -42,7 +42,7 @@
         </li>
         <li class="demo_li">
             <div><i class="fa fa-pencil fa-2x"></i></div>
-            <div>Shape</div>
+            <div>Itinerary</div>
         </li>
         <li class="demo_li">
             <div><i class="fa fa-car fa-2x"></i></div>
@@ -174,7 +174,8 @@ function canvasApp() {
 
                 if (zoomTimeout) {
                     if (zoomRatio > .4) {
-                        map.setZoom(map.getZoom() - 1);
+//                        map.setZoom(map.getZoom() - 1);
+                        setZoomwithPan(map.getZoom() - 1);
                         zoomTimeout = false;
                         setTimeout(function () {
                             zoomTimeout = true;
@@ -182,7 +183,8 @@ function canvasApp() {
                         recorder.updateRecord(getCurrentStatus(), "command: zooming");
                     } else if (zoomRatio < -.4) {
                         zoomRatio = -zoomRatio;
-                        map.setZoom(map.getZoom() + 1);
+//                        map.setZoom(map.getZoom() + 1);
+                        setZoomwithPan(map.getZoom() + 1);
                         zoomTimeout = false;
                         setTimeout(function () {
                             zoomTimeout = true;
@@ -227,6 +229,7 @@ function canvasApp() {
     leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_SUB, leftOnFrame);
     touchMgr.setupTouches();
     leapDeviceMgr.start();
+
     $('#menu_box_right').popmenu({'background': '#e67e22', 'focusColor': '#c0392b', 'iconSize': '100px', 'width': '500px'});
     $("#pop_ctrl_right").hide();
 
@@ -274,7 +277,7 @@ function canvasApp() {
             case "Clear":
                 shapeMgr.clearAllMarkers();
                 break;
-            case "Shape":
+            case "Itinerary":
                 shapeMgr.completeShape();
                 break;
             case "Route":
@@ -286,6 +289,28 @@ function canvasApp() {
 
 
     startMap();
+
+    function getPanDelta(cursorX, cursorY) {
+
+        var delta;
+
+
+        delta = [
+            (canvasWidth / 2-cursorX), (canvasHeight / 2-cursorY)
+        ];
+
+
+        return delta;
+    }
+
+    function setZoomwithPan(zoom) {
+        var cursorX = $(canvasLeft).offset().left;
+        var cursorY = $(canvasLeft).offset().top;
+        var panDelta = getPanDelta(cursorX, cursorY);
+        map.panBy(-panDelta[0], -panDelta[1]);
+        map.setZoom(zoom);
+        map.panBy(panDelta[0], panDelta[1]);
+    }
 
     function handleSingleTab(whichhand, pageX, pageY) {
         switch (whichhand) {
@@ -605,7 +630,8 @@ function canvasApp() {
                 zoomRatio /= 0.5;
                 if (zoomTimeout) {
                     if (zoomRatio > 0) {
-                        map.setZoom(map.getZoom() - 1);
+                        setZoomwithPan(map.getZoom() - 1);
+//                        map.setZoom(map.getZoom() - 1);
                         zoomTimeout = false;
                         setTimeout(function () {
                             zoomTimeout = true;
@@ -613,7 +639,8 @@ function canvasApp() {
                         recorder.updateRecord(getCurrentStatus(), "command: zooming");
                     } else if (zoomRatio < 0) {
                         zoomRatio = -zoomRatio;
-                        map.setZoom(map.getZoom() + 1);
+                        setZoomwithPan(map.getZoom() + 1);
+//                        map.setZoom(map.getZoom() + 1);
                         zoomTimeout = false;
                         setTimeout(function () {
                             zoomTimeout = true;
@@ -863,20 +890,30 @@ var shapeManager = (function () {
                 if (isInMakerProgress) {
 
 
-                    var shapeDrawing = new google.maps.Polygon({
-                        paths: currentShape.coords,
+//                    var shapeDrawing = new google.maps.Polygon({
+//                        paths: currentShape.coords,
+//                        strokeColor: '#FF0000',
+//                        strokeOpacity: 0.8,
+//                        strokeWeight: 2,
+//                        fillColor: '#FF0000',
+//                        fillOpacity: 0.35,
+//                        editable: true
+//                    });
+//                    shapeArray.push(shapeDrawing);
+//                    shapeDrawing.setMap(map);
+                    var polyline = new google.maps.Polyline({
+                        path: currentShape.coords,
+                        geodesic: true,
                         strokeColor: '#FF0000',
-                        strokeOpacity: 0.8,
-                        strokeWeight: 2,
-                        fillColor: '#FF0000',
-                        fillOpacity: 0.35,
-                        editable: true
+                        strokeOpacity: 1.0,
+                        strokeWeight: 2
                     });
-                    undoAction.object = shapeDrawing;
+                    polyline.setMap(map);
+                    shapeArray.push(polyline);
+
+                    undoAction.object = polyline;
                     undoAction.type = "completeShape";
                     redoAction.type = "none";
-                    shapeArray.push(shapeDrawing);
-                    shapeDrawing.setMap(map);
                     isInMakerProgress = false;
 
                     for (var i = 0; i < markersArray.length; i++) {

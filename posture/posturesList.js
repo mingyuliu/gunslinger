@@ -4,63 +4,63 @@
 var postureList = [];
 
 postureList.push({
-    name: "index w/ thumb up",
+    name: "thumb up",
     type: "+thu+ind_active",
-    fingerList: [100, true, false, false, false]
+    fingerList: [120, true, false, false, false]
 });
 
 postureList.push({
-    name: "index w/ thumb down",
+    name: "thumb down",
     type: "+thu+ind_down",
     fingerList: [80, true, false, false, false]
 });
 
 postureList.push({
-    name: "index",
+    name: "",
     type: "+ind",
     fingerList: [-80, true, false, false, false]
 });
 
 postureList.push({
-    name: "index & mid w/ thumb up",
+    name: "thumb up",
     type: "-rin-pin_active",
-    fingerList: [100, true, true, false, false]
+    fingerList: [120, true, true, false, false]
 });
 
 postureList.push({
-    name: "index & middle w/ thumb down",
+    name: "thumb down",
     type: "-rin-pin_down",
     fingerList: [80, true, true, false, false]
 });
 
 postureList.push({
-    name: "index & middle",
+    name: "",
     type: "+ind+mid",
     fingerList: [-80, true, true, false, false]
 });
 
 postureList.push({
-    name: "index & pinky",
+    name: "",
     type: "+ind+pin",
     fingerList: [-80, true, false, false, true]
 });
 
 postureList.push({
-    name: "index & pinky w/ thumb up",
+    name: "",
     type: "-mid-rin",
-    fingerList: [100, true, false, false, true]
+    fingerList: [120, true, false, false, true]
 });
 
 postureList.push({
-    name: "all four fingers",
+    name: "",
     type: "-thu",
     fingerList: [-80, true, true, true, true]
 });
 
 postureList.push({
-    name: "pinky w/ thumb up",
+    name: "thumb up",
     type: "+thu+pin",
-    fingerList: [100, false, false, false, true]
+    fingerList: [120, false, false, false, true]
 });
 
 
