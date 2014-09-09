@@ -8,7 +8,7 @@ var SCALE_RATIO = 1.5;
 var FINGER_RENDER_MODE = 0;
 var isVerboseInfoShonw = false;
 
-var TOUCH_DISTANCE_RECONFIG = 400;
+var TOUCH_DISTANCE_RECONFIG = 100;
 
 //scale of cursor
 var CURSOR_SCALE = 2;
@@ -663,7 +663,7 @@ var leapDeviceMgr = (function () {
                     var fin1 = Leap.vec3.fromValues(fingers[len].tipPosition[0], 0, fingers[len].tipPosition[2]);
                     var fin2 = Leap.vec3.fromValues(fingers[len - 1].tipPosition[0], 0, fingers[len - 1].tipPosition[2]);
                     var differ = Leap.vec3.distance(fin1, fin2);
-                    if (Leap.vec3.distance(fin1, fin2) < 20) {    //heuristics
+                    if (Leap.vec3.distance(fin1, fin2) < 25) {    //heuristics
                         if (fingers[len].type != 0) {
                             fingers[len].extended = false;
                         }
@@ -1277,21 +1277,24 @@ var touchMgr = (function () {
 
 
             if (touchMgr.currentTouches.length == 0) {
-                if (hand === "right") {
-                    var distance = vec2.dist(touchMgr.lastLeftPos, [touch.pageX, touch.pageY]);
-                    if (distance < TOUCH_DISTANCE_RECONFIG) {
-                        hand = "left";
-                        interstate.fsm.leapright();
+                if ((interstate.fsm.current == "unknown" || interstate.fsm.current == "unknownLeft" || interstate.fsm.current == "unknownRight")) {
+                    if (hand === "right") {
+                        var distance = vec2.dist(touchMgr.lastLeftPos, [touch.pageX, touch.pageY]);
+                        if (distance < TOUCH_DISTANCE_RECONFIG) {
+                            hand = "left";
+                            interstate.fsm.leapright();
+                        }
+                    } else if (hand === "left") {
+                        var distance = vec2.dist(touchMgr.lastRightPos, [touch.pageX, touch.pageY]);
+                        if (distance < TOUCH_DISTANCE_RECONFIG) {
+                            hand = "right";
+                            interstate.fsm.leapleft();
+                        }
                     }
-                } else if (hand === "left") {
-                    var distance = vec2.dist(touchMgr.lastRightPos, [touch.pageX, touch.pageY]);
-                    if (distance < TOUCH_DISTANCE_RECONFIG) {
-                        hand = "right";
-                        interstate.fsm.leapleft();
-                    }
-                }
 
+                }
                 interstate.fsm.newTouch();
+
 
                 touchMgr.currentTouches.push({
                     id: touch.identifier,
@@ -1348,7 +1351,7 @@ var touchMgr = (function () {
                 var touchCtr = calculateCenter("all");
 
                 var dis = vec2.dist(newTouchVec, touchCtr);
-                if (dis > 300) {
+                if (dis > 200) {
                     touchMgr.currentTouches.push({
                         id: touch.identifier,
                         pageX: touch.pageX,
@@ -1707,8 +1710,8 @@ function Controls(tag_, screenWid_, screenHeight_) {
         return data;
     };
 
-    this.getFingerExtensionData=function() {
-        if(this.fingerList) {
+    this.getFingerExtensionData = function () {
+        if (this.fingerList) {
             var data = [];
             data.push(this.fingerList[0] >= 0 ? true : false);
             for (var i = 1; i < this.fingerList.length; i++) {
@@ -2536,11 +2539,11 @@ var utilities = (function () {
 
     api.getRatio = function (position, use) {
         var posX, posY;
-        var ctrPos = 200,
+        var ctrPos = 150,
             radius = 140;
 
 
-        var threshold = .7;
+        var threshold = .4;
         if (use == "wall") {
             posY = position[0];
             posX = (position[1] - ctrPos);
@@ -2564,7 +2567,7 @@ var utilities = (function () {
 
     api.getOffsetPosition = function (position, use) {
         var posX, posY;
-        var ctrPos = 200,
+        var ctrPos = 150,
             radius = 140;
         var offsetRange = 16; //pixel ralated
 
@@ -2589,7 +2592,7 @@ var utilities = (function () {
 
     api.getAbsoluteOffset = function (position, use, whichhand) {
         var posX, posY;
-        var ctrPos = 200,
+        var ctrPos = 150,
             radius = 100;
         var elementStr = "#menu_box_" + whichhand + "_ele";
         var offsetRange = Math.max($(elementStr).height() / 2, $(elementStr).width() / 2); //pixel ralated

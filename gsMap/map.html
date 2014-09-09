@@ -37,12 +37,12 @@
             <div>Satellite</div>
             </a></li>
         <li class="demo_li">
-            <div><i class="fa fa-trash fa-2x"></i></div>
-            <div>Clear</div>
-        </li>
-        <li class="demo_li">
             <div><i class="fa fa-pencil fa-2x"></i></div>
             <div>Itinerary</div>
+        </li>
+        <li class="demo_li">
+            <div><i class="fa fa-trash fa-2x"></i></div>
+            <div>Clear</div>
         </li>
         <li class="demo_li">
             <div><i class="fa fa-car fa-2x"></i></div>
@@ -100,6 +100,7 @@ var cursorIdleTimeout = false;
 var itemSelected = 1;
 var leftItemSelected = 0;
 var rightItemSelected = 0;
+var isCursorActive = false;
 function canvasApp() {
 
     var distanceAlphaProj = 1;
@@ -175,7 +176,7 @@ function canvasApp() {
                 if (zoomTimeout) {
                     if (zoomRatio > .4) {
 //                        map.setZoom(map.getZoom() - 1);
-                        setZoomwithPan(map.getZoom() - 1);
+                        setZoomwithPanTouch(map.getZoom() - 1);
                         zoomTimeout = false;
                         setTimeout(function () {
                             zoomTimeout = true;
@@ -184,7 +185,7 @@ function canvasApp() {
                     } else if (zoomRatio < -.4) {
                         zoomRatio = -zoomRatio;
 //                        map.setZoom(map.getZoom() + 1);
-                        setZoomwithPan(map.getZoom() + 1);
+                        setZoomwithPanTouch(map.getZoom() + 1);
                         zoomTimeout = false;
                         setTimeout(function () {
                             zoomTimeout = true;
@@ -296,20 +297,41 @@ function canvasApp() {
 
 
         delta = [
-            (canvasWidth / 2-cursorX), (canvasHeight / 2-cursorY)
+            (canvasWidth / 2 - cursorX), (canvasHeight / 2 - cursorY)
         ];
 
 
         return delta;
     }
 
-    function setZoomwithPan(zoom) {
-        var cursorX = $(canvasLeft).offset().left;
-        var cursorY = $(canvasLeft).offset().top;
+    function setZoomwithPanTouch(zoom) {
+        var cursorX, cursorY;
+
+
+        cursorX = touchMgr.leftGroupCtr[0];
+        cursorY = touchMgr.leftGroupCtr[1];
+
+
         var panDelta = getPanDelta(cursorX, cursorY);
         map.panBy(-panDelta[0], -panDelta[1]);
         map.setZoom(zoom);
         map.panBy(panDelta[0], panDelta[1]);
+    }
+
+    function setZoomwithPan(zoom) {
+        var cursorX, cursorY;
+        if (isCursorActive) {
+            cursorX = $(canvasRight).offset().left + 100 * CURSOR_SCALE;
+            cursorY = $(canvasRight).offset().top + 100 * CURSOR_SCALE;
+            var panDelta = getPanDelta(cursorX, cursorY);
+            map.panBy(-panDelta[0], -panDelta[1]);
+            map.setZoom(zoom);
+            map.panBy(panDelta[0], panDelta[1]);
+        } else {
+            map.setZoom(zoom);
+        }
+
+
     }
 
     function handleSingleTab(whichhand, pageX, pageY) {
@@ -339,7 +361,7 @@ function canvasApp() {
         if ($(elementStr).css('display') == 'none') {
             top = Math.min(canvasHeight - $(elementStr).height(), top);
             left = Math.min(canvasWidth - $(elementStr).width(), left);
-            top = Math.max(0, top);
+            top = Math.max($(elementStr).height(), top);
             left = Math.max(0, left);
             $(elementStr).show("fast");
             $(elementBoxStr).css("top", top + "px");
@@ -589,7 +611,8 @@ function canvasApp() {
     function handleLeftAnimation(controls) {
         var ctx = ctxLeft;
         var offset = utilities.getOffsetPosition(controls.palmPosition, controls.use);
-
+        offset[0] = -offset[0];
+        offset[1] = -offset[1];
         var screenX = 0;
         var screenY = canvasHeight - CURSOR_SCALE * 200;
 
@@ -699,10 +722,12 @@ function canvasApp() {
         recorder.updateRecord(getCurrentStatus(), controls.getRecordData(), touchMgr.currentTouches);
         if (controls.posture == "invalid" || !controls.valid) {
             handleInvalidAnimation(controls);
+            isCursorActive = false;
         } else {
             ctxRight.clearRect(0, 0, canvas.width, canvas.height);
             handleRightAnimation(controls);
             handleRightEvent(controls);
+            isCursorActive = true;
         }
 //            console.log("right " + controls.posture);
         //debug purpose
@@ -765,6 +790,11 @@ function Shape() {
     this.addCoord = function (coord) {
         this.coords.push(coord);
     }
+    this.deleteLastCoord = function () {
+        if (this.coords.length > 0) {
+            this.coords.splice(this.coords.length - 1, 1);
+        }
+    }
 }
 
 
@@ -818,6 +848,7 @@ var shapeManager = (function () {
             undo: function () {
                 switch (undoAction.type) {
                     case "completeShape":
+
                     case "completeRoute":
                         undoAction.object.setMap(null);
                         redoAction = {
@@ -832,6 +863,7 @@ var shapeManager = (function () {
                             object: undoAction.object
                         };
                         markersArray.splice(markersArray.length - 1, 1);
+                        currentShape.deleteLastCoord();
                         break;
                     case "completePolyline":
                         undoAction.object.setMap(null);
@@ -852,6 +884,7 @@ var shapeManager = (function () {
             redo: function () {
                 switch (redoAction.type) {
                     case "completeShape":
+
                     case "completeRoute":
 
                         redoAction.object.setMap(map);
@@ -868,6 +901,7 @@ var shapeManager = (function () {
                             object: redoAction.object
                         };
                         markersArray.push(redoAction.object);
+                        currentShape.coords.push(redoAction.object.getPosition());
                         break;
                     case "completePolyline":
                         redoAction.object.setMap(map);

@@ -190,9 +190,11 @@ function startNewBlock() {
     postureIndex = 0;
     if (feedbackShowing) {
         checkFramePosture = checkFramePostureWithFeedback;
-        $("#leap-overlay-right").hide();
-        $("#leap-overlay-left").hide();
-        $("#leap-overlay-"+whichhand).show();
+        $("#leap-overlay-right").show();
+        $("#leap-overlay-left").show();
+        $('#leap-overlay-left').css({ 'opacity': 0.2 });
+        $('#leap-overlay-right').css({ 'opacity': 0.2 });
+        $("#leap-overlay-"+whichhand).css({ 'opacity': 1.0 });
         $(".hand-caption").show();
     } else {
         checkFramePosture = checkFramePostureWithoutFeedback;
@@ -338,6 +340,7 @@ function rightOnFrame(controls) {
     ctxRight.clearRect(0, 0, canvasWidth, canvasHeight);
     drawHand(ctxRight, controls);
     recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
+    leapDeviceMgr.printRightInfo(controls.cursorState);
     //update progress bar
 }
 
