@@ -53,7 +53,7 @@ var ctxDemoLeft;
 var CURSOR_SIZE = 30;
 CURSOR_SCALE = 1.5;
 var timer = false;
-var TIMEOUT = 800;
+var TIMEOUT = 500;
 var TIMEOUT_NON_FEEDBACK = 4000;
 
 var postureIndex = -1;
@@ -66,34 +66,31 @@ var isMathed = false;
 
 
 var blocks = [];
-blocks.push({
-    whichhand: "right",
-    feedback: true
-});
-blocks.push({
-    whichhand: "right",
-    feedback: true
-});
-blocks.push({
-    whichhand: "right",
-    feedback: true
-});
-blocks.push({
-    whichhand: "right",
-    feedback: false
-});
-blocks.push({
-    whichhand: "right",
-    feedback: false
-});
-blocks.push({
-    whichhand: "right",
-    feedback: false
-});
-blocks.push({
-    whichhand: "left",
-    feedback: true
-});
+
+
+
+
+//
+//
+//blocks.push({
+//    whichhand: "right",
+//    feedback: true
+//});
+//blocks.push({
+//    whichhand: "right",
+//    feedback: true
+//});
+//
+//blocks.push({
+//    whichhand: "right",
+//    feedback: false
+//});
+//blocks.push({
+//    whichhand: "right",
+//    feedback: false
+//});
+
+
 blocks.push({
     whichhand: "left",
     feedback: true
@@ -102,6 +99,7 @@ blocks.push({
     whichhand: "left",
     feedback: true
 });
+
 blocks.push({
     whichhand: "left",
     feedback: false
@@ -110,10 +108,9 @@ blocks.push({
     whichhand: "left",
     feedback: false
 });
-blocks.push({
-    whichhand: "left",
-    feedback: false
-});
+
+
+
 var checkFramePosture = function () {
 };
 
@@ -194,7 +191,7 @@ function startNewBlock() {
         $("#leap-overlay-left").show();
         $('#leap-overlay-left').css({ 'opacity': 0.2 });
         $('#leap-overlay-right').css({ 'opacity': 0.2 });
-        $("#leap-overlay-"+whichhand).css({ 'opacity': 1.0 });
+        $("#leap-overlay-" + whichhand).css({ 'opacity': 1.0 });
         $(".hand-caption").show();
     } else {
         checkFramePosture = checkFramePostureWithoutFeedback;
@@ -212,7 +209,7 @@ function startNewBlock() {
     window["ctxDemo" + capitaliseFst(whichhand)].clearRect(0, 0, canvasWidth, canvasHeight);
     utilities.drawRingnFingers(window["ctxDemo" + capitaliseFst(whichhand)],
             postureList[postureIndex].fingerList, whichhand);
-    $("#" + whichhand + "-demo-text").text(postureList[postureIndex].name);
+
 
 }
 
@@ -339,8 +336,9 @@ function rightOnFrame(controls) {
     checkFramePosture(controls);
     ctxRight.clearRect(0, 0, canvasWidth, canvasHeight);
     drawHand(ctxRight, controls);
-    recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
-    leapDeviceMgr.printRightInfo(controls.cursorState);
+    if (postureHand == controls.tag)
+        recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
+//    leapDeviceMgr.printRightInfo(controls.cursorState);
     //update progress bar
 }
 
@@ -348,8 +346,9 @@ function leftOnFrame(controls) {
     checkFramePosture(controls);
     ctxLeft.clearRect(0, 0, canvasWidth, canvasHeight);
     drawHand(ctxLeft, controls);
-    recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
-    var printInfo = isMathed ? ',': '.';
+    if (postureHand == controls.tag)
+        recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
+    var printInfo = isMathed ? ',' : '.';
     leapDeviceMgr.printRightInfo(printInfo);
 }
 
@@ -368,22 +367,19 @@ function drawHand(ctx, controls) {
 function fadeIn() {
 
     $('#demo-overlay-' + postureHand).removeClass('animated zoomOut' + capitaliseFst(postureHand));
-    $("#" + postureHand + "-demo-text").removeClass('animated fadeOut');
     window["ctxDemo" + capitaliseFst(postureHand)].clearRect(0, 0, 200 * CURSOR_SCALE, 200 * CURSOR_SCALE);
     if (postureIndex > -1 && postureIndex < postureList.length) {
         inStudy = true;
         recorder.updateRecord(getCurrentStatus(), "new posture showing");
         utilities.drawRingnFingers(window["ctxDemo" + capitaliseFst(postureHand)], postureList[postureIndex].fingerList, postureHand);
-        $("#" + postureHand + "-demo-text").text(postureList[postureIndex].name);
+
     }
 }
 function fadeOut() {
     $('#demo-overlay-' + postureHand).addClass('animated zoomOut' + capitaliseFst(postureHand));
-    $("#" + postureHand + "-demo-text").addClass('animated fadeOut');
     $('#demo-overlay-' + postureHand).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', fadeIn);
 }
 function fadeOutEnd() {
-    $("#" + postureHand + "-demo-text").addClass('animated fadeOut');
     $('#demo-overlay-' + postureHand).addClass('animated zoomOut' + capitaliseFst(postureHand));
     $('#demo-overlay-' + postureHand).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend',
             function () {
@@ -421,7 +417,7 @@ function skipCurrentPosture() {
 $(document).keyup(function (event) {
     console.log(event.which)
     switch (event.which) {
-        case 83:  //'s' for skip
+        case 83:  //'s' for mskip
             skipCurrentPosture();
             break;
         case 82: //'r' to turn on recorder
@@ -443,7 +439,6 @@ $(document).keyup(function (event) {
     }
 });
 $(window).ready(launch());
-
 
 
 </script>

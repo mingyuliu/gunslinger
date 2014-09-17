@@ -1,0 +1,84 @@
+<script src="underscore.js"></script>
+<script src="../js/jquery-2.1.0.min.js"></script>
+<script src="../js/FileSaver.js"></script>
+<script>
+    var SCALE_TO_PIXEL = 43 / 53;
+    function downloadRecords(logData) {
+
+
+        var blob = new Blob([JSON.stringify(logData)], {type: 'text/plain'});
+
+
+        saveAs(blob, "data.txt");
+
+    }
+    ;
+    var data = [];
+    function getFile(file) {
+        $.getJSON(file + ".txt", function (data_) {
+            data.push(data_[0][2]);
+        });
+    }
+
+    for (var i = 1; i <= 9; i++) {
+        getFile("p4/p4 pointing (" + i + ")");
+    }
+
+    var clickups, validClickups;
+
+    function startCleaning() {
+        for (var i = 0; i < data.length; i++) {
+            var oneSection = data[i];
+            clickups = _.filter(oneSection, function (item) {
+                return item.cursorEvent === "clickup" && !item.isHit && item.target !== 0
+            });
+            console.log("-------------------------------");
+//            console.log(i + " Section: " + oneSection[0].targetSize + " error clickups: " + clickups.length);
+            for (var j = 0; j < clickups.length; j++) {
+                var targetX = clickups[j].targetX;
+                var targetY = clickups[j].targetY;
+                var cursorX = clickups[j].cursorX;
+                var cursorY = clickups[j].cursorY;
+
+                var distance = Math.sqrt(Math.pow(targetX - cursorX, 2) + Math.pow(targetY - cursorY, 2));
+//                console.log("distance: "+distance);
+                if (distance > clickups[j].targetSize) {
+                    var index = _.indexOf(oneSection, clickups[j]);
+                    oneSection.splice(index, 1);
+                    console.log("distance: " + distance);
+                    searchForClickdown(oneSection, index);
+                }
+
+            }
+
+            clickups = _.filter(oneSection, function (item) {
+                return item.cursorEvent === "clickup" && !item.isHit && item.target !== 0
+            });
+
+            clickupErrors[oneSection[0].targetSize] += clickups.length;
+            console.log(i + " Section finised" + oneSection[0].targetSize + " error clickups: " + clickups.length);
+            console.log("-------------------------------");
+        }
+    }
+
+
+    function searchForClickdown(data_, index) {
+        console.log("**searching previous clickdown at " + index);
+        var oldIndex = index;
+        while (--index >= 0) {
+            if (data_[index].cursorEvent == "clickdown") {
+                data_.splice(index, 1);
+                return;
+            }
+        }
+        console.error("**cannot find");
+    }
+
+
+    var clickupErrors = {
+        40: 0,
+        80: 0,
+        160: 0
+    }
+
+</script>

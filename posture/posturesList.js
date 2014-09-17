@@ -16,7 +16,7 @@ postureList.push({
 });
 
 postureList.push({
-    name: "",
+    name: "thumb",
     type: "+ind",
     fingerList: [-80, true, false, false, false]
 });
@@ -34,25 +34,25 @@ postureList.push({
 });
 
 postureList.push({
-    name: "",
+    name: "thumb",
     type: "+ind+mid",
     fingerList: [-80, true, true, false, false]
 });
 
 postureList.push({
-    name: "",
+    name: "thumb",
     type: "+ind+pin",
     fingerList: [-80, true, false, false, true]
 });
 
 postureList.push({
-    name: "",
+    name: "thumb",
     type: "-mid-rin",
     fingerList: [120, true, false, false, true]
 });
 
 postureList.push({
-    name: "",
+    name: "thumb",
     type: "-thu",
     fingerList: [-80, true, true, true, true]
 });

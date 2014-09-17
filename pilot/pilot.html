@@ -13,7 +13,7 @@
     }
 
     #canvasOne {
-        z-index: 1;
+        z-index: 3;
     }
 
     #blocktext {
@@ -24,7 +24,8 @@
         position: absolute;
         top: 35%;
         right: 20%;
-        z-index: 3;
+        z-index: 2;
+        opacity: 0.6;
     }
 
     #blocktext h1 {
@@ -100,7 +101,6 @@ function toggleTechnique() {
 }
 
 
-
 var ACCELERATION_FACTOR = 3;
 var canvas;
 var ctx;
@@ -111,14 +111,15 @@ var shapeTarget;
 
 var canvasWidth = 0, canvasHeight = 0;
 
-var WIDTH_L = 270;
-var WIDTH_M = 90;
-var WIDTH_S = 30;
+var WIDTH_L = 160;
+var WIDTH_M = 80;
+var WIDTH_S = 40;
 var WIDTH_ORDER = [WIDTH_L, WIDTH_M, WIDTH_S, WIDTH_M, WIDTH_S, WIDTH_L, WIDTH_S, WIDTH_L, WIDTH_M];
-var currentBlock = 0;
+var currentSections = 0;
 var currentSet = 0;
 var currentTarget = 0;
 var currentWidth = 0;
+var currentBlock = 0;
 var particNote;
 var isInputValid = false;
 var isCursorDown = false;
@@ -143,7 +144,7 @@ function canvasApp() {
 
     function init() {
         //get block number
-        currentBlock = Number(getURLParameter("block")) - 1 || 0;
+        currentSections = Number(getURLParameter("sections")) - 1 || 0;
         currentWidth = Number(getURLParameter("width")) - 1 || 0;
         particNote = getURLParameter("note") || "practice";
 
@@ -165,7 +166,7 @@ function canvasApp() {
 //            ctx.translate(canvas.width, canvas.height);
 
         numShapes = 1;
-        readTextFile("../data/blocks.txt");
+        readTextFile("../data/blocks2.txt");
 
 
         leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
@@ -207,9 +208,9 @@ function canvasApp() {
         var screenY = -controls.y + canvasHeight;
 
 
-        var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentBlock, currentSet,
-                currentTarget, WIDTH_ORDER[currentWidth], sections[currentBlock][currentSet][currentTarget].distance,
-                sections[currentBlock][currentSet][currentTarget].x, sections[currentBlock][currentSet][currentTarget].y,
+        var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentSections, currentSet,
+                currentTarget, WIDTH_ORDER[currentWidth], sections[currentSections][currentSet][currentTarget].distance,
+                sections[currentSections][currentSet][currentTarget].x, sections[currentSections][currentSet][currentTarget].y,
                 screenX.toFixed(0), screenY.toFixed(0), isInputValid, "loopEvent");
 //        console.log(record.posture);
         records.push(record);
@@ -265,15 +266,15 @@ function canvasApp() {
         if (currentTarget > 6) {
             currentSet++;
             currentTarget = 0;
-            currentWidth++;
+
         }
-        if (currentSet > 2) {
+        if (currentSet > 1) {
             if (particNote != "practice")
                 writeToStorage();
-            currentBlock++;
+            currentSections++;
             currentSet = 0;
             currentTarget = 0;
-
+            currentWidth++;
         }
         if (currentWidth > 8) {
             currentWidth = 0;
@@ -295,9 +296,9 @@ function canvasApp() {
 
 //        setTimeout(function(){console.log(sections.length)},3000)
         var blockText = document.getElementById("blocktext");
-//        blockText.innerHTML = "block " + Number(currentBlock+1);
-        tempX = sections[currentBlock][currentSet][currentTarget].x * SCALE_TO_PIXEL * SHRINK_RATIO;
-        tempY = sections[currentBlock][currentSet][currentTarget].y * SCALE_TO_PIXEL * SHRINK_RATIO;
+//        blockText.innerHTML = "block " + Number(currentSections+1);
+        tempX = sections[currentSections][currentSet][currentTarget].x * SCALE_TO_PIXEL * SHRINK_RATIO;
+        tempY = sections[currentSections][currentSet][currentTarget].y * SCALE_TO_PIXEL * SHRINK_RATIO;
 
 
         //we set a randomized color, including a random alpha (transparency) value.
@@ -305,9 +306,9 @@ function canvasApp() {
         if (currentTarget == 0) {
             tempColor = "rgba(200, 0, 0, 0.8)";
             blockText.style.visibility = "visible";
-            blockText.innerHTML = "    <h1>#block " + Number(currentBlock + 1) + " #Set " + Number(currentSet + 1) + "<//h1> <h4>resume your task by clicking the target<//h4>";
+            blockText.innerHTML = "    <h1>#block " + Number(currentSections + 1) + " #Set " + Number(currentSet + 1) + "<//h1> <h4>resume your task by clicking the target<//h4>";
 
-            if (currentBlock == 0 && currentSet == 0) {
+            if (currentSections == 0 && currentSet == 0) {
                 blockText.innerHTML = "    <h1>block #1 Set #1<//h1> <h4>start your task by clicking the target<//h4>";
             }
         } else {
@@ -347,7 +348,6 @@ function canvasApp() {
 
     function handleAnimation(controls) {
 //        console.log("posture: "+controls.posture);
-
 
 
         var screenX = -controls.x + canvasWidth;
@@ -433,9 +433,9 @@ function canvasApp() {
                         isInputValid = false;
                     }
 
-                    var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentBlock, currentSet,
-                            currentTarget, WIDTH_ORDER[currentWidth], sections[currentBlock][currentSet][currentTarget].distance,
-                            sections[currentBlock][currentSet][currentTarget].x, sections[currentBlock][currentSet][currentTarget].y,
+                    var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentSections, currentSet,
+                            currentTarget, WIDTH_ORDER[currentWidth], sections[currentSections][currentSet][currentTarget].distance,
+                            sections[currentSections][currentSet][currentTarget].x, sections[currentSections][currentSet][currentTarget].y,
                             screenX.toFixed(0), screenY.toFixed(0), isInputValid, controls.cursorEvent);
                     if (records == undefined) {
                         records = [];
@@ -476,9 +476,9 @@ function canvasApp() {
                     } else {
                         isInputValid = false;
                     }
-                    var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentBlock, currentSet,
-                            currentTarget, WIDTH_ORDER[currentWidth], sections[currentBlock][currentSet][currentTarget].distance,
-                            sections[currentBlock][currentSet][currentTarget].x, sections[currentBlock][currentSet][currentTarget].y,
+                    var record = new Record(controls.timestamp.toFixed(2), controls.posture, controls.tipPosition, currentSections, currentSet,
+                            currentTarget, WIDTH_ORDER[currentWidth], sections[currentSections][currentSet][currentTarget].distance,
+                            sections[currentSections][currentSet][currentTarget].x, sections[currentSections][currentSet][currentTarget].y,
                             screenX.toFixed(0), screenY.toFixed(0), isInputValid, controls.cursorEvent);
                     createjs.Sound.play("../assets/clickdown.wav");
 
@@ -531,7 +531,7 @@ function canvasApp() {
         this.distance = distance_;
     }
 
-    function Record(timestamp_, posture_, tipPosition_, block_, set_, target_, targetSize_, distance_, targetX_, targetY_, cursorX_, cursorY_, isHit_, cursorEvent_) {
+    function Record(timestamp_, posture_, tipPosition_, sections_, set_, target_, targetSize_, distance_, targetX_, targetY_, cursorX_, cursorY_, isHit_, cursorEvent_) {
         cursorX_ /= (SCALE_TO_PIXEL * SHRINK_RATIO);
         cursorY_ /= (SCALE_TO_PIXEL * SHRINK_RATIO);
 
@@ -539,7 +539,7 @@ function canvasApp() {
         this.timestamp = timestamp_;
         this.posture = posture_;
         this.tipPosition = tipPosition_;
-        this.block = block_;
+        this.sections = sections_;
         this.set = set_;
         this.target = target_;
         this.targetX = targetX_;
@@ -574,7 +574,7 @@ function canvasApp() {
                 } else if (lines[i].indexOf("target position") > -1) {
                     var positionStr = lines[i];
                     var distanceStr = positionStr.substr(positionStr.indexOf("distance") + 9);
-                    distanceStr = distanceStr.substr(0, distanceStr.length - 1);
+                    distanceStr = distanceStr.substr(0, distanceStr.length - 2);
                     var distance = Number(distanceStr);
                     positionStr = positionStr.substr(positionStr.indexOf("(") + 1, positionStr.indexOf(")") - 1);
                     var positions = positionStr.split(",");

@@ -161,7 +161,7 @@ function canvasApp() {
         if (currentTouch.whichhand == "left") {
             if (touchMgr.countTouches("left") == 2 && currentTouch.group == 1) {
                 var d = new Date().getTime();
-                if (d - currentTouch.starttime < 150) return;
+                if (d - currentTouch.starttime < 250) return;
                 ctxLeft.clearRect(0, 0, canvas.width, canvas.height);
                 canvasLeft.style.top = touchMgr.leftGroupCtr[1] + "px";
                 canvasLeft.style.left = touchMgr.leftGroupCtr[0] + "px";
@@ -206,7 +206,7 @@ function canvasApp() {
         var d = new Date().getTime();
 
         if (touchMgr.countTouches(currentTouch.whichhand) == 1) {
-            if (d - currentTouch.starttime < 150) {
+            if (d - currentTouch.starttime < 250) {
                 if (currentTouch.group == 1) {
                     //handle double tab
                     handleDoubleTab(currentTouch.whichhand, currentTouch.pageX, currentTouch.pageY);
@@ -458,16 +458,18 @@ function canvasApp() {
                 break;
 
             case "-rin-pin":
+                if(controls.checkRinPinPosture()) {
+                    showMenu("right", screenY, screenX, true);
+                    var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[0];
+                    offset += $("#menu_box_right_ele").width() / 2;
+                    offset = Math.floor(offset / $("#menu_box_right_ele").height());
+                    var items = $("#menu_box_right_ele li");
+                    canvasRight.style.top = $(items[offset]).offset().top + $("#menu_box_right_ele").height() / 2 - 100 * CURSOR_SCALE + "px";
+                    canvasRight.style.left = $(items[offset]).offset().left + $("#menu_box_right_ele").height() / 2 - 100 * CURSOR_SCALE + "px";
+                    rightItemSelected = offset;
+                    utilities.drawGeneric(ctx);
+                }
 
-                showMenu("right", screenY, screenX, true);
-                var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[0];
-                offset += $("#menu_box_right_ele").width() / 2;
-                offset = Math.floor(offset / $("#menu_box_right_ele").height());
-                var items = $("#menu_box_right_ele li");
-                canvasRight.style.top = $(items[offset]).offset().top + $("#menu_box_right_ele").height() / 2 - 100 * CURSOR_SCALE + "px";
-                canvasRight.style.left = $(items[offset]).offset().left + $("#menu_box_right_ele").height() / 2 - 100 * CURSOR_SCALE + "px";
-                rightItemSelected = offset;
-                utilities.drawGeneric(ctx);
                 break;
 
 
@@ -488,17 +490,20 @@ function canvasApp() {
     }
 
     function handleLeftEvent(controls) {
-        console.log("event " + controls.cursorEvent);
+
         switch (controls.cursorEvent) {
             case "clickup":
                 if (leftClickTimeout && isLeftCursorDown) {
                     switch (controls.posture) {
 
                         case "-rin-pin":
-                            var items = $("#menu_box_left_ele li");
+                            if(controls.checkRinPinPosture()) {
+                                var items = $("#menu_box_left_ele li");
 
-                            $(items[leftItemSelected]).trigger("click");
-                            console.log("rinpin");
+                                $(items[leftItemSelected]).trigger("click");
+                                console.log("rinpin");
+                            }
+
                             break;
                     }
                     leftClickTimeout = false;
@@ -539,10 +544,13 @@ function canvasApp() {
                             break;
 
                         case "-rin-pin":
-                            var items = $("#menu_box_right_ele li");
+                            if(controls.checkRinPinPosture()) {
+                                var items = $("#menu_box_right_ele li");
 
-                            $(items[rightItemSelected]).trigger("click");
-                            console.log("rinpin")
+                                $(items[rightItemSelected]).trigger("click");
+                            }
+
+
                             break;
                     }
                     rightClickTimeout = false;
@@ -634,7 +642,7 @@ function canvasApp() {
                 }
                 utilities.drawPan(ctx);
                 var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, false);
-                map.panBy(ballPos[0], ballPos[1]);
+                map.panBy(ballPos[0]/3, ballPos[1]/3);
                 recorder.updateRecord(getCurrentStatus(), "command: panning");
                 ctx.translate(-offset[0] + ballPos[0], -offset[1] + ballPos[1]);
 
@@ -679,16 +687,19 @@ function canvasApp() {
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
             case "-rin-pin":
-                showMenu("left", canvasWidth / 2, canvasHeight / 2, true);
-                var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[1];
-                offset += $("#menu_box_left_ele").height() / 2;
-                offset = Math.floor(offset / $("#menu_box_left_ele").width());
-                var items = $("#menu_box_left_ele li");
-                canvasLeft.style.top = $(items[offset]).offset().top + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
-                canvasLeft.style.left = $(items[offset]).offset().left + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
-                leftItemSelected = offset;
-                utilities.drawGeneric(ctx);
-                utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+                    if(controls.checkRinPinPosture()) {
+                        showMenu("left", canvasWidth / 2, canvasHeight / 2, true);
+                        var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[1];
+                        offset += $("#menu_box_left_ele").height() / 2;
+                        offset = Math.floor(offset / $("#menu_box_left_ele").width());
+                        var items = $("#menu_box_left_ele li");
+                        canvasLeft.style.top = $(items[offset]).offset().top + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
+                        canvasLeft.style.left = $(items[offset]).offset().left + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
+                        leftItemSelected = offset;
+                        utilities.drawGeneric(ctx);
+                        utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+                    }
+
                 break;
             case "-thu":
                 closeMenu("left");
@@ -1204,7 +1215,7 @@ function transferPointToLatLng() {
 }
 
 
-var ctrPosY = 200;
+var ctrPosY = 150;
 var ctrPosX = 0;
 
 function drawNaviBall(ctx, position, use, oneDirection, range) {
@@ -1214,7 +1225,7 @@ function drawNaviBall(ctx, position, use, oneDirection, range) {
     var offsetRange = range || 40; //pixel ralated
 
 
-    var threshold = .6;
+    var threshold = .3;
     if (use == "wall") {
         posY = -(position[0] - ctrPosX);
         posX = -(position[1] - ctrPosY);
@@ -1305,13 +1316,18 @@ $(document).keyup(function (event) {
             //startStudy();
             break;
         case 73: //'i'
-            leapDeviceMgr.printRightInfo(modalities[currentModality] + " " + studyTasks[currentTask]);
+            leapDeviceMgr.printRightInfo(modalities[currentModality] + " <br/>" + studyTasks[currentTask]);
             break;
         case 70: //'f': finished current task
             currentTask++;
             currentTask = Math.min(studyTasks.length - 1, currentTask);
-            recorder.updateRecord(getCurrentStatus(), "task finished");
+            recorder.updateRecord(getCurrentStatus(), "task: finished");
             break;
+        case 77: //'m' mistake
+            recorder.updateRecord(getCurrentStatus(), "task: mistake");
+            break;
+
+
     }
 });
 
@@ -1330,7 +1346,6 @@ function getCurrentStatus() {
     };
     return status;
 }
-
 
 </script>
 </htm

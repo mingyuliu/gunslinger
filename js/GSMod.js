@@ -19,11 +19,11 @@ var SCALE_TO_PIXEL = 200 / 57;
 
 //CD Gain Config
 var vMin = 10,
-    vMax = 600,
+    vMax = 400,
     cdMin = 0.2,
     cdMax = 1900 / 80,
-    ratio_inf = 0.5,
-    lambda = 4 / (vMax - vMin),
+    ratio_inf = 0.55,
+    lambda = 4.1 / (vMax - vMin),
     vel_inf = ratio_inf * (vMax - vMin) + vMin;
 //OneEuroFilter
 var freq = 60,
@@ -684,6 +684,10 @@ var leapDeviceMgr = (function () {
                     if (thumbProj[0] < indexProj[0] && tag == "right") {
                         fingers[0].extended = true;
                     }
+
+                }
+                if (differ > 20) {
+
                     if (thumbProj[0] > indexProj[0] && tag == "left") {
                         fingers[0].extended = true;
                     }
@@ -1366,7 +1370,7 @@ var touchMgr = (function () {
                 } else {
                     var previousTouch = touchMgr.currentTouches[touchMgr.currentTouches.length - 1];
                     var groupNum = 0;
-                    if ((d - previousTouch.starttime) < 30) {
+                    if ((d - previousTouch.starttime) < 100) {
                         previousTouch.group++;
                         groupNum = previousTouch.group;
                     }
@@ -1568,6 +1572,8 @@ var touchMgr = (function () {
 var interstate = (function () {
     var api = {};
 
+    api.lastHand = "right";
+
 
     api.fsm = StateMachine.create({
         initial: 'unknown',
@@ -1576,9 +1582,9 @@ var interstate = (function () {
         },
         events: [
             { name: 'leapright', from: 'unknown', to: 'waitLeft' },
-            { name: 'noLeapright', from: 'waitLeft', to: 'unknown' },
+            { name: 'noLeapright', from: 'waitLeft', to: 'unknownLeft' },
             { name: 'leapleft', from: 'unknown', to: 'waitRight' },
-            { name: 'noLeapleft', from: 'waitRight', to: 'unknown' },
+            { name: 'noLeapleft', from: 'waitRight', to: 'unknownRight' },
 
             { name: 'newTouch', from: 'unknown', to: 'touchRight'  },
 
@@ -1631,15 +1637,20 @@ var interstate = (function () {
 //                console.log("event: "+event+" from "+from+ " to "+to);
 //            },
             onenterstate: function (event, from, to) {
-                console.log("from " + from + " enter " + to);
+                console.log("evt: "+event+" from " + from + " enter " + to);
             },
             onentertouchRight: function (event, from, to) {
                 touchMgr.changeTouchHand("right");
             },
             onentertouchLeft: function (event, from, to) {
                 touchMgr.changeTouchHand("left");
+            },
+            onenterunknownRight: function(event, from, to) {
+                api.lastHand = "right";
+            },
+            onenterunknownLeft: function(event, from, to) {
+                api.lastHand = "left";
             }
-
 
 
 
@@ -1688,10 +1699,11 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.stablePalmPosition = vec3.create();
     if (this.use == "wall") {
         //wall
-        SCALE_TO_PIXEL = 45 / 53;
+        SCALE_TO_PIXEL = 43 / 53;
         SHRINK_RATIO = 1;
     }
     this.historyPoints = [];
+    this.historyPostures = [];
 
     this.getRecordData = function () {
         var data = {
@@ -1781,9 +1793,30 @@ function Controls(tag_, screenWid_, screenHeight_) {
         if (this.historyPoints.length > 15) {
             this.historyPoints.splice(0, 1);
         }
-        ;
+
         this.historyPoints.push([posX, posY, vel, timestampe]);
     };
+
+    this.addPostures = function (posture) {
+        if (this.historyPostures.length > 10) {
+            this.historyPostures.splice(0, 1);
+        }
+
+        this.historyPostures.push(posture);
+    };
+
+    this.checkRinPinPosture = function () {
+        if (this.historyPostures.length > 9) {
+            for (var i = 0; i < this.historyPostures.length; i++) {
+                if(this.historyPostures[i] != "-rin-pin") {
+                    return false;
+                }
+            }
+            return true
+        }
+        return false;
+    }
+
 
     this.getHistoryPoint = function () {
         var vel = Number.MAX_VALUE;
@@ -1967,9 +2000,9 @@ function Controls(tag_, screenWid_, screenHeight_) {
                     var delta = [this.fx.filter(velraw[0], this.timestamp * 0.001), this.fy.filter(velraw[1], this.timestamp * 0.001)];
 //                    var delta = [velraw[0], velraw[1]];
                     CDGainTransfer(delta);
-                    if (this.use == "wall") {  //scale cdgain
-                        vec2.scale(delta, delta, 1 / (800 / 1700));
-                    }
+//                    if (this.use == "wall") {  //scale cdgain
+//                        vec2.scale(delta, delta, 1 / (800 / 1700));
+//                    }
                     if (this.cursorState == "down") {
                         vec2.scale(delta, delta, 0.4);
                     }
@@ -1993,6 +2026,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
 
                 this.addPoints(this.x, this.y, vec3.len(fingers[1].tipVelocity), this.timestamp);
 
+
             } else {
                 this.setCursorState("none");
                 isThumbDown = false;
@@ -2002,6 +2036,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
             this.posture = "none";
             this.valid = false;
         }
+        this.addPostures(this.posture);
         this.lastFrameTimestamp = frame.timestamp * 0.001;
     }
 }
@@ -2612,7 +2647,7 @@ var utilities = (function () {
         var ratio = len / radius;
 
         vec2.scale(pos, pos, offsetRange * ratio / vec2.len(pos));
-        leapDeviceMgr.printInfo(pos[0] + " " + pos[1]);
+//        leapDeviceMgr.printInfo(pos[0] + " " + pos[1]);
         return pos;
 
     };
