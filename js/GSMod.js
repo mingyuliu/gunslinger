@@ -1699,7 +1699,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.stablePalmPosition = vec3.create();
     if (this.use == "wall") {
         //wall
-        SCALE_TO_PIXEL = 43 / 53;
+        SCALE_TO_PIXEL = 103 / 100;
         SHRINK_RATIO = 1;
     }
     this.historyPoints = [];

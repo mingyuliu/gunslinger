@@ -1,0 +1,103 @@
+<script src="underscore.js"></script>
+<script src="../js/jquery-2.1.0.min.js"></script>
+<script src="../js/FileSaver.js"></script>
+<script>
+
+    function download() {
+
+
+        var blob = new Blob([names], {type: 'text/plain'});
+
+
+        var date = new Date();
+        saveAs(blob, date.toGMTString() + ".csv");
+    }
+
+    var whichParticipant = "p1";
+    var startSection = 0;
+
+
+    var data = [];
+    function getFile(file, index) {
+        index = (index - 1) % 2;
+        $.getJSON(file + ".txt", function (data_) {
+            data.push([index, data_[0][2]]);
+        }).done(function () {
+            if (data.length == 6) {
+                analyze();
+            }
+        });
+    }
+
+    function searchLastMarker(item, index) {
+        for (var i = 0; i < index; i++) {
+        }
+    }
+
+    function analyze() {
+        for (var i = 0; i < data.length; i++) {
+            var modality = data[i][1][0][1].modality;
+            var order = data[i][0];
+
+
+
+            var addMarker = _.filter(data[i][1], function (item) {
+                return item[2] == "command: add marker"
+            });
+
+
+            var redoTime = _.filter(data[i][1], function (item) {
+                return item[2] == "command: redo-addMarker"
+            });
+
+            var saveTime = _.filter(data[i][1], function (item) {
+                return item[2] == "command: save itinerary"
+            });
+
+
+            if (addMarker.length !== 2 || redoTime.length !== 1 || saveTime.length == 0) {
+                console.error("mistake markers:" + addMarker.length + " redos " + redoTime.length +" savetime: "+saveTime.length+ " redo index " + _.indexOf(data[i][1], redoTime[0]));
+            }
+
+            var markerLen = addMarker.length;
+            var markerTime=addMarker[1][0];
+
+            while(markerLen--) {
+                if(addMarker[markerLen][0] < redoTime[0][0]) {
+                    markerTime = addMarker[markerLen][0];
+                    break;
+                }
+            }
+
+            if (redoTime.length > 0 && saveTime.length > 0) {
+                var starttime = data[i][1][0][0];
+                var t1Time = markerTime - starttime;
+                var t2Time = redoTime[0][0] - markerTime;
+                var t3Time = saveTime[0][0] - redoTime[0][0];
+                console.log(modality + " order " + order + " times: " + t1Time + "," + t2Time + "," + t3Time + "\n");
+                var dataset = [modality, order, t1Time, t2Time, t3Time];
+                names += whichParticipant + "," + dataset.join() + "\n";
+            }
+            else {
+                names += whichParticipant + ",0,0,0,0,0\n";
+            }
+
+
+        }
+    }
+
+    function setParticipantNo(number) {
+        whichParticipant = number;
+        data = [];
+
+        for (var i = 1; i <= 6; i++) {
+            getFile(whichParticipant + "/map study (" + i + ")", i);
+        }
+
+
+    }
+
+    var names = "participants,modality,order,t1,t2,t3\n";
+
+
+</script>

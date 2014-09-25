@@ -1,0 +1,195 @@
+<script src="underscore.js"></script>
+<script src="../js/jquery-2.1.0.min.js"></script>
+<script src="../js/FileSaver.js"></script>
+<script>
+    var SCALE_TO_PIXEL = 43 / 53;
+    function downloadRecords(logData) {
+
+
+        var blob = new Blob([JSON.stringify(logData)], {type: 'text/plain'});
+
+
+        saveAs(blob, "data.txt");
+
+    }
+
+    var whichParticipant = "p1";
+    var startSection = 0;
+
+
+    var data = [];
+    var participant = "";
+    function getFile(index) {
+        var file = "p" + index + "/posture study left";
+        $.getJSON(file + ".txt", function (data_) {
+            data.push(["p" + index, data_[0][2]]);
+        })
+    }
+
+
+    function start() {
+        for (var i = 2; i <= 11; i++) {
+            getFile(i);
+        }
+    }
+
+    var name = "participants,feedback,complete time,posture\n";
+
+    var counter1 = {
+        "+ind": 0,
+        "-thu": 0,
+        "+ind+mid": 0,
+        "+thu+ind_active": 0,
+        "+thu+ind_down": 0,
+        "-rin-pin_active": 0,
+        "-rin-pin_down": 0,
+        "-mid-rin": 0,
+        "+thu+pin": 0,
+        "+ind+pin": 0
+    };
+    var counter2 = {
+        "+ind": 0,
+        "-thu": 0,
+        "+ind+mid": 0,
+        "+thu+ind_active": 0,
+        "+thu+ind_down": 0,
+        "-rin-pin_active": 0,
+        "-rin-pin_down": 0,
+        "-mid-rin": 0,
+        "+thu+pin": 0,
+        "+ind+pin": 0
+    };
+
+    function reset() {
+        counter1 = {
+            "+ind": 0,
+            "-thu": 0,
+            "+ind+mid": 0,
+            "+thu+ind_active": 0,
+            "+thu+ind_down": 0,
+            "-rin-pin_active": 0,
+            "-rin-pin_down": 0,
+            "-mid-rin": 0,
+            "+thu+pin": 0,
+            "+ind+pin": 0
+        };
+        counter2 = {
+            "+ind": 0,
+            "-thu": 0,
+            "+ind+mid": 0,
+            "+thu+ind_active": 0,
+            "+thu+ind_down": 0,
+            "-rin-pin_active": 0,
+            "-rin-pin_down": 0,
+            "-mid-rin": 0,
+            "+thu+pin": 0,
+            "+ind+pin": 0
+        };
+    }
+
+    for (var i = 0; i < data.length; i++) {
+        var items = _.groupBy(data[i][1], function (item) {
+            return item[2].minVal;
+        });
+        console.log(items);
+    }
+    function countFrames(block) {
+        var starttimelines = _.filter(block, function (item) {
+            return item[2] == "new posture showing" || item[2] == "new block, new posture showing"
+        });
+        var finishedtimelines = _.filter(block, function (item) {
+            return item[2] == "Get to next posture"
+        });
+
+        for (var i = 0; i < starttimelines.length; i++) {
+            var index = _.indexOf(block, starttimelines[i]);
+            starttimelines[i][1] = block[index + 1][1];
+        }
+
+        for (var i = 0; i < 10; i++) {
+            counter1[starttimelines[i][1].gestureType] = finishedtimelines[i][0] - starttimelines[i][0];
+        }
+
+        for (var i = 10; i < 20; i++) {
+            counter2[starttimelines[i][1].gestureType] = finishedtimelines[i][0] - starttimelines[i][0];
+        }
+    }
+
+    function countNonFeedbackFrames(block) {
+        var starttimelines = _.filter(block, function (item) {
+            return item[2] == "new posture showing" || item[2] == "new block, new posture showing"
+        });
+        var finishedtimelines = _.filter(block, function (item) {
+            return item[2] == "Get to next posture"
+        });
+        var completetimelines = [];
+
+        for (var i = 0; i < starttimelines.length; i++) {
+            var index = _.indexOf(block, starttimelines[i]);
+            starttimelines[i][1] = block[index + 1][1];
+        }
+
+        for (var i = 0; i < starttimelines.length; i++) {
+            var indexStart = _.indexOf(block, starttimelines[i]);
+            var indexEnd = _.indexOf(block, finishedtimelines[i]);
+            indexStart += 2;
+            completetimelines.push(searchMatches(block, indexStart, indexEnd));
+        }
+
+        for (var i = 20; i < 30; i++) {
+            counter1[starttimelines[i][1].gestureType] = completetimelines[i] - starttimelines[i][0];
+        }
+
+        for (var i = 30; i < 40; i++) {
+            counter2[starttimelines[i][1].gestureType] = completetimelines[i] - starttimelines[i][0];
+        }
+    }
+
+    function searchMatches(block, indexStart, indexEnd) {
+        var isMatched = false;
+        var starttime = block[indexStart][0];
+        for (var i = indexStart; i < indexEnd; i++) {
+            if (!block[i][1].isMathed || block[i][2].minVal > .15) {
+                starttime = block[i][0];
+            }
+            if (block[i][0] - starttime > 500) {
+                return block[i][0];
+            }
+        }
+        return Number.MAX_VALUE;
+    }
+
+    function analyze() {
+        for (var i = 0; i < data.length; i++) {
+
+            countFrames(data[i][1]);
+
+            for (var key in counter1) {
+                name += data[i][0] + ",TRUE," + counter1[key] + "," + key + "\n";
+            }
+            for (var key in counter2) {
+                name += data[i][0] + ",TRUE," + counter2[key] + "," + key + "\n";
+            }
+
+            reset();
+
+            countNonFeedbackFrames(data[i][1]);
+
+            for (var key in counter1) {
+                name += data[i][0] + ",FALSE," + counter1[key] + "," + key + "\n";
+            }
+            for (var key in counter2) {
+                name += data[i][0] + ",FALSE," + counter2[key] + "," + key + "\n";
+            }
+
+            reset();
+        }
+
+        var blob = new Blob([name], {type: 'text/plain'});
+
+        var date = new Date();
+        saveAs(blob, date.toGMTString() + ".csv");
+    }
+
+
+</script>

@@ -1,14 +1,14 @@
 // Section
 // Set 1
 // Activate Task
-(1650, 893) // initial pointer position 
-(1339,1055) // target position (distance 350)
+(450, 893) // initial pointer position
+(700,655) // target position (distance 350)
 // Sequence Task
-(1689,1055) // target position (distance 350)
-(989,1055) // target position (distance 700)
-(368,732) // target position (distance 700)
-(1611,87) // target position (distance 1400)
-(368,732) // target position (distance 1400)
+(750,605) // target position (distance 350)
+(729,705) // target position (distance 700)
+(780,600) // target position (distance 700)
+(800,650) // target position (distance 1400)
+(708,632) // target position (distance 1400)
 (989,1055) // target position (distance 700)
 // Set 2
 // Activate Task

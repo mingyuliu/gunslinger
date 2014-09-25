@@ -2,83 +2,339 @@
 <script src="../js/jquery-2.1.0.min.js"></script>
 <script src="../js/FileSaver.js"></script>
 <script>
-    var SCALE_TO_PIXEL = 43 / 53;
-    function downloadRecords(logData) {
+var SCALE_TO_PIXEL = 43 / 53;
+function downloadRecords(logData) {
 
 
-        var blob = new Blob([JSON.stringify(logData)], {type: 'text/plain'});
+    var blob = new Blob([JSON.stringify(logData)], {type: 'text/plain'});
 
 
-        saveAs(blob, "data.txt");
+    saveAs(blob, "data.txt");
 
+}
+
+var whichParticipant = "p1";
+var startSection = 0;
+
+
+var data = [];
+function getFile(file) {
+    $.getJSON(file + ".txt", function (data_) {
+        data.push(data_[0][2]);
+    }).done(function () {
+        if (data.length == 9) {
+            startCleaning();
+        }
+    });
+}
+
+
+function setParticipantNo(number) {
+    whichParticipant = number;
+    data = [];
+    $.getJSON(whichParticipant + "/" + whichParticipant + " pointing (1).txt", function (data_) {
+        data.push(data_[0][2]);
+        startSection = data_[0][2][0].sections;
+    });
+    for (var i = 2; i <= 9; i++) {
+        getFile(whichParticipant + "/" + whichParticipant + " pointing (" + i + ")");
     }
-    ;
-    var data = [];
-    function getFile(file) {
-        $.getJSON(file + ".txt", function (data_) {
-            data.push(data_[0][2]);
+}
+
+var clickups, validClickups;
+
+function startCleaning() {
+    for (var i = 0; i < data.length; i++) {
+        var oneSection = data[i];
+        clickups = _.filter(oneSection, function (item) {
+            return item.cursorEvent === "clickup" && !item.isHit && item.target !== 0
         });
-    }
-
-    for (var i = 1; i <= 9; i++) {
-        getFile("p4/p4 pointing (" + i + ")");
-    }
-
-    var clickups, validClickups;
-
-    function startCleaning() {
-        for (var i = 0; i < data.length; i++) {
-            var oneSection = data[i];
-            clickups = _.filter(oneSection, function (item) {
-                return item.cursorEvent === "clickup" && !item.isHit && item.target !== 0
-            });
-            console.log("-------------------------------");
+        clickupErrorsOld[oneSection[0].targetSize] += clickups.length;
+        console.log("-------------------------------");
 //            console.log(i + " Section: " + oneSection[0].targetSize + " error clickups: " + clickups.length);
-            for (var j = 0; j < clickups.length; j++) {
-                var targetX = clickups[j].targetX;
-                var targetY = clickups[j].targetY;
-                var cursorX = clickups[j].cursorX;
-                var cursorY = clickups[j].cursorY;
+        for (var j = 0; j < clickups.length; j++) {
+            var targetX = clickups[j].targetX;
+            var targetY = clickups[j].targetY;
+            var cursorX = clickups[j].cursorX;
+            var cursorY = clickups[j].cursorY;
 
-                var distance = Math.sqrt(Math.pow(targetX - cursorX, 2) + Math.pow(targetY - cursorY, 2));
+            var distance = Math.sqrt(Math.pow(targetX - cursorX, 2) + Math.pow(targetY - cursorY, 2));
 //                console.log("distance: "+distance);
-                if (distance > clickups[j].targetSize) {
-                    var index = _.indexOf(oneSection, clickups[j]);
-                    oneSection.splice(index, 1);
-                    console.log("distance: " + distance);
-                    searchForClickdown(oneSection, index);
+            if (distance > Math.max(clickups[j].targetSize, 100)) {
+                var index = _.indexOf(oneSection, clickups[j]);
+                oneSection.splice(index, 1);
+                console.log("distance: " + distance);
+                searchForClickdownToSplice(oneSection, index);
+            }
+
+        }
+
+        clickups = _.filter(oneSection, function (item) {
+            return item.cursorEvent === "clickup" && !item.isHit && item.target !== 0
+        });
+
+        clickupErrors[oneSection[0].targetSize] += clickups.length;
+        if (oneSection[0].targetSize === 40) {
+            console.log(clickups);
+        }
+        console.log(i + " Section finised" + oneSection[0].targetSize + " error clickups: " + clickups.length);
+        console.log("-------------------------------");
+    }
+    generatingCVSFile();
+}
+
+
+function searchForClickdownToSplice(data_, index) {
+    console.log("**searching previous clickdown at " + index);
+    var oldIndex = index;
+    while (--index >= 0) {
+        if (data_[index].cursorEvent == "clickdown") {
+            data_.splice(index, 1);
+            return;
+        }
+    }
+    console.error("**cannot find");
+}
+
+function searchForClickdown(data, index) {
+    var oldIndex = index;
+    while (--index >= 0) {
+        if (data[index].cursorEvent == "clickdown") {
+            return data[index];
+        }
+    }
+    return data[oldIndex];
+}
+
+
+var clickupErrors = {
+    40: 0,
+    80: 0,
+    160: 0
+};
+var clickupErrorsOld = {
+    40: 0,
+    80: 0,
+    160: 0
+};
+
+var names = "participants,distance,size,section,set,target,valid,duration_down,duration_up,err_dn,err_up,err_num,clutch_num,clutch,invalid_time,clutch_time\n";
+function generatingCVSFile() {
+
+    for (var i = 0; i < data.length; i++) {
+
+        names += getTrialInfo(data[i], whichParticipant);
+    }
+
+
+}
+var participantIndex = 1;
+function sleep(millis) {
+
+    setTimeout(function () {
+
+                setParticipantNo("p" + participantIndex);
+            }
+            , millis);
+
+
+}
+
+function download() {
+
+
+    var blob = new Blob([names], {type: 'text/plain'});
+
+
+    var date = new Date();
+    saveAs(blob, date.toGMTString() + ".csv");
+}
+
+function getTrialInfo(rawdata, header) {
+    var recordData = getDataset(rawdata);
+    var valid = true;
+    var currentTarget = 0;
+    var clickdownCounter = 0;
+    var clickupCounter = 0;
+    var clickdownError = 0;
+    var clickupError = 0;
+    var strinfo = "";
+    var trailCounter = 0;
+
+    for (var i = 0; i < rawdata.length; i++) {
+        if (rawdata[i].cursorEvent == "clickup") {
+            clickupCounter++;
+            if (!rawdata[i].isHit) {
+                clickupError++;
+            }
+        } else if (rawdata[i].cursorEvent == "clickdown") {
+            clickdownCounter++;
+            if (!rawdata[i].isHit) {
+                clickdownError++;
+            }
+        }
+        if (rawdata[i].cursorEvent == "clickup" && !rawdata[i].isHit) {
+            valid = false;
+        }
+        if (currentTarget != rawdata[i].target) {
+            var metadata;
+            if (trailCounter != 0) {
+                var downItem = searchForClickdown(rawdata, i - 1);
+                var isClutching = clickdownCounter == clickupCounter ? false : true;
+                if (!isClutching) {
+                    if (recordData[trailCounter][5] > 1.0) {
+                        isClutching = true;
+                    } else {
+                        recordData[trailCounter][5] = 0;
+                    }
                 }
+                metadata = [valid, ( (downItem.timestamp - recordData[trailCounter - 1][0].timestamp) * 0.001).toFixed(3),
+                    ( (rawdata[i - 1].timestamp - recordData[trailCounter - 1][0].timestamp) * 0.001).toFixed(3),
+                            Math.max(0,clickdownError - (clickdownCounter - clickupCounter)), clickupError, clickupCounter - 1, clickdownCounter - clickupCounter, isClutching,
+                    recordData[trailCounter][4], recordData[trailCounter][5]];
+            } else {
+                var isClutching = clickdownCounter == clickupCounter ? false : true;
+                if (!isClutching) {
+                    if (recordData[trailCounter][5] > 1.0) {
+                        isClutching = true;
+                    } else {
+                        recordData[trailCounter][5] = 0;
+                    }
+                }
+                metadata = [valid, 0, 0, Math.max(0,clickdownError - (clickdownCounter - clickupCounter)), clickupError, clickupCounter - 1, clickdownCounter - clickupCounter, clickdownCounter == clickupCounter ? false : true, 0];
 
             }
+            var section = rawdata[i - 1].sections - startSection;
+            if (rawdata[i - 1].target !== 0) {
+                var distance_ = sections[rawdata[i - 1].sections][rawdata[i - 1].set][rawdata[i - 1].target].distance;
+                strinfo += header + "," + distance_ + "," + rawdata[i - 1].targetSize + "," + section + "," + rawdata[i - 1].set
+                        + "," + rawdata[i - 1].target + "," + metadata.join() + "\n";
+            }
 
-            clickups = _.filter(oneSection, function (item) {
-                return item.cursorEvent === "clickup" && !item.isHit && item.target !== 0
-            });
-
-            clickupErrors[oneSection[0].targetSize] += clickups.length;
-            console.log(i + " Section finised" + oneSection[0].targetSize + " error clickups: " + clickups.length);
-            console.log("-------------------------------");
+            clickdownCounter = 0;
+            clickupCounter = 0;
+            clickdownError = 0;
+            clickupError = 0;
+            currentTarget = rawdata[i].target;
+            trailCounter++;
+            valid = true;
         }
     }
+    var isClutching = clickdownCounter == clickupCounter ? false : true;
+    if (!isClutching) {
+        if (recordData[recordData.length - 1][5] > 0.5) {
+            isClutching = true;
 
+        } else {
+            recordData[recordData.length - 1][5] = 0;
+        }
+    }
+    var downItem = searchForClickdown(rawdata, rawdata.length - 1);
+    var metadata = [valid, ((downItem.timestamp - recordData[recordData.length - 2][0].timestamp) * 0.001).toFixed(3),
+        ((rawdata[i - 1].timestamp - recordData[recordData.length - 2][0].timestamp) * 0.001).toFixed(3),
+                Math.max(0,clickdownError - (clickdownCounter - clickupCounter)), clickupError, clickupCounter - 1, clickdownCounter - clickupCounter, isClutching,
+        recordData[recordData.length - 1][4], recordData[recordData.length - 1][5]];
+    var section = rawdata[rawdata.length - 1].sections - startSection;
+    var distance_ = sections[rawdata[rawdata.length - 1].sections][rawdata[rawdata.length - 1].set][rawdata[rawdata.length - 1].target].distance;
+    strinfo += header + "," + distance_ + "," + rawdata[rawdata.length - 1].targetSize + "," + section + "," + rawdata[rawdata.length - 1].set
+            + "," + rawdata[rawdata.length - 1].target + "," + metadata.join() + "\n";
+    return strinfo;
+}
 
-    function searchForClickdown(data_, index) {
-        console.log("**searching previous clickdown at " + index);
-        var oldIndex = index;
-        while (--index >= 0) {
-            if (data_[index].cursorEvent == "clickdown") {
-                data_.splice(index, 1);
-                return;
+function getDataset(rawdata) {
+    var recordData = [];
+    var valid = true;
+    var currentTarget = 0;
+    var invalidFramesCounter = 0;
+    var clutchTime, invalidTime = 0;
+    var cluthStart, invalidStart = 0;
+    for (var i = 0; i < rawdata.length; i++) {
+        if (rawdata[i].cursorEvent == "clickup" && !rawdata[i].isHit) {
+            valid = false;
+        }
+        if (rawdata[i].posture == "none" || rawdata[i].posture == "full" || rawdata[i].posture == "invalid" || rawdata[i].posture == "-thu" || rawdata[i].posture == "+ind+mid" || rawdata[i].posture == "+thu" || rawdata[i].posture == "fist") {
+            invalidFramesCounter++;
+            if (invalidStart == 0) {
+                invalidStart = rawdata[i].timestamp;
+            }
+        } else {
+            if (invalidStart != 0) {
+                invalidTime += (rawdata[i].timestamp - invalidStart);
+                invalidStart = 0;
             }
         }
-        console.error("**cannot find");
+        if (rawdata[i].posture == "+ind") {
+            if (cluthStart == 0) {
+                cluthStart = rawdata[i].timestamp;
+            }
+        } else {
+            if (cluthStart != 0) {
+                clutchTime += (rawdata[i].timestamp - cluthStart);
+                cluthStart = 0;
+            }
+        }
+        if (currentTarget != rawdata[i].target) {
+            recordData.push([rawdata[i - 1], searchForClickdown(rawdata, i - 1) , valid, invalidFramesCounter, (invalidTime * 0.001).toFixed(3), (clutchTime * 0.001).toFixed(3)]);
+            currentTarget = rawdata[i].target;
+            invalidFramesCounter = 0;
+            clutchTime = 0;
+            invalidTime = 0;
+            cluthStart = 0;
+            invalidStart = 0;
+            valid = true;
+        }
     }
+    recordData.push([rawdata[rawdata.length - 1], searchForClickdown(rawdata, i - 1) , valid, invalidFramesCounter, (invalidTime * 0.001).toFixed(3), (clutchTime * 0.001).toFixed(3)]);
+    return recordData;
+}
 
 
-    var clickupErrors = {
-        40: 0,
-        80: 0,
-        160: 0
-    }
+var sections = [];
+function readTextFile(file) {
+    $.get(file, function (myContentFile) {
+        var lines = myContentFile.split("\r\n");
+        var newSection = [];
+        var newSet = [];
+        var newTarget = [];
+        for (var i  in lines) {
+            //here your code
+            //each line is "lines[i]"
+
+
+            //print in console
+            if (lines[i].indexOf("Section") > -1) {
+                if (i != 0) {
+
+                    sections.push(newSet);
+                    newSet = new Array();
+                }
+            } else if (lines[i].indexOf("target position") > -1) {
+                var positionStr = lines[i];
+                var distanceStr = positionStr.substr(positionStr.indexOf("distance") + 9);
+                distanceStr = distanceStr.substr(0, distanceStr.length - 2);
+                var distance = Number(distanceStr);
+                positionStr = positionStr.substr(positionStr.indexOf("(") + 1, positionStr.indexOf(")") - 1);
+                var positions = positionStr.split(",");
+                var posX = Number(positions[0]);
+                var posY = Number(positions[1]);
+                newTarget.push(new Target(posX, posY, distance));
+
+                if (newTarget.length > 6) {
+                    newSet.push(newTarget);
+                    newTarget = new Array();
+                }
+            }
+        }
+
+    }, 'text')
+
+}
+
+function Target(x_, y_, distance_) {
+    this.x = x_;
+    this.y = y_;
+    this.distance = distance_;
+}
+
 
 </script>

@@ -139,21 +139,21 @@ function canvasApp() {
                 recorder.updateRecord(getCurrentStatus(), "command: panning");
             }
         } else if (currentTouch.whichhand == "right") {
-//            if (touchMgr.countTouches("right") == 1 && currentTouch.group == 0) {
-//                var d = new Date().getTime();
-//                if (d - currentTouch.starttime > 150) {
-//                    shapeManager.getInstance().addPolylineXY(currentTouch.pageX, currentTouch.pageY);
-//                }
-//            }
+            if (touchMgr.countTouches("right") == 1 && currentTouch.group == 0) {
+                var d = new Date().getTime();
+                if (d - currentTouch.starttime > 150) {
+                    shapeManager.getInstance().addPolylineXY(currentTouch.pageX, currentTouch.pageY);
+                }
+            }
         }
     };
 
     touchMgr.afterTouchStartHandler = function (currentTouch) {
-//        if (currentTouch.whichhand == "right") {
-//            if (touchMgr.countTouches("right") === 1) {
-//                shapeManager.getInstance().startPolylineXY(currentTouch.pageX, currentTouch.pageY);
-//            }
-//        }
+        if (currentTouch.whichhand == "right") {
+            if (touchMgr.countTouches("right") === 1) {
+                shapeManager.getInstance().startPolylineXY(currentTouch.pageX, currentTouch.pageY);
+            }
+        }
     };
 
 
@@ -216,9 +216,9 @@ function canvasApp() {
 
                 }
             }
-//            if (currentTouch.whichhand == "right") {
-//                shapeManager.getInstance().endPolylineXY(currentTouch.pageX, currentTouch.pageY);
-//            }
+            if (currentTouch.whichhand == "right") {
+                shapeManager.getInstance().endPolylineXY(currentTouch.pageX, currentTouch.pageY);
+            }
 
         }
 
@@ -642,7 +642,7 @@ function canvasApp() {
                 }
                 utilities.drawPan(ctx);
                 var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, false);
-                map.panBy(ballPos[0]/3, ballPos[1]/3);
+                map.panBy(ballPos[0], ballPos[1]);
                 recorder.updateRecord(getCurrentStatus(), "command: panning");
                 ctx.translate(-offset[0] + ballPos[0], -offset[1] + ballPos[1]);
 
@@ -1348,4 +1348,4 @@ function getCurrentStatus() {
 }
 
 </script>
-</htm
+</html>

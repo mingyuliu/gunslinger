@@ -1,0 +1,142 @@
+<script src="underscore.js"></script>
+<script src="../js/jquery-2.1.0.min.js"></script>
+<script src="../js/FileSaver.js"></script>
+<script>
+    var SCALE_TO_PIXEL = 43 / 53;
+    function downloadRecords(logData) {
+
+
+        var blob = new Blob([JSON.stringify(logData)], {type: 'text/plain'});
+
+
+        saveAs(blob, "data.txt");
+
+    }
+
+    var whichParticipant = "p1";
+    var startSection = 0;
+
+
+    var data = [];
+    var participant = "";
+    function getFile(index) {
+        var file = "p" + index + "/p" + index + " midas";
+        $.getJSON(file + ".txt", function (data_) {
+            data.push(["p" + index, data_[0][2]]);
+        })
+    }
+
+
+    function start() {
+        for (var i = 2; i <= 11; i++) {
+            getFile(i);
+        }
+    }
+
+    var name = "participants,duration,null,fist,ind,thu,indmid,thuind,rinpin,full,midrin,thupin,indpin\n";
+
+    var counter = {
+        "fist": 0,
+        "+ind": 0,
+        "-thu": 0,
+        "+ind+mid": 0,
+        "+thu+ind": 0,
+        "-rin-pin": 0,
+        "full": 0,
+        "-mid-rin": 0,
+        "+thu+pin": 0,
+        "+ind+pin": 0,
+        "none": 0,
+        "invalid": 0
+    };
+
+    function reset() {
+        counter = {
+            "fist": 0,
+            "+ind": 0,
+            "-thu": 0,
+            "+ind+mid": 0,
+            "+thu+ind": 0,
+            "-rin-pin": 0,
+            "full": 0,
+            "-mid-rin": 0,
+            "+thu+pin": 0,
+            "+ind+pin": 0,
+            "none": 0,
+            "invalid": 0
+        };
+    }
+
+
+    function countFrames(item) {
+        var lastFramePosture = item[0][2].posture;
+        var startTime = item[0][0];
+        for (var i = 1; i < item.length; i++) {
+
+            if (item[i][2].posture === lastFramePosture && item[i][2].valid && item[i][2].minVal < .15) {
+
+            } else {
+                if (item[i][0] - startTime > 250)
+                    counter[lastFramePosture] += item[i][0] - startTime;
+                startTime = item[i][0];
+
+            }
+
+            if (item[i][2].minVal < .15)
+                lastFramePosture = item[i][2].posture;
+            else lastFramePosture = "none";
+        }
+    }
+
+
+//        function countFrames(item) {
+//            var lastFramePosture = item[0][2].posture;
+//            var startTime = item[0][0];
+//            for (var i = 1; i < item.length; i++) {
+//
+//                if (item[i][2].posture === lastFramePosture && item[i][2].valid ) {
+//
+//                } else {
+//                    if (item[i][0] - startTime > 250)
+//                        counter[lastFramePosture] ++;
+//                    startTime = item[i][0];
+//                }
+////                if (item[i][2].minVal < .1)
+//                    lastFramePosture = item[i][2].posture;
+////                else lastFramePosture = "none";
+//            }
+//        }
+
+    function analyze() {
+        for (var i = 0; i < data.length; i++) {
+            var str = data[i][0] + ",";
+            countFrames(data[i][1]);
+
+            var duration = (data[i][1][data[i][1].length - 1][0] - data[i][1][0][0]);
+            var postureLen = counter["fist"] + counter["+ind"] + counter["-thu"] + counter["+ind+mid"] + counter["+thu+ind"] + counter["-rin-pin"] + counter["full"] + counter["-mid-rin"] + counter["+thu+pin"] + counter["+ind+pin"];
+            var idleLen = duration - postureLen;
+            var lengthSet = [idleLen, counter["fist"],
+                counter["+ind"],
+                counter["-thu"],
+                counter["+ind+mid"],
+                counter["+thu+ind"],
+                counter["-rin-pin"],
+                counter["full"],
+                counter["-mid-rin"],
+                counter["+thu+pin"],
+                counter["+ind+pin"]]
+            str += duration + "," + lengthSet.join() + "\n";
+            name += str;
+            reset();
+        }
+
+
+        var blob = new Blob([name], {type: 'text/plain'});
+
+
+        var date = new Date();
+        saveAs(blob, date.toGMTString() + ".csv");
+    }
+
+
+</script>
