@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <title></title>
 </head>
+<script src="//js.leapmotion.com/leap-0.6.3.js"></script>
+<script src="../js/leap.hand-entry.js"></script>
 <link href="../css/GSMod.css" rel="stylesheet" type="text/css">
 <link href="../css/progressbar.css" rel="stylesheet" type="text/css">
 <script src="../js/jquery-2.1.0.min.js"></script>
-<script src="../js/leap-0.6.0.min.js"></script>
 <script src="../js/1euro.js"></script>
 <script src="../js/jquery.popmenu.js"></script>
 <script src="../js/FileSaver.js"></script>
@@ -318,7 +319,7 @@ function canvasApp() {
         map.panBy(panDelta[0], panDelta[1]);
     }
 
-    function setZoomwithPan(zoom) {
+    function setZoomwithPan(zoom, controls) {
         var cursorX, cursorY;
         if (isCursorActive) {
             cursorX = $(canvasRight).offset().left + 100 * CURSOR_SCALE;
@@ -628,7 +629,6 @@ function canvasApp() {
         ctx.save();
         var ratio = utilities.getRatio(controls.palmPosition, controls.use);
         ctx.globalAlpha = 1 - ratio;
-//        ctx.translate(screenX, screenY);
 
         canvasLeft.style.top = screenY + "px";
         canvasLeft.style.left = screenX + "px";
@@ -643,6 +643,7 @@ function canvasApp() {
                 utilities.drawPan(ctx);
                 var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, false);
                 map.panBy(ballPos[0], ballPos[1]);
+                controls.timeMachine.add(new SnapShotX(controls.timestamp, "panBy", vec2.fromValues(-ballPos[0], -ballPos[1])));
                 recorder.updateRecord(getCurrentStatus(), "command: panning");
                 ctx.translate(-offset[0] + ballPos[0], -offset[1] + ballPos[1]);
 
@@ -660,18 +661,18 @@ function canvasApp() {
                 var zoomRatio = ballPos[1] / 40;
                 zoomRatio /= 0.5;
                 if (zoomTimeout) {
-                    if (zoomRatio > 0) {
-                        setZoomwithPan(map.getZoom() - 1);
-//                        map.setZoom(map.getZoom() - 1);
+                    if (zoomRatio > 0.1) {
+                        controls.timeMachine.add(new SnapShotX(controls.timestamp, "zoom", map.getZoom()));
+                        setZoomwithPan(map.getZoom() - 1, controls);
                         zoomTimeout = false;
                         setTimeout(function () {
                             zoomTimeout = true;
                         }, 600 / Math.ceil(zoomRatio));
                         recorder.updateRecord(getCurrentStatus(), "command: zooming");
-                    } else if (zoomRatio < 0) {
+                    } else if (zoomRatio < -0.1) {
                         zoomRatio = -zoomRatio;
-                        setZoomwithPan(map.getZoom() + 1);
-//                        map.setZoom(map.getZoom() + 1);
+                        controls.timeMachine.add(new SnapShotX(controls.timestamp, "zoom", map.getZoom()));
+                        setZoomwithPan(map.getZoom() + 1, controls);
                         zoomTimeout = false;
                         setTimeout(function () {
                             zoomTimeout = true;
@@ -736,6 +737,9 @@ function canvasApp() {
             isCursorActive = false;
         } else {
             ctxRight.clearRect(0, 0, canvas.width, canvas.height);
+            // put in timemachine
+            snapshot = new SnapShot(controls.timestamp, vec2.fromValues(controls.x, controls.y));
+            controls.timeMachine.add(snapshot);
             handleRightAnimation(controls);
             handleRightEvent(controls);
             isCursorActive = true;
@@ -1225,7 +1229,7 @@ function drawNaviBall(ctx, position, use, oneDirection, range) {
     var offsetRange = range || 40; //pixel ralated
 
 
-    var threshold = .3;
+    var threshold = .4;
     if (use == "wall") {
         posY = -(position[0] - ctrPosX);
         posX = -(position[1] - ctrPosY);
@@ -1345,6 +1349,43 @@ function getCurrentStatus() {
         gsState: interstate.fsm.current
     };
     return status;
+}
+
+
+function SnapShot(timestamp, point) {
+    this.timestamp = timestamp;
+    this.point = point;
+}
+
+function SnapShotX(timestamp, type, val) {
+    this.timestamp = timestamp;
+    this.type = type;
+    this.val = val;
+}
+
+function TimeMachine(whichhand) {
+    this.snapshots = [];
+
+    this.add = function (snapshot) {
+        if (this.snapshots.length > 60) {
+            this.snapshots.shift();
+        }
+        this.snapshots.push(snapshot);
+    };
+
+    this.clear = function () {
+        this.snapshots = [];
+    };
+
+    this.getByTime = function (timestamp) {
+        for (var i = this.snapshots.length - 1; i >= 0; i--) {
+            if (timestamp.toFixed(0) == this.snapshots[i].timestamp.toFixed(0)) {
+                return this.snapshots[i];
+            }
+        }
+    }
+
+
 }
 
 </script>

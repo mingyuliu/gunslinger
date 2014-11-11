@@ -625,22 +625,6 @@ var leapDeviceMgr = (function () {
         }
     };
 
-//    updateTouches = function (touches) {
-//        for (var i = 0; i<touches.length; i++) {
-//            var px = touches[i].pageX;
-//            var py = touches[i].pageY;
-//
-//            ctxTouch.beginPath();
-//            ctxTouch.arc(px, py, 20, 0, 2*Math.PI, true);
-//
-//            ctxTouch.fillStyle = "rgba(0, 0, 200, 0.2)";
-//            ctxTouch.fill();
-//
-//            ctxTouch.lineWidth = 2.0;
-//            ctxTouch.strokeStyle = "rgba(0, 0, 200, 0.8)";
-//            ctxTouch.stroke();
-//        }
-//    }
 
     filterFingers = function (frame, tag) {
         if (frame.hands.length > 0) {
@@ -740,20 +724,48 @@ var leapDeviceMgr = (function () {
         controller.onFrameLoop = onFrameLoop || function () {
             // body...
         };
-        controller.controls = new Controls(tag, screenWidth, screenHeight);
+        controller.controls = new Controls(tag, screenWidth, screenHeight, new TimeMachine(tag));
 
-//        controller.use('riggedHand');
+
         controller.connect();
-
         controller.setBackground(true); //enable
-
         _controllers.push(controller);
 
+        controller.use('handEntry');
+        controller.on('handLost',
+            function (hand) {
+                console.log("lost detected " + hand.palmVelocity );
+                if (hand.timeVisible > 1
+                    && ((hand.palmVelocity[0] < 0 && tag == "right") || (hand.palmVelocity[0] > 0 && tag == "left"))) {
+                    var vel = vec2.len(vec2.fromValues(hand.palmVelocity[0], hand.palmVelocity[1]));
+                    console.log("lost vel " + vel);
+                    if (vel > 600) {
+
+                        var frameIdx = 0;
+                        while (frameIdx < 60) {
+                            frameIdx++;
+                            var previousFrame = controller.frame(frameIdx);
+
+
+                            if (!previousFrame.valid) continue;
+                            if (previousFrame.hands.length == 0) continue;
+                            if (previousFrame.hands[0] == undefined) continue;
+                            var palmVel = vec3.len(previousFrame.hands[0].palmVelocity);
+                            if (palmVel < 20) {
+                                console.log("will called " + frameIdx);
+                                this.controls.rollback(previousFrame.timestamp * 0.001);
+
+                                break;
+                            }
+                        }
+                    }
+
+                }
+            }
+        );
     };
 
     api.start = function () {
-        //for test gui
-//        createProgress();
         createDebugTextElement();
 
         for (var i = 0; i < _controllers.length; i++) {
@@ -780,15 +792,12 @@ var leapDeviceMgr = (function () {
                     window["interstate"]["fsm"]["noLeap" + this.tag]();
                 }
 
-//                interstate.update();
-                //debug info: fps
-//                var frameOutput = document.getElementById("frameDataLeft");
-//                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + interstate.fsm.current + "</div>";
-//                $("#frameDataLeft").show();
+
             });
 
         }
     };
+
 
     api.printInfo = function (msg) {
         var frameOutput = document.getElementById("frameDataLeft");
@@ -1637,7 +1646,7 @@ var interstate = (function () {
 //                console.log("event: "+event+" from "+from+ " to "+to);
 //            },
             onenterstate: function (event, from, to) {
-                console.log("evt: "+event+" from " + from + " enter " + to);
+//                console.log("evt: " + event + " from " + from + " enter " + to);
             },
             onentertouchRight: function (event, from, to) {
                 touchMgr.changeTouchHand("right");
@@ -1645,10 +1654,10 @@ var interstate = (function () {
             onentertouchLeft: function (event, from, to) {
                 touchMgr.changeTouchHand("left");
             },
-            onenterunknownRight: function(event, from, to) {
+            onenterunknownRight: function (event, from, to) {
                 api.lastHand = "right";
             },
-            onenterunknownLeft: function(event, from, to) {
+            onenterunknownLeft: function (event, from, to) {
                 api.lastHand = "left";
             }
 
@@ -1662,8 +1671,11 @@ var interstate = (function () {
     return api;
 })();
 
-function Controls(tag_, screenWid_, screenHeight_) {
+
+
+function Controls(tag_, screenWid_, screenHeight_, timeMachine_) {
     this.tag = tag_;
+    this.timeMachine = timeMachine_;
     this.screenHeight = screenHeight_;
     this.screenWidth = screenWid_;
     this.x = screenWid_ / 2;
@@ -1704,6 +1716,43 @@ function Controls(tag_, screenWid_, screenHeight_) {
     }
     this.historyPoints = [];
     this.historyPostures = [];
+
+    this.rollback = function (timestamp) {
+        switch (this.tag) {
+            case "right":
+                for (var i = this.timeMachine.snapshots.length - 1; i >= 0; i--) {
+                    if (this.timeMachine.snapshots[i].timestamp.toFixed(0) >= timestamp.toFixed(0)) {
+                        this.x = this.timeMachine.snapshots[i].point[0];
+                        this.y = this.timeMachine.snapshots[i].point[1];
+                    } else {
+                        this.timeMachine.clear();
+                        break;
+                    }
+                }
+                break;
+            case "left":
+                if (map == undefined) return;
+                for (var i = this.timeMachine.snapshots.length - 1; i >= 0; i--) {
+                    if (this.timeMachine.snapshots[i].timestamp.toFixed(0) >= timestamp.toFixed(0)) {
+                        console.log("action"+this.timeMachine.snapshots[i].type);
+                        switch (this.timeMachine.snapshots[i].type) {
+                            case "panBy":
+                                map.panBy(this.timeMachine.snapshots[i].val[0], this.timeMachine.snapshots[i].val[1]);
+                                break;
+                            case "zoom":
+                                map.setZoom(this.timeMachine.snapshots[i].val);
+                                break;
+                        }
+                    } else {
+                        this.timeMachine.clear();
+                        break;
+                    }
+                }
+                break;
+
+        }
+
+    }
 
     this.getRecordData = function () {
         var data = {
@@ -1808,7 +1857,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
     this.checkRinPinPosture = function () {
         if (this.historyPostures.length > 9) {
             for (var i = 0; i < this.historyPostures.length; i++) {
-                if(this.historyPostures[i] != "-rin-pin") {
+                if (this.historyPostures[i] != "-rin-pin") {
                     return false;
                 }
             }
@@ -2007,7 +2056,6 @@ function Controls(tag_, screenWid_, screenHeight_) {
                         vec2.scale(delta, delta, 0.4);
                     }
                     vec2.scale(delta, delta, (this.timestamp - this.lastFrameTimestamp) * 0.001 * SCALE_TO_PIXEL);
-//                console.log("after:" + delta);
 
                     //#convert
                     if (this.use == "wall") {
@@ -2017,6 +2065,7 @@ function Controls(tag_, screenWid_, screenHeight_) {
                         this.x -= delta[0];
                         this.y += delta[1];
                     }
+
                     this.ReviseCursorPos();
                 } else {
                     this.fx.filter(0, this.timestamp * 0.001);
@@ -2071,6 +2120,30 @@ var utilities = (function () {
         }
 
         return array;
+    };
+
+    api.sd = function standardDeviation(values) {
+        var avg = api.avg(values);
+
+        var squareDiffs = values.map(function (value) {
+            var diff = value - avg;
+            var sqrDiff = diff * diff;
+            return sqrDiff;
+        });
+
+        var avgSquareDiff = api.avg(squareDiffs);
+
+        var stdDev = Math.sqrt(avgSquareDiff);
+        return stdDev;
+    };
+
+    api.avg = function average(data) {
+        var sum = data.reduce(function (sum, value) {
+            return sum + value;
+        }, 0);
+
+        var avg = sum / data.length;
+        return avg;
     };
 
     api.getURLParameter = function getURLParameter(sParam) {
