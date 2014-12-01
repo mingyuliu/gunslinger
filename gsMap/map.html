@@ -13,6 +13,7 @@
 <script src="../js/jquery.popmenu.js"></script>
 <script src="../js/FileSaver.js"></script>
 <link rel="stylesheet" href="lib/font-awesome/css/font-awesome.min.css"/>
+<link rel="stylesheet" href="../css/animate.min.css"/>
 <link rel="stylesheet" href="iconmoon.css"/>
 <link rel="stylesheet" href="../css/vex.css"/>
 <link rel="stylesheet" href="../css/vex-theme-os.css"/>
@@ -30,6 +31,7 @@
 <img id="item2" src="img/navigation.png">
 <img id="item3" src="img/clear.png">
 
+<div id="spinner" class="sk-spinner sk-spinner-pulse"></div>
 <div id="menu_box_right">
     <div class="pop_ctrl" id="pop_ctrl_right"><i class="fa fa-bars"></i></div>
     <ul id="menu_box_right_ele">
@@ -77,6 +79,7 @@
         </li>
     </ul>
 </div>
+
 </body>
 
 
@@ -102,7 +105,14 @@ var itemSelected = 1;
 var leftItemSelected = 0;
 var rightItemSelected = 0;
 var isCursorActive = false;
-function canvasApp() {
+$("#spinner").hide();
+function canvasApp(infinite2) {
+//    infinite2 = infinite2 || infinite;
+////    $("leap-overlay-left").animate({
+////            -webkit-animation-duration: 3s,
+////    -webkit-animation-delay: 2s,
+////    -webkit-animation-iteration-count: infinite2
+////    });
 
     var distanceAlphaProj = 1;
 
@@ -459,7 +469,7 @@ function canvasApp() {
                 break;
 
             case "-rin-pin":
-                if(controls.checkRinPinPosture()) {
+                if (controls.checkRinPinPosture()) {
                     showMenu("right", screenY, screenX, true);
                     var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[0];
                     offset += $("#menu_box_right_ele").width() / 2;
@@ -498,7 +508,7 @@ function canvasApp() {
                     switch (controls.posture) {
 
                         case "-rin-pin":
-                            if(controls.checkRinPinPosture()) {
+                            if (controls.checkRinPinPosture()) {
                                 var items = $("#menu_box_left_ele li");
 
                                 $(items[leftItemSelected]).trigger("click");
@@ -545,7 +555,7 @@ function canvasApp() {
                             break;
 
                         case "-rin-pin":
-                            if(controls.checkRinPinPosture()) {
+                            if (controls.checkRinPinPosture()) {
                                 var items = $("#menu_box_right_ele li");
 
                                 $(items[rightItemSelected]).trigger("click");
@@ -633,6 +643,21 @@ function canvasApp() {
         canvasLeft.style.top = screenY + "px";
         canvasLeft.style.left = screenX + "px";
         ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
+        //handle zoom
+        if (controls.posture == "+ind+mid") {
+            $("#spinner").show();
+            if (isCursorActive) {
+                var cursorX = $(canvasRight).offset().left + 100 * CURSOR_SCALE;
+                var cursorY = $(canvasRight).offset().top + 100 * CURSOR_SCALE;
+                var sX = canvas.width - cursorX;
+                var sY = canvas.height - cursorY;
+                $("#spinner").css({top: cursorY - 40, left: cursorX - 40});
+            } else {
+                $("#spinner").css({top: canvas.height / 2, left: canvas.width / 2});
+            }
+        } else {
+            $("#spinner").hide();
+        }
         switch (controls.posture) {
             case "+ind":
                 closeMenu("left");
@@ -688,18 +713,18 @@ function canvasApp() {
                 utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
                 break;
             case "-rin-pin":
-                    if(controls.checkRinPinPosture()) {
-                        showMenu("left", canvasWidth / 2, canvasHeight / 2, true);
-                        var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[1];
-                        offset += $("#menu_box_left_ele").height() / 2;
-                        offset = Math.floor(offset / $("#menu_box_left_ele").width());
-                        var items = $("#menu_box_left_ele li");
-                        canvasLeft.style.top = $(items[offset]).offset().top + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
-                        canvasLeft.style.left = $(items[offset]).offset().left + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
-                        leftItemSelected = offset;
-                        utilities.drawGeneric(ctx);
-                        utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
-                    }
+                if (controls.checkRinPinPosture()) {
+                    showMenu("left", canvasWidth / 2, canvasHeight / 2, true);
+                    var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[1];
+                    offset += $("#menu_box_left_ele").height() / 2;
+                    offset = Math.floor(offset / $("#menu_box_left_ele").width());
+                    var items = $("#menu_box_left_ele li");
+                    canvasLeft.style.top = $(items[offset]).offset().top + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
+                    canvasLeft.style.left = $(items[offset]).offset().left + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
+                    leftItemSelected = offset;
+                    utilities.drawGeneric(ctx);
+                    utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+                }
 
                 break;
             case "-thu":
@@ -729,6 +754,7 @@ function canvasApp() {
         ctx.restore();
     }
 
+    var pointingState = false;
 
     function rightOnFrame(controls) {
         recorder.updateRecord(getCurrentStatus(), controls.getRecordData(), touchMgr.currentTouches);
@@ -738,8 +764,20 @@ function canvasApp() {
         } else {
             ctxRight.clearRect(0, 0, canvas.width, canvas.height);
             // put in timemachine
-            snapshot = new SnapShot(controls.timestamp, vec2.fromValues(controls.x, controls.y));
+            snapshot = new SnapShot(controls.timestamp, vec2.fromValues(controls.x, controls.y), vec3.clone(controls.tipVelocity));
+
             controls.timeMachine.add(snapshot);
+            if (controls.posture == "+thu+ind") {
+                if (!pointingState) {
+                    pointingState = true;
+                    controls.rollback();
+                    console.log("rollback");
+                }
+            } else if (pointingState) {
+                controls.rollback();
+                console.log("rollback");
+                pointingState = false;
+            }
             handleRightAnimation(controls);
             handleRightEvent(controls);
             isCursorActive = true;
@@ -1352,9 +1390,10 @@ function getCurrentStatus() {
 }
 
 
-function SnapShot(timestamp, point) {
+function SnapShot(timestamp, point, vel) {
     this.timestamp = timestamp;
     this.point = point;
+    this.vel = vel;
 }
 
 function SnapShotX(timestamp, type, val) {

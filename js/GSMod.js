@@ -1709,6 +1709,7 @@ function Controls(tag_, screenWid_, screenHeight_, timeMachine_) {
     this.palmPosition = vec3.fromValues(0, 200, 0);
     this.palmNormal = vec3.create();
     this.stablePalmPosition = vec3.create();
+    this.tipVelocity = vec3.create();
     if (this.use == "wall") {
         //wall
         SCALE_TO_PIXEL = 103 / 100;
@@ -1720,15 +1721,32 @@ function Controls(tag_, screenWid_, screenHeight_, timeMachine_) {
     this.rollback = function (timestamp) {
         switch (this.tag) {
             case "right":
-                for (var i = this.timeMachine.snapshots.length - 1; i >= 0; i--) {
-                    if (this.timeMachine.snapshots[i].timestamp.toFixed(0) >= timestamp.toFixed(0)) {
-                        this.x = this.timeMachine.snapshots[i].point[0];
-                        this.y = this.timeMachine.snapshots[i].point[1];
-                    } else {
-                        this.timeMachine.clear();
-                        break;
+                if (timestamp == undefined) {
+
+                    for (var i = this.timeMachine.snapshots.length - 1; i >= 0; i--) {
+                        var velocity = vec3.len(this.timeMachine.snapshots[i].vel);
+                        if (velocity > 20) {
+                            this.x = this.timeMachine.snapshots[i].point[0];
+                            this.y = this.timeMachine.snapshots[i].point[1];
+                        } else {
+                            console.log("rollback unit " + i);
+                            this.timeMachine.clear();
+                            break;
+                        }
+                    }
+
+                } else {
+                    for (var i = this.timeMachine.snapshots.length - 1; i >= 0; i--) {
+                        if (this.timeMachine.snapshots[i].timestamp.toFixed(0) >= timestamp.toFixed(0)) {
+                            this.x = this.timeMachine.snapshots[i].point[0];
+                            this.y = this.timeMachine.snapshots[i].point[1];
+                        } else {
+                            this.timeMachine.clear();
+                            break;
+                        }
                     }
                 }
+
                 break;
             case "left":
                 if (map == undefined) return;
@@ -2008,6 +2026,7 @@ function Controls(tag_, screenWid_, screenHeight_, timeMachine_) {
 
             var fingers = hand.fingers;
             this.tipPosition = frame.hands[0].fingers[1].tipPosition;
+            this.tipVelocity = frame.hands[0].fingers[1].tipVelocity;
 
             //viz info
             var angle = angleBtLines([0, 0, -1], [hand.direction[0], 0, hand.direction[2]]);
