@@ -1718,6 +1718,27 @@ function Controls(tag_, screenWid_, screenHeight_, timeMachine_) {
     this.historyPoints = [];
     this.historyPostures = [];
 
+    this.rollbackIn = function () {
+        switch (this.tag) {
+            case "right":
+                for (var i = this.timeMachine.snapshots.length - 20; i >= 0; i--) {
+                    var velocity1 = vec3.len(this.timeMachine.snapshots[i].vel);
+                    var velocity2 = vec3.len(this.timeMachine.snapshots[i + 1].vel);
+
+                    if (velocity1 < velocity2) {
+                        this.x = this.timeMachine.snapshots[i].point[0];
+                        this.y = this.timeMachine.snapshots[i].point[1];
+                        this.timeMachine.clear();
+                        break;
+                    }
+                }
+                break;
+            case "left":
+                break;
+        }
+        this.timeMachine.clear();
+    };
+
     this.rollback = function (timestamp) {
         switch (this.tag) {
             case "right":
@@ -1729,7 +1750,7 @@ function Controls(tag_, screenWid_, screenHeight_, timeMachine_) {
                             this.x = this.timeMachine.snapshots[i].point[0];
                             this.y = this.timeMachine.snapshots[i].point[1];
                         } else {
-                            console.log("rollback unit " + i);
+
                             this.timeMachine.clear();
                             break;
                         }
@@ -1740,7 +1761,9 @@ function Controls(tag_, screenWid_, screenHeight_, timeMachine_) {
                         if (this.timeMachine.snapshots[i].timestamp.toFixed(0) >= timestamp.toFixed(0)) {
                             this.x = this.timeMachine.snapshots[i].point[0];
                             this.y = this.timeMachine.snapshots[i].point[1];
+                            console.log("keepin rolling " + this.timeMachine.snapshots[i].timestamp.toFixed(0));
                         } else {
+                            console.log("stopped at "+ this.timeMachine.snapshots[i].timestamp.toFixed(0));
                             this.timeMachine.clear();
                             break;
                         }
@@ -1769,6 +1792,7 @@ function Controls(tag_, screenWid_, screenHeight_, timeMachine_) {
                 break;
 
         }
+        this.timeMachine.clear();
 
     }
 
@@ -2025,8 +2049,8 @@ function Controls(tag_, screenWid_, screenHeight_, timeMachine_) {
             }
 
             var fingers = hand.fingers;
-            this.tipPosition = frame.hands[0].fingers[1].tipPosition;
-            this.tipVelocity = frame.hands[0].fingers[1].tipVelocity;
+            this.tipPosition = hand.indexFinger.tipPosition;
+            this.tipVelocity = hand.indexFinger.tipVelocity;
 
             //viz info
             var angle = angleBtLines([0, 0, -1], [hand.direction[0], 0, hand.direction[2]]);
@@ -2057,7 +2081,7 @@ function Controls(tag_, screenWid_, screenHeight_, timeMachine_) {
 
 
                 if (this.posture == "+thu+ind") {
-                    var velraw = [frame.hands[0].fingers[1].tipVelocity[0], frame.hands[0].fingers[1].tipVelocity[1]];
+                    var velraw = [hand.indexFinger.tipVelocity[0], hand.indexFinger.tipVelocity[1]];
                     if (vec2.len(velraw) < 14) {
                         velraw = [0, 0];
                     }

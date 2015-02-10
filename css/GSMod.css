@@ -133,7 +133,7 @@ pre{
     width: 80px;
     height: 80px;
     margin: 0 auto;
-    background-color: #D00000;
+    border: 5px solid #D00000;
     border-radius: 100%;
     -webkit-animation: sk-pulseScaleOut 1s infinite ease-in-out;
     animation: sk-pulseScaleOut 1s infinite ease-in-out; }

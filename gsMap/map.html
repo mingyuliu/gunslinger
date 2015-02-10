@@ -105,7 +105,7 @@ var itemSelected = 1;
 var leftItemSelected = 0;
 var rightItemSelected = 0;
 var isCursorActive = false;
-$("#spinner").hide();
+
 function canvasApp(infinite2) {
 //    infinite2 = infinite2 || infinite;
 ////    $("leap-overlay-left").animate({
@@ -607,7 +607,9 @@ function canvasApp(infinite2) {
             canvas = canvasLeft;
             screenX = 0;
             screenY = canvasHeight - CURSOR_SCALE * 200;
+            $("#spinner").hide();
         }
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         canvas.style.top = screenY + "px";
@@ -651,7 +653,7 @@ function canvasApp(infinite2) {
                 var cursorY = $(canvasRight).offset().top + 100 * CURSOR_SCALE;
                 var sX = canvas.width - cursorX;
                 var sY = canvas.height - cursorY;
-                $("#spinner").css({top: cursorY - 40, left: cursorX - 40});
+                $("#spinner").css({top: cursorY - 43, left: cursorX - 43});
             } else {
                 $("#spinner").css({top: canvas.height / 2, left: canvas.width / 2});
             }
@@ -758,24 +760,28 @@ function canvasApp(infinite2) {
 
     function rightOnFrame(controls) {
         recorder.updateRecord(getCurrentStatus(), controls.getRecordData(), touchMgr.currentTouches);
+        snapshot = new SnapShot(controls.timestamp, vec2.fromValues(controls.x, controls.y), vec3.clone(controls.tipVelocity));
+
+            controls.timeMachine.add(snapshot);
         if (controls.posture == "invalid" || !controls.valid) {
             handleInvalidAnimation(controls);
             isCursorActive = false;
         } else {
             ctxRight.clearRect(0, 0, canvas.width, canvas.height);
             // put in timemachine
-            snapshot = new SnapShot(controls.timestamp, vec2.fromValues(controls.x, controls.y), vec3.clone(controls.tipVelocity));
 
-            controls.timeMachine.add(snapshot);
             if (controls.posture == "+thu+ind") {
                 if (!pointingState) {
-                    pointingState = true;
-                    controls.rollback();
-                    console.log("rollback");
+                    ctxRight.globalAlpha = .2;
+                    if (vec3.len(controls.tipVelocity) < 20) {
+                        controls.rollbackIn();
+                        pointingState = true;
+                        console.log("rollback in");
+                    }
                 }
             } else if (pointingState) {
                 controls.rollback();
-                console.log("rollback");
+                console.log("rollback out");
                 pointingState = false;
             }
             handleRightAnimation(controls);
