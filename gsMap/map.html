@@ -681,33 +681,20 @@ function canvasApp(infinite2) {
                 if (olderLeftPosture !== "+ind+mid") {
                     ctrPosY = controls.palmPosition[1];
                     ctrPosX = controls.palmPosition[0];
+                    ctrLevel = map.getZoom();
                 }
-                utilities.drawZoom(ctx);
+                var upper = Math.min(21 - ctrLevel, 5);
+                var lower = Math.min(ctrLevel, 5);
+                utilities.drawZoomLevel(ctx, upper, lower);
                 var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, true);
                 var offsetRange = 40;
-                var zoomRatio = ballPos[1] / 40;
-                zoomRatio /= 0.5;
-                if (zoomTimeout) {
-                    if (zoomRatio > 0.1) {
-                        controls.timeMachine.add(new SnapShotX(controls.timestamp, "zoom", map.getZoom()));
-                        setZoomwithPan(map.getZoom() - 1, controls);
-                        zoomTimeout = false;
-                        setTimeout(function () {
-                            zoomTimeout = true;
-                        }, 600 / Math.ceil(zoomRatio));
-                        recorder.updateRecord(getCurrentStatus(), "command: zooming");
-                    } else if (zoomRatio < -0.1) {
-                        zoomRatio = -zoomRatio;
-                        controls.timeMachine.add(new SnapShotX(controls.timestamp, "zoom", map.getZoom()));
-                        setZoomwithPan(map.getZoom() + 1, controls);
-                        zoomTimeout = false;
-                        setTimeout(function () {
-                            zoomTimeout = true;
-                        }, 600 / Math.ceil(zoomRatio));
-                        recorder.updateRecord(getCurrentStatus(), "command: zooming")
-                    }
+                var LEVEL = 5;
+                var zoomRatio = - ballPos[1] / 39 * LEVEL;
+                map.setZoom(Math.max(1, ctrLevel + Math.ceil(zoomRatio)));
 
-                }
+                var frameOutput = document.getElementById("frameDataLeft");
+                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + zoomRatio + "</div>";
+                $("#frameDataLeft").show();
 
 
                 ctx.translate(-offset[0] + ballPos[0], -offset[1] + ballPos[1]);
@@ -834,7 +821,7 @@ function initialize() {
         zoomControl: false,
         streetViewControl: false,
         center: new google.maps.LatLng(39.958099, -75.167805),
-        minZoom: 3
+        minZoom: 1
     };
     map = new google.maps.Map(document.getElementById('map-canvas'),
             mapOptions);
@@ -1265,6 +1252,7 @@ function transferPointToLatLng() {
 
 var ctrPosY = 150;
 var ctrPosX = 0;
+var ctrLevel = 5;
 
 function drawNaviBall(ctx, position, use, oneDirection, range) {
     ctx.save();

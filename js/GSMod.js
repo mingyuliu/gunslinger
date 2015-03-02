@@ -2786,10 +2786,22 @@ var utilities = (function () {
         ctx.restore();
     };
 
-    api.drawZoom = function (ctx) {
-
+    var drawUpperCurve = function (ctx, level, valid) {
+        var lvl = level || 1;
         ctx.save();
+
+        var offset = 100;
+        ctx.translate(offset*(1-lvl), offset*(1-lvl));
+        ctx.scale(lvl, lvl);
+
+        // @upper curve
+
         ctx.beginPath();
+        if (!valid) {
+            ctx.fillStyle = 'LightGray';
+        }
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
         ctx.moveTo(127.1, 35.5);
         ctx.bezierCurveTo(129.8, 36.6, 132.5, 37.9, 135.0, 39.4);
         ctx.lineTo(137.5, 35.1);
@@ -2799,10 +2811,29 @@ var utilities = (function () {
         ctx.bezierCurveTo(83.3, 28.9, 106.1, 26.7, 127.1, 35.5);
         ctx.closePath();
         ctx.fill();
-        ctx.stroke();
+
+
+        ctx.restore();
+    };
+
+    var drawLowerCurve = function (ctx, level, valid) {
+        var lvl = level || 1;
+        ctx.save();
+
+        var offset = 100;
+        ctx.translate(offset*(1-lvl), offset*(1-lvl));
+        ctx.scale(lvl, lvl);
+
+        // @upper curve
+
+//         ctx.stroke();
 
         // panzoomfeedback/zoom/Path
+        // @lower curve
         ctx.beginPath();
+        if (!valid) {
+            ctx.fillStyle = 'LightGray';
+        }
         ctx.moveTo(72.9, 164.5);
         ctx.bezierCurveTo(69.6, 163.2, 66.5, 161.5, 63.5, 159.7);
         ctx.lineTo(61.0, 164.1);
@@ -2812,9 +2843,26 @@ var utilities = (function () {
         ctx.bezierCurveTo(115.5, 171.2, 93.3, 173.1, 72.9, 164.5);
         ctx.closePath();
         ctx.fill();
-        ctx.stroke();
+//         ctx.stroke();
 
-        // panzoomfeedback/zoom/Group
+        ctx.restore();
+    };
+
+
+
+    api.drawZoomLevel = function (ctx, upper, lower) {
+        for (var i = 1; i <= 5; i++) {
+            drawUpperCurve(ctx, i * 0.1, upper >= i);
+            drawLowerCurve(ctx, i * 0.1, lower >= i);
+            //drawLowerCurve(ctx, i * 0.2, lower <= i);
+        }
+    };
+
+    api.drawZoom = function (ctx) {
+        console.log("d");
+        ctx.save();
+
+        drawZoomLevel(ctx, 5, 5);
 
         // panzoomfeedback/zoom/Group/Compound Path
         ctx.save();
