@@ -1,6 +1,7 @@
-<script src="underscore.js"></script>
+<script src="lodash.min.js"></script>
 <script src="../js/jquery-2.1.0.min.js"></script>
 <script src="../js/FileSaver.js"></script>
+<script src="../js/gl-matrix.js"></script>
 <script>
 
     function download() {
@@ -106,5 +107,65 @@
 
     var names = "participants,modality,order,t1,t2,t3\n";
 
+
+    //create collection data for filtering analysis
+    function createCollection(pNum) {
+        var pData = data[pNum][1];
+        pData = _.filter(pData, function(n) {
+            return n[2].handUsed === 'right';
+        });
+        var dataToReturn = [];
+        pData.forEach(function(n) {
+            dataToReturn.push(new VelData(n[0], n[2].palmPosition, n[2].valid));
+        });
+        return dataToReturn;
+    }
+
+    function VelData(time, position, inFrame) {
+        this.time = time;
+        this.position = position;
+        this.inFrame = inFrame;
+    }
+
+    function analyzeFilter(d) {
+        var startTime = d[0].time;
+        var prevValid = d[0].inFrame;
+
+        for (var i = 2; i < d.length; i++) {
+            if (!prevValid && d[i].inFrame) {
+                startTime = d[i].time;
+            }
+            if (prevValid && !d[i].inFrame && checkLegit(d, i)) {
+                var vel = vec3.create();
+                var offset = vec3.create();
+                var prev = i - 2;
+                while (prev >= 0) {
+                    if (d[prev].inFrame) {
+                        vec3.sub(offset, d[i].position, d[prev].position);
+                        vec3.scale(vel, offset, 1 / (d[i].time - d[prev].time));
+                        if ((d[i].time - startTime) *.001 > 1 && vel[0] < 0) // that's for right postures
+                            console.log("#" + i + " " + vec3.len(vel) + " #timeAlive " + (d[i].time - startTime) *.001);
+                        break;
+                    }
+                    prev--;
+                }
+
+            }
+            prevValid = d[i].inFrame;
+        }
+    }
+
+    // also should include direction
+    function checkLegit(d, start) {
+
+        var end = d[start].time;
+        var counter = start + 1;
+        while (counter < d.length) {
+            if (d[counter].inFrame) break;
+            end = d[counter].time;
+            counter++;
+        }
+        return end - d[start].time > 1000;
+    }
 
 </script>
