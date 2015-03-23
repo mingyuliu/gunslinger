@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<script src="//js.leapmotion.com/leap-0.6.3.js"></script>
+<script src="../js/leap.hand-entry.js"></script>
+<link href="../css/GSMod.css" rel="stylesheet" type="text/css">
+<link href="../css/progressbar.css" rel="stylesheet" type="text/css">
+<script src="../js/jquery-2.1.0.min.js"></script>
+<script src="../js/1euro.js"></script>
+<script src="../js/jquery.popmenu.js"></script>
+<script src="../js/FileSaver.js"></script>
+<link rel="stylesheet" href="lib/font-awesome/css/font-awesome.min.css"/>
+<link rel="stylesheet" href="../css/animate.min.css"/>
+<link rel="stylesheet" href="iconmoon.css"/>
+<link rel="stylesheet" href="../css/vex.css"/>
+<link rel="stylesheet" href="../css/vex-theme-os.css"/>
+<link rel="stylesheet" href="../css/vex-theme-flat-attack.css">
+<script src="../js/vex.combined.min.js"></script>
+<body>
+<script src="../js/move.min.js"></script>
+<script src="../js/state-machine.js"></script>
+<div id="map-canvas"></div>
+<canvas id="leap-overlay-right" class="overlay"></canvas>
+<canvas id="leap-overlay-left" class="overlay"></canvas>
+
+<canvas id="touch-overlay" class="touch-overlay"></canvas>
+<img id="item1" src="img/draw.png">
+<img id="item2" src="img/navigation.png">
+<img id="item3" src="img/clear.png">
+<style>
+    .touch-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 100003;
+    }
+</style>
+
+<div id="menu_box_right">
+    <div class="pop_ctrl" id="pop_ctrl_right"><i class="fa fa-bars"></i></div>
+    <ul id="menu_box_right_ele">
+        <li class="demo_li">
+            <div><i class="fa icon-earth fa-2x"></i></div>
+            <div>Satellite</div>
+            </a></li>
+        <li class="demo_li">
+            <div><i class="fa fa-pencil fa-2x"></i></div>
+            <div>Itinerary</div>
+        </li>
+        <li class="demo_li">
+            <div><i class="fa fa-trash fa-2x"></i></div>
+            <div>Clear</div>
+        </li>
+        <li class="demo_li">
+            <div><i class="fa fa-car fa-2x"></i></div>
+            <div>Route</div>
+        </li>
+        <li class="demo_li">
+            <div><i class="fa fa-times fa-2x"></i></div>
+            <div>Exit</div>
+        </li>
+    </ul>
+</div>
+<div id="menu_box_left">
+    <div class="pop_ctrl" id="pop_ctrl_left"><i class="fa fa-bars"></i></div>
+    <ul id="menu_box_left_ele">
+        <li class="demo_li">
+            <div><i class="fa icon-redo fa-2x"></i></div>
+            <div>Redo</div>
+            </a></li>
+        <li class="demo_li">
+            <div><i class="fa icon-undo fa-2x"></i></div>
+            <div>Undo</div>
+        </li>
+        <li class="demo_li">
+            <div><i class="fa fa-download fa-2x"></i></div>
+            <div>Save</div>
+        </li>
+
+        <li class="demo_li">
+            <div><i class="fa fa-times fa-2x"></i></div>
+            <div>Exit</div>
+        </li>
+    </ul>
+</div>
+
+</body>
+
+
+<script src="../js/gestures.js"></script>
+<script src="../js/GSMod.js"></script>
+<script src="../js/gl-matrix.js"></script>
+<script src="circular-progress.js"></script>
+<script type="text/javascript"
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDf5Bggd6pUGScaAgQnt0HPwVhcLwV5fHU&sensor=false&language=en">
+</script>
+<script>
+var canvasWidth = 0, canvasHeight = 0;
+var ACCELERATION_FACTOR = 3;
+var canvas;
+var ctxRight;
+var ctxLeft;
+var canvasLeft;
+var canvasRight;
+var ctxTouch;
+var CURSOR_SIZE = 30;
+var cursorIdleTimeout = false;
+var itemSelected = 1;
+var leftItemSelected = 0;
+var rightItemSelected = 0;
+var isCursorActive = false;
+var targetRadius = 150;
+
+function canvasApp(infinite2) {
+//    infinite2 = infinite2 || infinite;
+////    $("leap-overlay-left").animate({
+////            -webkit-animation-duration: 3s,
+////    -webkit-animation-delay: 2s,
+////    -webkit-animation-iteration-count: infinite2
+////    });
+
+    var distanceAlphaProj = 1;
+
+
+    var isRightCursorDown = false;
+    var isLeftCursorDown = false;
+    var rightClickTimeout = true;
+    var leftClickTimeout = true;
+    canvasWidth = document.body.clientWidth;
+    canvasHeight = document.body.clientHeight;
+
+    canvasRight = document.getElementById("leap-overlay-right");
+    // fullscreen
+    canvasRight.width = 200 * CURSOR_SCALE;
+    canvasRight.height = 200 * CURSOR_SCALE;
+    ctxRight = canvasRight.getContext("2d");
+
+    canvasLeft = document.getElementById("leap-overlay-left");
+    // fullscreen
+    canvasLeft.width = 200 * CURSOR_SCALE;
+    canvasLeft.height = 200 * CURSOR_SCALE;
+    ctxLeft = canvasLeft.getContext("2d");
+
+
+    canvas = document.getElementById("touch-overlay");
+    // fullscreen
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    ctxTouch = canvas.getContext("2d");
+
+    ctxTouch.save();
+
+    ctxTouch.beginPath();
+    ctxTouch.setLineDash([5]);
+    ctxTouch.strokeStyle = 'CadetBlue';
+    ctxTouch.lineWidth = 35;
+    ctxTouch.arc(canvasWidth / 2, canvasHeight / 2, targetRadius,0,2 * Math.PI,false);
+    ctxTouch.stroke();
+    ctxTouch.restore();
+
+
+    leapDeviceMgr.initDevice(canvasWidth, canvasHeight);
+    leapDeviceMgr.addDevice("localhost", "right", GESTURE_SUB, rightOnFrame);
+    leapDeviceMgr.addDevice("192.168.20.128", "left", GESTURE_SUB, leftOnFrame);
+    touchMgr.setupTouches();
+    leapDeviceMgr.start();
+
+    $('#menu_box_right').popmenu({'background': '#e67e22', 'focusColor': '#c0392b', 'iconSize': '100px', 'width': '500px'});
+    $("#pop_ctrl_right").hide();
+
+    $('#menu_box_left').popmenu({ 'iconSize': '100px', 'width': '100px'});
+    $("#pop_ctrl_left").hide();
+    $("#menu_box_left_ele li").click(function () {
+
+        switch ($(this).find("div")[1].innerHTML) {
+            case "Exit":
+
+                break;
+            case "Redo":
+                shapeManager.getInstance().redo();
+                break;
+            case "Undo":
+                shapeManager.getInstance().undo();
+                break;
+            case "Save":
+                utilities.showShortMsg("Itinerary has been saved");
+                recorder.updateRecord(getCurrentStatus(), "command: save itinerary");
+                break;
+        }
+    });
+    $("#menu_box_right_ele li").click(function () {
+        var shapeMgr = shapeManager.getInstance();
+        switch ($(this).find("div")[1].innerHTML) {
+            case "Exit":
+                break;
+            case "Satellite":
+                map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
+                $(this).find("div")[1].innerHTML = "Roadmap";
+                var element = $("#menu_box_right_ele li i.icon-earth")[0];
+                $(element).removeClass("icon-earth").addClass("icon-map");
+                recorder.updateRecord(getCurrentStatus(), "command: change to satellite");
+                break;
+            case "Roadmap":
+                map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+                $(this).find("div")[1].innerHTML = "Satellite";
+                var element = $("#menu_box_right_ele li i.icon-map")[0];
+                $(element).addClass("icon-earth").removeClass("icon-map");
+                recorder.updateRecord(getCurrentStatus(), "command: change to roadmap");
+                break;
+            case "Clear":
+                shapeMgr.clearAllMarkers();
+                break;
+            case "Itinerary":
+                shapeMgr.completeShape();
+                break;
+            case "Route":
+                shapeMgr.completeRoute();
+                break;
+
+        }
+    });
+
+
+    startMap();
+
+
+
+
+
+
+
+    function drawBound(isOuter) {
+        if (isOuter) {
+            ctxTouch.save();
+            ctxTouch.beginPath();
+            ctxTouch.setLineDash([5]);
+            ctxTouch.alpha = 0.1;
+            ctxTouch.fillStyle = 'Gainsboro';
+
+            ctxTouch.arc(canvasWidth / 2, canvasHeight / 2, targetRadius,0,2 * Math.PI,false);
+            ctxTouch.fill();
+            ctxTouch.restore();
+        } else {
+            ctxTouch.save();
+            ctxTouch.beginPath();
+            ctxTouch.setLineDash([5]);
+            ctxTouch.alpha = 0.9;
+            ctxTouch.fillStyle = 'Khaki';
+            ctxTouch.arc(canvasWidth / 2, canvasHeight / 2, targetRadius,0,2 * Math.PI,false);
+            ctxTouch.fill();
+            ctxTouch.restore();
+        }
+    }
+
+
+    function handleRightAnimation(controls) {
+//        console.log("posture: "+controls.posture);
+        var ctx = ctxRight;
+
+        var screenX = -controls.x + canvasWidth;
+        var screenY = -controls.y + canvasHeight;
+        ctx.save();
+        var ratio = utilities.getRatio(controls.palmPosition, controls.use);
+        ctx.globalAlpha = 1 - ratio;
+        canvasRight.style.top = screenY + "px";
+        canvasRight.style.left = screenX + "px";
+        ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
+
+        var targetCtrX = canvasWidth / 2;
+        var targetCtrY = canvasHeight / 2;
+        var posX = -controls.x + canvasWidth + 100 * CURSOR_SCALE;
+        var posY = -controls.y + canvasHeight + 100 * CURSOR_SCALE;
+        console.log(posX);
+        if (Math.pow(posX - targetCtrX, 2) + Math.pow(posY - targetCtrY, 2) > Math.pow(targetRadius, 2)) {
+            drawBound(true);
+        } else {
+            drawBound(false);
+        }
+
+
+        switch (controls.posture) {
+            case "+thu+ind":
+
+                var depthScale = controls.depthVal;
+                distanceAlphaProj = controls.devianceVal;
+
+
+                switch (controls.cursorState) {
+                    case "active":
+                        utilities.drawPoint(ctx);
+                        break;
+                    case "down":
+                        if (isRightCursorDown) {
+                            utilities.drawPoint(ctx);
+                            utilities.drawDown(ctx);
+
+
+                        } else {
+                            utilities.drawPoint(ctx);
+//                                ctx.fillStyle = "rgba(255,255,0,0.4)";
+                        }
+
+                        break;
+                    case "dragging":
+//                            ctx.fillStyle = "rgba(255,0,0,0.9)";
+                        break;
+                }
+
+                window.clearTimeout(cursorIdleTimeout);
+                cursorIdleTimeout = false;
+                break;
+            case "+ind":
+
+
+                distanceAlphaProj = controls.devianceVal;
+
+                var depthScale = controls.depthVal;
+
+                utilities.drawClutch(ctx);
+
+                if (!cursorIdleTimeout) {
+                    cursorIdleTimeout = setTimeout(function () {
+                        isRightCursorDown = false;
+                    }, 600);
+                }
+                break;
+
+
+
+
+            default :
+
+                utilities.drawGeneric(ctx);
+                isRightCursorDown = false;
+
+        }
+        var offset = utilities.getOffsetPosition(controls.palmPosition, controls.use);
+        ctx.translate(-offset[0], -offset[1]);
+        utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+
+
+
+        ctx.restore();
+
+    }
+
+
+
+    function handleInvalidAnimation(controls) {
+        var ctx;
+        var screenX, screenY;
+
+        var canvas;
+        if (interstate.fsm.current === "twoTouches") {
+            return;
+        }
+        if (controls.tag == "right") {
+            if (interstate.fsm.current === "touchRightWait" || interstate.fsm.current === "touchRight") return;
+            ctx = ctxRight;
+            canvas = canvasRight;
+            screenX = -controls.x + canvasWidth;
+            screenY = -controls.y + canvasHeight;
+
+        } else if (controls.tag == "left") {
+            if (interstate.fsm.current === "touchLeftWait" || interstate.fsm.current === "touchLeft") return;
+            ctx = ctxLeft;
+            canvas = canvasLeft;
+            screenX = 0;
+            screenY = canvasHeight - CURSOR_SCALE * 200;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        canvas.style.top = screenY + "px";
+        canvas.style.left = screenX + "px";
+        ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
+        ctx.globalAlpha = 0.2;
+        utilities.drawGeneric(ctx);
+        var offset = utilities.getOffsetPosition(controls.palmPosition, controls.use);
+        ctx.translate(-offset[0], -offset[1]);
+        utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+
+        ctx.restore();
+//        console.log("invalid draing" + controls.fingerList);
+
+    }
+
+    var zoomTimeout = true;
+    var olderLeftPosture = "none";
+
+    function handleLeftAnimation(controls) {
+        var ctx = ctxLeft;
+        var offset = utilities.getOffsetPosition(controls.palmPosition, controls.use);
+        offset[0] = -offset[0];
+        offset[1] = -offset[1];
+        var screenX = 0;
+        var screenY = canvasHeight - CURSOR_SCALE * 200;
+
+
+        ctx.save();
+        var ratio = utilities.getRatio(controls.palmPosition, controls.use);
+        ctx.globalAlpha = 1 - ratio;
+
+        canvasLeft.style.top = screenY + "px";
+        canvasLeft.style.left = screenX + "px";
+        ctx.scale(CURSOR_SCALE, CURSOR_SCALE);
+
+        switch (controls.posture) {
+            case "+ind":
+                if (olderLeftPosture !== "+ind") {
+                    ctrPosY = controls.palmPosition[1];
+                    ctrPosX = controls.palmPosition[0];
+                }
+                utilities.drawPan(ctx);
+                var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, false);
+
+                controls.timeMachine.add(new SnapShotX(controls.timestamp, "panBy", vec2.fromValues(-ballPos[0], -ballPos[1])));
+                recorder.updateRecord(getCurrentStatus(), "command: panning");
+                ctx.translate(-offset[0] + ballPos[0], -offset[1] + ballPos[1]);
+
+                utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+                break;
+            case "+ind+mid":
+                if (olderLeftPosture !== "+ind+mid") {
+                    ctrPosY = controls.palmPosition[1];
+                    ctrPosX = controls.palmPosition[0];
+
+                }
+                var upper = Math.min(21 - ctrLevel, 5);
+                var lower = Math.min(ctrLevel, 5);
+                utilities.drawZoomLevel(ctx, upper, lower);
+                var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, true);
+                var offsetRange = 40;
+                var LEVEL = 5;
+                var zoomRatio = - ballPos[1] / 39 * LEVEL;
+
+
+                var frameOutput = document.getElementById("frameDataLeft");
+                frameOutput.innerHTML = "<div style='width:650px; font-size: 30px;float:left; padding:5px; position:absolute; top:10px; left:10px''>" + zoomRatio + "</div>";
+                $("#frameDataLeft").show();
+
+
+                ctx.translate(-offset[0] + ballPos[0], -offset[1] + ballPos[1]);
+
+                utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+                break;
+            case "-rin-pin":
+                if (controls.checkRinPinPosture()) {
+                    var offset = utilities.getAbsoluteOffset(controls.palmPosition, controls.use, controls.tag)[1];
+                    offset += $("#menu_box_left_ele").height() / 2;
+                    offset = Math.floor(offset / $("#menu_box_left_ele").width());
+                    var items = $("#menu_box_left_ele li");
+                    canvasLeft.style.top = $(items[offset]).offset().top + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
+                    canvasLeft.style.left = $(items[offset]).offset().left + $("#menu_box_left_ele").width() / 2 - 100 * CURSOR_SCALE + "px";
+                    leftItemSelected = offset;
+                    utilities.drawGeneric(ctx);
+                    utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+                }
+
+                break;
+            case "-thu":
+                if (olderLeftPosture !== "-thu") {
+                    ctrPosY = controls.palmPosition[1];
+                    ctrPosX = controls.palmPosition[0];
+                }
+                utilities.drawFlickMenu(ctx);
+                var ballPos = drawNaviBall(ctx, controls.stablePalmPosition, controls.use, true, 100);
+                if (ballPos[1] < -60) {
+                    shapeManager.getInstance().undo();
+                } else if (ballPos[1] > 60) {
+                    shapeManager.getInstance().redo();
+                }
+
+                utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+                break;
+            default :
+
+                utilities.drawGeneric(ctx);
+                ctx.translate(-offset[0], -offset[1]);
+                utilities.drawRingnFingers(ctx, controls.fingerList, controls.tag);
+        }
+        olderLeftPosture = controls.posture;
+        ctx.restore();
+    }
+
+    var pointingState = false;
+
+    function rightOnFrame(controls) {
+        recorder.updateRecord(getCurrentStatus(), controls.getRecordData(), touchMgr.currentTouches);
+        snapshot = new SnapShot(controls.timestamp, vec2.fromValues(controls.x, controls.y), vec3.clone(controls.tipVelocity));
+
+        controls.timeMachine.add(snapshot);
+        if (controls.posture == "invalid" || !controls.valid) {
+            handleInvalidAnimation(controls);
+            isCursorActive = false;
+        } else {
+            ctxRight.clearRect(0, 0, canvas.width, canvas.height);
+            // put in timemachine
+
+            if (controls.posture == "+thu+ind") {
+                if (!pointingState) {
+                    ctxRight.globalAlpha = .2;
+                    if (vec3.len(controls.tipVelocity) < 20) {
+                        controls.rollbackIn();
+                        pointingState = true;
+                        console.log("rollback in");
+                    }
+                }
+            } else if (pointingState) {
+                controls.rollback();
+                console.log("rollback out");
+                pointingState = false;
+            }
+            handleRightAnimation(controls);
+            isCursorActive = true;
+        }
+//            console.log("right " + controls.posture);
+        //debug purpose
+    }
+
+    function leftOnFrame(controls) {
+        recorder.updateRecord(getCurrentStatus(), controls.getRecordData(), touchMgr.currentTouches);
+        if (controls.posture == "invalid" || !controls.valid) {
+            handleInvalidAnimation(controls);
+        } else {
+            ctxLeft.clearRect(0, 0, canvas.width, canvas.height);
+            handleLeftAnimation(controls);
+        }
+
+    }
+
+
+}
+
+
+$(window).ready(canvasApp());
+
+
+function startMap() {
+
+
+//    initialize();
+}
+
+//Google Map Ini
+var map;
+var directionsService = new google.maps.DirectionsService();
+var directionsDisplay;
+
+
+
+
+
+var naviBallPosX = 0;
+var naviBallPosY = 0;
+var bigCirR = 120;
+var ballR = 50;
+var smallCirR = 80;
+
+function transferPointToLatLng() {
+    var offset = .2;
+    var neBound = map.getBounds().getNorthEast();
+    var swBound = map.getBounds().getSouthWest();
+
+    var proj = map.getProjection();
+
+    var neBoundWorld = proj.fromLatLngToPoint(neBound);
+    var swBoundWorld = proj.fromLatLngToPoint(swBound);
+    // centerPiWorld.x = centerPiWorld.x / 256 * canvas.width;
+    // centerPiWorld.y = centerPiWorld.y / 256 * canvas.height;
+
+    var neBoundWorldX = neBoundWorld.x * (Math.pow(2, map.getZoom()));
+    var neBoundWorldY = neBoundWorld.y * (Math.pow(2, map.getZoom()));
+
+    neBoundWorldX -= canvasWidth * offset;
+    neBoundWorldY -= canvasHeight * offset;
+
+    neBoundWorldX = neBoundWorldX / (Math.pow(2, map.getZoom()));
+    neBoundWorldY = neBoundWorldY / (Math.pow(2, map.getZoom()));
+
+    var newNEBoundWorld = new google.maps.Point(neBoundWorldX, neBoundWorldY);
+    var newNEBound = proj.fromPointToLatLng(newNEBoundWorld);
+
+    var swBoundWorldX = neBoundWorld.x * (Math.pow(2, map.getZoom()));
+    var swBoundWorldY = neBoundWorld.y * (Math.pow(2, map.getZoom()));
+
+    swBoundWorldX += canvasWidth * offset;
+    swBoundWorldY += canvasHeight * offset;
+
+    swBoundWorldX = swBoundWorldX / (Math.pow(2, map.getZoom()));
+    swBoundWorldY = swBoundWorldY / (Math.pow(2, map.getZoom()));
+
+    var newSWBoundWorld = new google.maps.Point(swBoundWorldX, swBoundWorldY);
+    var newSWBound = proj.fromPointToLatLng(newNEBoundWorld);
+
+    var bounds = new google.maps.LatLngBounds();
+    bounds.extend(newNEBound);
+    bounds.extend(newSWBound);
+    map.fitBounds(bounds);
+}
+
+
+var ctrPosY = 150;
+var ctrPosX = 0;
+var ctrLevel = 5;
+
+function drawNaviBall(ctx, position, use, oneDirection, range) {
+    ctx.save();
+    var posX, posY;
+    var radius = 80;
+    var offsetRange = range || 40; //pixel ralated
+
+
+    var threshold = .4;
+    if (use == "wall") {
+        posY = -(position[0] - ctrPosX);
+        posX = -(position[1] - ctrPosY);
+    } else {
+        posX = (position[0] - ctrPosX);
+        posY = -(position[1] - ctrPosY);
+    }
+    var pos = vec2.fromValues(posX, posY);
+
+
+    var len = vec2.len(pos);
+    if (len === 0) {
+        utilities.drawGeneric(ctx);
+        ctx.restore();
+        return [0, 0];
+    }
+    len = Math.min(len, radius);
+    var ratio = len / radius;
+
+    if (ratio > threshold) {
+        ratio = (ratio - threshold) * 1 / (1 - threshold);
+
+    } else {
+        ratio = 0;
+    }
+
+
+    vec2.scale(pos, pos, offsetRange * ratio / vec2.len(pos));
+    pos[0] = oneDirection ? 0 : pos[0];
+    ctx.translate(pos[0], pos[1]);
+    utilities.drawGeneric(ctx);
+    ctx.restore();
+
+    return pos;
+}
+
+//document.addEventListener("touchstart", touchHandler, true);
+//document.addEventListener("touchmove", touchHandler, true);
+//document.addEventListener("touchend", touchHandler, true);
+//document.addEventListener("touchcancel", touchHandler, true);
+
+function touchHandler(event) {
+    var touches = event.changedTouches,
+            first = touches[0],
+            type = "";
+    switch (event.type) {
+        case "touchstart":
+            type = "mousedown";
+            break;
+        case "touchmove":
+            type = "mousemove";
+            break;
+        case "touchend":
+            type = "mouseup";
+            break;
+        default:
+            return;
+    }
+
+    //initMouseEvent(type, canBubble, cancelable, view, clickCount,
+    //           screenX, screenY, clientX, clientY, ctrlKey,
+    //           altKey, shiftKey, metaKey, button, relatedTarget);
+
+    var simulatedEvent = document.createEvent("MouseEvent");
+    simulatedEvent.initMouseEvent(type, true, true, window, 1,
+            first.screenX, first.screenY,
+            first.clientX, first.clientY, false,
+            false, false, false, 0/*left*/, null);
+
+    first.target.dispatchEvent(simulatedEvent);
+    event.preventDefault();
+}
+
+$(document).keyup(function (event) {
+    switch (event.which) {
+
+        case 82: //'r' to turn on recorder
+            recorder.startRecorder("map study");
+            break;
+        case 80: //'p' for pausing
+            recorder.stopRecorder();
+            break;
+        case 68://'d' for downloading data
+            recorder.downloadRecords();
+            break;
+        case 66: //'b' to begin
+            //startStudy();
+            break;
+        case 73: //'i'
+            leapDeviceMgr.printRightInfo(modalities[currentModality] + " <br/>" + studyTasks[currentTask]);
+            break;
+        case 70: //'f': finished current task
+            currentTask++;
+            currentTask = Math.min(studyTasks.length - 1, currentTask);
+            recorder.updateRecord(getCurrentStatus(), "task: finished");
+            break;
+        case 77: //'m' mistake
+            recorder.updateRecord(getCurrentStatus(), "task: mistake");
+            break;
+
+
+    }
+});
+
+var modalities = ["not specified", "gs", "touch", "mixed"];
+var currentModality = Number(utilities.getURLParameter("mode") || 0);
+var studyTasks = ["open-ended", "t1", "t2", "t3"];
+var currentTask = 0;
+if (currentModality > 0) {
+    currentTask = 1;
+}
+function getCurrentStatus() {
+    var status = {
+        modality: modalities[currentModality],
+        task: studyTasks[currentTask],
+        gsState: interstate.fsm.current
+    };
+    return status;
+}
+
+
+function SnapShot(timestamp, point, vel) {
+    this.timestamp = timestamp;
+    this.point = point;
+    this.vel = vel;
+}
+
+function SnapShotX(timestamp, type, val) {
+    this.timestamp = timestamp;
+    this.type = type;
+    this.val = val;
+}
+
+function TimeMachine(whichhand) {
+    this.snapshots = [];
+
+    this.add = function (snapshot) {
+        if (this.snapshots.length > 60) {
+            this.snapshots.shift();
+        }
+        this.snapshots.push(snapshot);
+    };
+
+    this.clear = function () {
+        this.snapshots = [];
+    };
+
+    this.getByTime = function (timestamp) {
+        for (var i = this.snapshots.length - 1; i >= 0; i--) {
+            if (timestamp.toFixed(0) == this.snapshots[i].timestamp.toFixed(0)) {
+                return this.snapshots[i];
+            }
+        }
+    }
+
+}
+
+</script>
+</html>
