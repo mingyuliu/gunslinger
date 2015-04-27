@@ -20,7 +20,7 @@
     var data = [];
     var participant = "";
     function getFile(index) {
-        var file = "p" + index + "/p" + index + " midas";
+        var file = "newMidas/p" + index;
         $.getJSON(file + ".txt", function (data_) {
             data.push(["p" + index, data_[0][2]]);
         })
@@ -28,7 +28,7 @@
 
 
     function start() {
-        for (var i = 2; i <= 11; i++) {
+        for (var i = 1; i <= 10; i++) {
             getFile(i);
         }
     }
@@ -72,11 +72,11 @@
         var lastFramePosture = item[0][2].posture;
         var startTime = item[0][0];
         for (var i = 1; i < item.length; i++) {
-
+            //if(item[i][2].handUsed === "left") continue;
             if (item[i][2].posture === lastFramePosture && item[i][2].valid && item[i][2].minVal < .15) {
 
             } else {
-                if (item[i][0] - startTime > 250)
+                if (item[i][0] - startTime > 50)
                     counter[lastFramePosture] += item[i][0] - startTime;
                 startTime = item[i][0];
 

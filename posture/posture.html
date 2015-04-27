@@ -177,6 +177,42 @@ function startStudy() {
 }
 
 
+function SnapShot(timestamp, point, vel) {
+    this.timestamp = timestamp;
+    this.point = point;
+    this.vel = vel;
+}
+
+function SnapShotX(timestamp, type, val) {
+    this.timestamp = timestamp;
+    this.type = type;
+    this.val = val;
+}
+
+function TimeMachine(whichhand) {
+    this.snapshots = [];
+
+    this.add = function (snapshot) {
+        if (this.snapshots.length > 60) {
+            this.snapshots.shift();
+        }
+        this.snapshots.push(snapshot);
+    };
+
+    this.clear = function () {
+        this.snapshots = [];
+    };
+
+    this.getByTime = function (timestamp) {
+        for (var i = this.snapshots.length - 1; i >= 0; i--) {
+            if (timestamp.toFixed(0) == this.snapshots[i].timestamp.toFixed(0)) {
+                return this.snapshots[i];
+            }
+        }
+    }
+
+}
+
 function startNewBlock() {
     inStudy = true;
     utilities.shuffle(postureList);
@@ -336,7 +372,7 @@ function rightOnFrame(controls) {
     checkFramePosture(controls);
     ctxRight.clearRect(0, 0, canvasWidth, canvasHeight);
     drawHand(ctxRight, controls);
-    if (postureHand == controls.tag)
+//    if (postureHand == controls.tag) RECORD BOTH HANDS FOR MIDAS
         recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
 //    leapDeviceMgr.printRightInfo(controls.cursorState);
     //update progress bar
@@ -346,10 +382,10 @@ function leftOnFrame(controls) {
     checkFramePosture(controls);
     ctxLeft.clearRect(0, 0, canvasWidth, canvasHeight);
     drawHand(ctxLeft, controls);
-    if (postureHand == controls.tag)
+//    if (postureHand == controls.tag)
         recorder.updateRecord(getCurrentStatus(), controls.getRecordData());
     var printInfo = isMathed ? ',' : '.';
-    leapDeviceMgr.printRightInfo(printInfo);
+//    leapDeviceMgr.printRightInfo(printInfo);
 }
 
 function drawHand(ctx, controls) {
